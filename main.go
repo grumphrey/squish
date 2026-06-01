@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 	"html"
 	"log"
 	"net/http"
+	"os"
 )
 
 type RequestBody struct {
@@ -14,9 +18,32 @@ type RequestBody struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Print("Error loading .env file")
+	}
+
+	// Routes
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/shorten", shortenURLHandler)
 
+	// Database connection
+	fmt.Println("database_url: ", os.Getenv("DATABASE_URL"))
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal("Unable to connect to database: %v\n", err)
+	}
+	defer conn.Close(context.Background())
+
+	// Testing a DB query...
+	var long_url string
+	err = conn.QueryRow(context.Background(), "select long_url from long_urls where id=$1", 7777).Scan(&long_url)
+	if err != nil {
+		log.Print("QueryRow failed: %v\n", err)
+	}
+	fmt.Println("long_url: ", long_url)
+
+	// Starting HTTP Server
 	fmt.Println("Starting http server...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
