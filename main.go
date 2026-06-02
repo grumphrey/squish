@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -52,6 +53,16 @@ func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for redirecting user to corresponding page given a short url
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, you are currently on %q\n", html.EscapeString(r.URL.Path))
+	// TODO:
+	// Take the short url from url path
+	// Decode corresponding ID from short url
+	// Query DB for corresponding ID
+	// If doesn't exist, show 404 page (or temporary response message)
+	// If ID exists, get the long_url and redirect user to long_url
+
+	// TODO: Input validation, ensure short url contains ASCII only, else might error in decode func
+	short_url := strings.TrimPrefix(r.URL.Path, "/")
+	fmt.Println(short_url)
 }
 
 // Handler to process URLs to be shortened
@@ -112,4 +123,17 @@ func encodeBase62(from int) (to string) {
 	}
 	// fmt.Println("result: ", string(result))
 	return string(result)
+}
+
+func base62Decode(from string) (to int) {
+	const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	// Reverse of encode
+	// Start with 0
+	// From left to right, take accumulated result multiplied by 62 + add the digit in base 10
+	// Repeat until no more digits
+	result := 0
+	for i := range from {
+		result = result*62 + strings.IndexByte(base62Alphabet, from[i]) // TODO: safe to index string since ASCII only?
+	}
+	return result
 }
