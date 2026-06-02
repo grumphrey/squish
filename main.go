@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
 type RequestBody struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+	LongUrl string `json:"url"`
 }
+
+var db *pgxpool.Pool
 
 func main() {
 	err := godotenv.Load()
@@ -25,28 +26,21 @@ func main() {
 	}
 
 	// Database connection
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	db, err = pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal("Unable to connect to database: %v\n", err)
+		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}
-	defer conn.Close(context.Background())
-
-	// Testing a DB query...
-	var long_url string
-	err = conn.QueryRow(context.Background(), "select long_url from long_urls where id=$1", 7777).Scan(&long_url)
-	if err != nil {
-		log.Print("QueryRow failed: %v\n", err)
-	}
-	fmt.Println("long_url with id 7777: ", long_url)
-	encodeBase62(10000000000000000)
+	log.Println("Connected to database server")
+	defer db.Close()
 
 	// Routes
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/shorten", shortenURLHandler)
 
 	// Starting HTTP server
+	log.Println("Starting URL shortener on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to start server: %v", err)
 	}
 }
 
@@ -58,30 +52,35 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 // Handler to process URLs to be shortened
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		w.Header().Add("Allow", "POST")
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
+	// TODO: refactor
 	var body RequestBody
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
 
 	// NOTE: Type mismatch: may get bad JSON that doesn't match destination struct... decoder will silently ignore keys it cannot find
+	// TODO: input validation
 	if err := decoder.Decode(&body); err != nil {
 		http.Error(w, "Invalid JSON!", http.StatusBadRequest)
 		return
 	}
 
-	transformDataStub(body)
+	// TODO: refactor
+	var url_id int
+	err := db.QueryRow(context.Background(), "INSERT INTO long_urls (long_url) VALUES ($1) RETURNING id", body.LongUrl).Scan(&url_id)
+	if err != nil {
+		log.Printf("Query error: failed to write to long_urls, %v\n", err)
+	}
+	fmt.Println("url_id:", url_id)
+	short_url := encodeBase62(url_id) // Should never fail, since ID is guaranteed integer obtained from database
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "hello"})
-}
-
-// Takes in some data, transforms it in some way
-func transformDataStub(r RequestBody) {
-	fmt.Printf("data to be transformed: (name: %s) (age: %d)\n", r.Name, r.Age)
+	json.NewEncoder(w).Encode(map[string]string{"short_url": short_url})
 }
 
 // Convert given base 10 to base 62 (positive numbers only)
