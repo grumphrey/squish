@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"html"
+	// "html"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -35,7 +37,8 @@ func main() {
 	defer db.Close()
 
 	// Routes
-	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/{$}", landingPageHandler)
+	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/shorten", createShortURLHandler)
 
 	// Starting HTTP server
@@ -50,9 +53,37 @@ func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "You are on the landing page\n")
 }
 
+// Input validation: ensure short url contains ASCII only, else might error in decode func
+func validateShortURL(url string) error {
+	if !isAlphanumeric(url) {
+		return errors.New("URL not alphanumerical")
+	}
+	return nil
+}
+
+func isAlphanumeric(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, rune := range s {
+		if !(rune >= 'a' && rune <= 'z' || rune >= 'A' && rune <= 'Z') && !(rune >= '0' && rune <= '9') { // unicode.isDigit can return true for Arabic numerals, similar line of reason for unicode.isLetter
+			return false
+		}
+	}
+	return true
+}
+
+func validateLongURL(long_url string) error {
+	u, err := url.ParseRequestURI(long_url)
+
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return err
+	}
+	return nil
+}
+
 // Handler for redirecting user to corresponding page given a short url
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, you are currently on %q\n", html.EscapeString(r.URL.Path))
+func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO:
 	// Take the short url from url path
 	// Decode corresponding ID from short url
@@ -60,9 +91,41 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// If doesn't exist, show 404 page (or temporary response message)
 	// If ID exists, get the long_url and redirect user to long_url
 
-	// TODO: Input validation, ensure short url contains ASCII only, else might error in decode func
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
-	fmt.Println(short_url)
+	fmt.Println("short_url:", short_url)
+
+	if err := validateShortURL(short_url); err != nil {
+		log.Printf("redirectHandler: %v", err)
+		http.Error(w, "Invalid short URL", http.StatusBadRequest)
+		return
+	}
+
+	url_id := base62Decode(short_url)
+
+	long_url, err := getLongURLByID(url_id)
+	if err != nil {
+		log.Printf("redirectHandler: %v", err)
+		http.Error(w, "Internal server error", http.StatusBadRequest)
+	}
+
+	if err := validateLongURL(long_url); err != nil {
+		log.Printf("redirectHandler: %v", err)
+		http.Error(w, "Invalid long URL", http.StatusBadRequest)
+		// TODO: redirect to 404 page
+	}
+
+	log.Printf("Redirecting user to %v\n", long_url)
+	http.Redirect(w, r, long_url, http.StatusFound)
+}
+
+func getLongURLByID(id int) (string, error) {
+	var long_url string
+
+	err := db.QueryRow(context.Background(), "SELECT long_url FROM long_urls WHERE id=$1", id).Scan(&long_url)
+	if err != nil {
+		return "", err
+	}
+	return long_url, nil
 }
 
 // Handler to process URLs to be shortened
@@ -101,7 +164,7 @@ func decodeURL(r *http.Request) (string, error) {
 	return req.LongUrl, nil
 }
 
-func createLongURL(long_url string) (id int) {
+func createLongURL(long_url string) (id int) { // TODO: error handling?
 	err := db.QueryRow(context.Background(), "INSERT INTO long_urls (long_url) VALUES ($1) RETURNING id", long_url).Scan(&id)
 	if err != nil {
 		log.Printf("Query error: failed to write to long_urls, %v\n", err)
