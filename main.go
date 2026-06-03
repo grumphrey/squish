@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	// "html"
 	"log"
 	"net/http"
 	"os"
@@ -20,15 +18,23 @@ type CreateShortURLRequest struct {
 
 var db *pgxpool.Pool
 
+// TODO: cleanup main
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
 
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	// Database connection
 	// TODO: retry logic built in?
-	db, err = pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatalf("DATABASE_URL missing")
+	}
+	db, err = pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}
@@ -41,7 +47,7 @@ func main() {
 	http.HandleFunc("/shorten", createShortURLHandler)
 
 	// Starting HTTP server
-	log.Println("Starting URL shortener on port 8080")
+	log.Println("Starting URL shortener http server on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		// TODO: Database connection leak since fatal immediately terminates program without running deferred cleanup funcs
 		log.Fatalf("Unable to start server: %v", err)
@@ -51,7 +57,7 @@ func main() {
 // TODO: Handler for landing page
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("------------------Visit to landing page")
-	fmt.Fprintf(w, "You are on the landing page\n")
+	http.ServeFile(w, r, "./static/index.html")
 }
 
 // Handler for redirecting user to corresponding page given a short url
@@ -61,7 +67,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
 	if err := validateShortURL(short_url); err != nil {
-		log.Printf("redirectHandler: %v", err)
+		log.Printf("redirectHandler: invalid short URL: %v (%v)", short_url, err)
 		http.Error(w, "Invalid short URL", http.StatusBadRequest)
 		return
 	}
@@ -71,7 +77,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	long_url, err := getLongURLByID(url_id)
 	if err != nil {
 		log.Printf("DB query error: failed to read long_url given ID, %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Internal server error: this short url might not exist", http.StatusInternalServerError)
 		// TODO: URL was never shortened before, redirect to 404 page
 		// Use a different error message + 404 code?
 		return
