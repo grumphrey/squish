@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/urlshortener # docker will read from .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} # docker will read from .env
+      - POSTGRES_DB=urlshortener
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/init.sql # init tables
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
