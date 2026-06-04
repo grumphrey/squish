@@ -20,6 +20,7 @@ type CreateShortURLRequest struct {
 
 //go:embed static/*
 var staticFiles embed.FS
+
 var db *pgxpool.Pool
 
 // TODO: Refactor global vars, server struct
@@ -32,7 +33,7 @@ func main() {
 // NOTE: To allow returning errors into main and run deferred functions
 func run() error {
 	err := godotenv.Load()
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return errors.New("Could not load .env file")
 	}
 
@@ -40,6 +41,7 @@ func run() error {
 	if dbURL == "" {
 		return errors.New("Missing env: DATABASE_URL")
 	}
+
 	db, err = pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		return fmt.Errorf("Unable to create connection pool: %w", err)
@@ -50,7 +52,7 @@ func run() error {
 		return fmt.Errorf("Could not ping database: %w", err)
 	}
 
-	http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
+	http.Handle("/static/", http.FileServer(http.FS(staticFiles))) // serve from embedded filesystem
 	http.HandleFunc("/{$}", landingPageHandler)
 	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/shorten", createShortURLHandler)
@@ -64,7 +66,7 @@ func run() error {
 
 // Handler for landing page
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/index.html")
+	http.ServeFileFS(w, r, staticFiles, "static/index.html")
 }
 
 // Handler for redirecting user to corresponding page given a short url
@@ -94,7 +96,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 func errorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	if status == http.StatusNotFound {
 		w.WriteHeader(status) // TODO: http.ServeFile writes 200 by default. Maybe write own servefile function. Note: first header write wins
-		http.ServeFile(w, r, "./static/404.html")
+		http.ServeFileFS(w, r, staticFiles, "static/404.html")
 		return
 	}
 }
