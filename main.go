@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,51 +21,52 @@ type CreateShortURLRequest struct {
 // TODO: move into app struct
 var db *pgxpool.Pool
 
-// TODO: cleanup main
-func main() {
+// NOTE: To allow returning errors into main and run deferred functions
+func run() error {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Error loading .env file")
+		return errors.New("Could not load .env file")
 	}
 
-	// Database connection
-	// TODO: retry logic built in?
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatalf("DATABASE_URL missing")
+		return errors.New("Missing env: DATABASE_URL")
 	}
 	db, err = pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err)
+		return fmt.Errorf("Unable to create connection pool: %w", err)
 	}
-	log.Println("Connected to database server")
 	defer db.Close()
+	if err := db.Ping(context.Background()); err != nil {
+		return fmt.Errorf("Could not ping database: %w", err)
+	}
 
-	// Routes
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/{$}", landingPageHandler)
 	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/shorten", createShortURLHandler)
 
-	// Starting HTTP server
 	log.Println("Starting URL shortener http server on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		// TODO: Database connection leak since fatal immediately terminates program without running deferred cleanup funcs
-		log.Fatalf("Unable to start server: %v", err)
+		return fmt.Errorf("Could not start http server: %w", err)
+	}
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Server error: %w", err)
 	}
 }
 
 // Handler for landing page
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("------------------Visit to landing page")
 	http.ServeFile(w, r, "./static/index.html")
 }
 
 // Handler for redirecting user to corresponding page given a short url
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("------------------Visit to redirection page")
-
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
 	if err := validateShortURL(short_url); err != nil {
@@ -95,17 +98,15 @@ func errorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	}
 }
 
-// Handler to process URLs to be shortened
+// Handler to process long URLs to be shortened
 func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("------------------Visit to create short url page")
-
 	if r.Method != http.MethodPost {
 		w.Header().Add("Allow", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	// TODO: Input validation: how to ensure correct JSON format and not let JSON decoder fail silently?
+	// should be okay since JSON sent by frontend will match expected structure
 	long_url, err := deserializeToURL(r)
 	if err != nil {
 		log.Printf("createShortURLHandler: Could not decode invalid JSON (%v)\n", err)
@@ -118,6 +119,8 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid long URL", http.StatusBadRequest)
 		return
 		// TODO: URL is invalid, show error message to user?
+		// Maybe send error to frontend to display correct error message
+		// frontend also does validation.
 	}
 
 	url_id, err := createLongURL(long_url)
@@ -128,16 +131,16 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	short_url := encodeBase62(url_id) // Should never fail, since ID is guaranteed to be an integer obtained from database
 
-	// TODO: return/display short url to user
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"short_url": short_url})
+	log.Println("Created short url: %v", short_url)
 }
 
 // Helper func to decode JSON from request into URL
 func deserializeToURL(r *http.Request) (string, error) {
-	// TODO: input validation
 	// Type mismatch: may get bad JSON that doesn't match destination struct... decoder will silently ignore keys it cannot find
+	// But should be okay since JSON sent by frontend will match expected structure
 	var req CreateShortURLRequest
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
