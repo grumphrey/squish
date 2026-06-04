@@ -56,7 +56,7 @@ func run() error {
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("Server error: %w", err)
+		log.Fatalf("Server error: %v", err)
 	}
 }
 
@@ -134,7 +134,7 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"short_url": short_url})
-	log.Println("Created short url: %v", short_url)
+	log.Printf("Created short url: %v", short_url)
 }
 
 // Helper func to decode JSON from request into URL
