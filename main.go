@@ -16,6 +16,7 @@ type CreateShortURLRequest struct {
 	LongUrl string `json:"url"`
 }
 
+// TODO: move into app struct
 var db *pgxpool.Pool
 
 // TODO: cleanup main
@@ -24,9 +25,6 @@ func main() {
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
-
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Database connection
 	// TODO: retry logic built in?
@@ -42,6 +40,8 @@ func main() {
 	defer db.Close()
 
 	// Routes
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/{$}", landingPageHandler)
 	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/shorten", createShortURLHandler)
@@ -54,7 +54,7 @@ func main() {
 	}
 }
 
-// TODO: Handler for landing page
+// Handler for landing page
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("------------------Visit to landing page")
 	http.ServeFile(w, r, "./static/index.html")
@@ -67,8 +67,9 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
 	if err := validateShortURL(short_url); err != nil {
+		// Short URL provided by user is invalid, show 404 page
 		log.Printf("redirectHandler: invalid short URL: %v (%v)", short_url, err)
-		http.Error(w, "Invalid short URL", http.StatusBadRequest)
+		errorHandler(w, r, http.StatusNotFound)
 		return
 	}
 
@@ -76,15 +77,22 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	long_url, err := getLongURLByID(url_id)
 	if err != nil {
+		// Cannot find long_url in DB, show 404 page
 		log.Printf("DB query error: failed to read long_url given ID, %v", err)
-		http.Error(w, "Internal server error: this short url might not exist", http.StatusInternalServerError)
-		// TODO: URL was never shortened before, redirect to 404 page
-		// Use a different error message + 404 code?
+		errorHandler(w, r, http.StatusNotFound)
 		return
 	}
 
 	log.Printf("Redirecting user to %v\n", long_url)
 	http.Redirect(w, r, long_url, http.StatusFound)
+}
+
+func errorHandler(w http.ResponseWriter, r *http.Request, status int) {
+	if status == http.StatusNotFound {
+		w.WriteHeader(status) // TODO: http.ServeFile writes 200 by default. Maybe write own servefile function. Note: first header write wins
+		http.ServeFile(w, r, "./static/404.html")
+		return
+	}
 }
 
 // Handler to process URLs to be shortened
