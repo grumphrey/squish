@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"embed"
 	"errors"
 	"fmt"
 	"log"
@@ -18,8 +18,16 @@ type CreateShortURLRequest struct {
 	LongUrl string `json:"url"`
 }
 
-// TODO: move into app struct
+//go:embed static/*
+var staticFiles embed.FS
 var db *pgxpool.Pool
+
+// TODO: Refactor global vars, server struct
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
+}
 
 // NOTE: To allow returning errors into main and run deferred functions
 func run() error {
@@ -37,12 +45,12 @@ func run() error {
 		return fmt.Errorf("Unable to create connection pool: %w", err)
 	}
 	defer db.Close()
+	// connection to datastore is lazy
 	if err := db.Ping(context.Background()); err != nil {
 		return fmt.Errorf("Could not ping database: %w", err)
 	}
 
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 	http.HandleFunc("/{$}", landingPageHandler)
 	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/shorten", createShortURLHandler)
@@ -52,12 +60,6 @@ func run() error {
 		return fmt.Errorf("Could not start http server: %w", err)
 	}
 	return nil
-}
-
-func main() {
-	if err := run(); err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
 }
 
 // Handler for landing page
@@ -86,7 +88,6 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Redirecting user to %v\n", long_url)
 	http.Redirect(w, r, long_url, http.StatusFound)
 }
 
@@ -106,8 +107,8 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// should be okay since JSON sent by frontend will match expected structure
-	long_url, err := deserializeToURL(r)
+	decoded, err := decode[CreateShortURLRequest](r)
+	long_url := decoded.LongUrl
 	if err != nil {
 		log.Printf("createShortURLHandler: Could not decode invalid JSON (%v)\n", err)
 		http.Error(w, "Invalid JSON!", http.StatusBadRequest)
@@ -129,26 +130,13 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+
 	short_url := encodeBase62(url_id) // Should never fail, since ID is guaranteed to be an integer obtained from database
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"short_url": short_url})
-	log.Printf("Created short url: %v", short_url)
-}
-
-// Helper func to decode JSON from request into URL
-func deserializeToURL(r *http.Request) (string, error) {
-	// Type mismatch: may get bad JSON that doesn't match destination struct... decoder will silently ignore keys it cannot find
-	// But should be okay since JSON sent by frontend will match expected structure
-	var req CreateShortURLRequest
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-
-	err := decoder.Decode(&req)
-	if err != nil {
-		return "", err
+	if err := encode(w, r, http.StatusOK, map[string]string{"short_url": short_url}); err != nil {
+		log.Printf("Encoding error: (%v)\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
-
-	return req.LongUrl, nil
+	log.Printf("Created short url: %v", short_url)
 }

@@ -1,21 +1,31 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 )
 
-func isAlphanumeric(s string) bool {
-	if len(s) == 0 {
-		return false
+// Encode value into JSON
+func encode[T any](w http.ResponseWriter, r *http.Request, status int, v T) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		return fmt.Errorf("encode json: %w", err)
 	}
-	for _, rune := range s {
-		if !(rune >= 'a' && rune <= 'z' || rune >= 'A' && rune <= 'Z') && !(rune >= '0' && rune <= '9') {
-			return false
-		}
+	return nil
+}
+
+// Decode value from JSON
+func decode[T any](r *http.Request) (T, error) {
+	var v T
+	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+		return v, fmt.Errorf("decode json: %w", err)
 	}
-	return true
+	return v, nil
 }
 
 // Convert given input in base 10 to base 62 (assuming positive numbers only)
@@ -64,4 +74,16 @@ func validateLongURL(long_url string) error {
 		return err
 	}
 	return nil
+}
+
+func isAlphanumeric(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, rune := range s {
+		if !(rune >= 'a' && rune <= 'z' || rune >= 'A' && rune <= 'Z') && !(rune >= '0' && rune <= '9') {
+			return false
+		}
+	}
+	return true
 }
