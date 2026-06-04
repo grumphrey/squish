@@ -37,6 +37,7 @@ async function shortenLink() {
   document.querySelector(".hint").textContent = "";
 
   const payload = { url };
+  // TODO: loading spinner
   try {
     const response = await fetch("/shorten", {
       method: "POST",
@@ -103,6 +104,8 @@ const taglines = [
   "Shrink it. Send it. Done.",
   "Your link, but make it cute.",
   "Life's too short for long links.",
+  "We put URLs on a diet.",
+  "Shrinking links, not dreams.",
 ];
 let i = 0,
   charIdx = 0,

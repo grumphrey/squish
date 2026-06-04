@@ -147,12 +147,14 @@ h2 {
   line-height: 1.15;
   margin-bottom: 14px;
 }
+.hero-sub-container {
+  margin: 0 auto 40px;
+}
 .hero-sub {
   font-size: 17px;
   color: var(--s-muted);
   line-height: 1.65;
   max-width: 560px;
-  margin: 0 auto 40px;
   font-weight: 400;
 }
 .hero-input-row {
@@ -242,6 +244,17 @@ h2 {
 }
 .copy-btn:hover {
   background: var(--s-orange-dark);
+}
+.hero-preheader {
+  color: var(--s-muted);
+  padding-bottom: 8px;
+  text-transform: uppercase;
+}
+.hero-headline {
+  /* padding-bottom: 16px; */
+}
+.hero-message p {
+  margin-bottom: 8px;
 }
 
 /* ── FOOTER ── */
