@@ -39,7 +39,7 @@ async function shortenLink() {
   const payload = { url };
   // TODO: loading spinner
   try {
-    const response = await fetch("/shorten", {
+    const response = await fetch("/api/shorten", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

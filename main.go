@@ -8,7 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -26,7 +29,7 @@ var db *pgxpool.Pool
 // TODO: Refactor global vars, server struct
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("Server error: %v", err)
+		log.Fatal(err)
 	}
 }
 
@@ -34,33 +37,65 @@ func main() {
 func run() error {
 	err := godotenv.Load()
 	if err != nil && !os.IsNotExist(err) {
-		return errors.New("Could not load .env file")
+		return errors.New("load .env file")
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		return errors.New("Missing env: DATABASE_URL")
+		return errors.New("env: DATABASE_URL")
 	}
 
 	db, err = pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-		return fmt.Errorf("Unable to create connection pool: %w", err)
+		return fmt.Errorf("create connection pool: %w", err)
 	}
 	defer db.Close()
 	// connection to datastore is lazy
 	if err := db.Ping(context.Background()); err != nil {
-		return fmt.Errorf("Could not ping database: %w", err)
+		return fmt.Errorf("ping database: %w", err)
 	}
 
-	http.Handle("/static/", http.FileServer(http.FS(staticFiles))) // serve from embedded filesystem
-	http.HandleFunc("/{$}", landingPageHandler)
-	http.HandleFunc("/", redirectHandler)
-	http.HandleFunc("/shorten", createShortURLHandler)
-
-	log.Println("Starting URL shortener http server on port 8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		return fmt.Errorf("Could not start http server: %w", err)
+	mux := http.NewServeMux()
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
+	mux.Handle("/static/", http.FileServer(http.FS(staticFiles))) // serve from embedded filesystem
+	mux.HandleFunc("/{$}", landingPageHandler)
+	mux.HandleFunc("/", redirectHandler)
+	mux.HandleFunc("/api/shorten", createShortURLHandler)
+
+	serverErr := make(chan error, 1)
+	go func() {
+		log.Printf("Starting URL shortener http server on port%s", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- fmt.Errorf("server error: %w", err)
+		}
+		close(serverErr)
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErr:
+		return err
+	case <-quit:
+		log.Println("Shutting down server...")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shut down: %s\n", err)
+	}
+	log.Println("Server stopped")
+
 	return nil
 }
 
