@@ -1,4 +1,4 @@
-module github.com/grumphrey/url-shortener
+module url-shortener
 
 go 1.26.3
 

@@ -9,24 +9,20 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
+
+	"url-shortener/internal/handlers"
+	"url-shortener/internal/repository"
+	"url-shortener/internal/services"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
-type CreateShortURLRequest struct {
-	LongUrl string `json:"url"`
-}
-
 //go:embed static/*
 var staticFiles embed.FS
 
-var db *pgxpool.Pool
-
-// TODO: Refactor global vars, server struct
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -45,7 +41,7 @@ func run() error {
 		return errors.New("env: DATABASE_URL")
 	}
 
-	db, err = pgxpool.New(context.Background(), dbURL)
+	db, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		return fmt.Errorf("create connection pool: %w", err)
 	}
@@ -55,6 +51,10 @@ func run() error {
 		return fmt.Errorf("ping database: %w", err)
 	}
 
+	repo := repository.NewUrlRepository(db)
+	service := services.NewUrlService(repo)
+	handler := handlers.NewUrlHandler(service, staticFiles)
+
 	mux := http.NewServeMux()
 	server := &http.Server{
 		Addr:         ":8080",
@@ -63,10 +63,11 @@ func run() error {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	mux.Handle("/static/", http.FileServer(http.FS(staticFiles))) // serve from embedded filesystem
-	mux.HandleFunc("/{$}", landingPageHandler)
-	mux.HandleFunc("/", redirectHandler)
-	mux.HandleFunc("/api/shorten", createShortURLHandler)
+
+	mux.Handle("/static/", http.FileServerFS(staticFiles)) // serve from embedded filesystem
+	mux.HandleFunc("/{$}", handler.HandleIndex)
+	mux.HandleFunc("/", handler.HandleRedirect)
+	mux.HandleFunc("/api/shorten", handler.HandleCreateShortURL)
 
 	serverErr := make(chan error, 1)
 	go func() {
@@ -97,83 +98,4 @@ func run() error {
 	log.Println("Server stopped")
 
 	return nil
-}
-
-// Handler for landing page
-func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFileFS(w, r, staticFiles, "static/index.html")
-}
-
-// Handler for redirecting user to corresponding page given a short url
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
-	short_url := strings.TrimPrefix(r.URL.Path, "/")
-
-	if err := validateShortURL(short_url); err != nil {
-		// Short URL provided by user is invalid, show 404 page
-		log.Printf("redirectHandler: invalid short URL: %v (%v)", short_url, err)
-		errorHandler(w, r, http.StatusNotFound)
-		return
-	}
-
-	url_id := base62Decode(short_url)
-
-	long_url, err := getLongURLByID(url_id)
-	if err != nil {
-		// Cannot find long_url in DB, show 404 page
-		log.Printf("DB query error: failed to read long_url given ID, %v", err)
-		errorHandler(w, r, http.StatusNotFound)
-		return
-	}
-
-	http.Redirect(w, r, long_url, http.StatusFound)
-}
-
-func errorHandler(w http.ResponseWriter, r *http.Request, status int) {
-	if status == http.StatusNotFound {
-		w.WriteHeader(status) // TODO: http.ServeFile writes 200 by default. Maybe write own servefile function. Note: first header write wins
-		http.ServeFileFS(w, r, staticFiles, "static/404.html")
-		return
-	}
-}
-
-// Handler to process long URLs to be shortened
-func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	decoded, err := decode[CreateShortURLRequest](r)
-	long_url := decoded.LongUrl
-	if err != nil {
-		log.Printf("createShortURLHandler: Could not decode invalid JSON (%v)\n", err)
-		http.Error(w, "Invalid JSON!", http.StatusBadRequest)
-		return
-	}
-
-	if err := validateLongURL(long_url); err != nil {
-		log.Printf("createShortURLHandler: Invalid long url provided by client (%v)\n", err)
-		http.Error(w, "Invalid long URL", http.StatusBadRequest)
-		return
-		// TODO: URL is invalid, show error message to user?
-		// Maybe send error to frontend to display correct error message
-		// frontend also does validation.
-	}
-
-	url_id, err := createLongURL(long_url)
-	if err != nil {
-		log.Printf("DB query error: failed to write to long_urls (%v)\n", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	short_url := encodeBase62(url_id) // Should never fail, since ID is guaranteed to be an integer obtained from database
-
-	if err := encode(w, r, http.StatusOK, map[string]string{"short_url": short_url}); err != nil {
-		log.Printf("Encoding error: (%v)\n", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	log.Printf("Created short url: %v", short_url)
 }

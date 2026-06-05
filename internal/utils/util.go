@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 )
 
 // Encode value into JSON
-func encode[T any](w http.ResponseWriter, r *http.Request, status int, v T) error {
+func Encode[T any](w http.ResponseWriter, r *http.Request, status int, v T) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(v); err != nil {
@@ -20,7 +20,7 @@ func encode[T any](w http.ResponseWriter, r *http.Request, status int, v T) erro
 }
 
 // Decode value from JSON
-func decode[T any](r *http.Request) (T, error) {
+func Decode[T any](r *http.Request) (T, error) {
 	var v T
 	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 		return v, fmt.Errorf("decode json: %w", err)
@@ -29,7 +29,7 @@ func decode[T any](r *http.Request) (T, error) {
 }
 
 // Convert given input in base 10 to base 62 (assuming positive numbers only)
-func encodeBase62(from int) (to string) {
+func Base62Encode(from int) (to string) {
 	// e.g. 123 -> need to divide repeatedly to get remainder. lookup remainder to base62 representation. return as string (the short url)
 	const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" // should be safe to index into since ASCII
 	result := []byte{}
@@ -44,7 +44,7 @@ func encodeBase62(from int) (to string) {
 }
 
 // Convert given input from base 62 to base 10
-func base62Decode(from string) (to int) {
+func Base62Decode(from string) (to int) {
 	const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	result := 0
 	for i := range from {
@@ -56,9 +56,9 @@ func base62Decode(from string) (to int) {
 // Check short url (to be redirected to long url) provided by user is valid.
 //
 // Should only contain alphanumeric (0-9) (a-z) (A-Z)
-func validateShortURL(url string) error {
+func ValidateShortUrl(url string) error {
 	if !isAlphanumeric(url) {
-		return errors.New("URL not alphanumerical")
+		return errors.New("invalid short url: not alphanumerical")
 	}
 	return nil
 }
@@ -67,11 +67,11 @@ func validateShortURL(url string) error {
 //
 // Should be a valid web URL (http or https), with valid top-level domain.
 // Currently only checked by frontend.
-func validateLongURL(long_url string) error {
+func ValidateLongUrl(long_url string) error {
 	u, err := url.ParseRequestURI(long_url)
 
 	if err != nil || u.Scheme == "" || u.Host == "" {
-		return err
+		return fmt.Errorf("invalid long url: %w", err)
 	}
 	return nil
 }

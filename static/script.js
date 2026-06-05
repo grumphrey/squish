@@ -48,6 +48,7 @@ async function shortenLink() {
     });
 
     if (!response.ok) {
+      // TODO: gracefully handle error, maybe server can send json with error field
       throw new Error(`${response.status} from server`);
     }
 
