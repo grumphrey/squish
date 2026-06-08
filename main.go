@@ -67,7 +67,7 @@ func run() error {
 	mux.Handle("/static/", http.FileServerFS(staticFiles)) // serve from embedded filesystem
 	mux.HandleFunc("/{$}", handler.HandleIndex)
 	mux.HandleFunc("/", handler.HandleRedirect)
-	mux.HandleFunc("/api/shorten", handler.HandleCreateShortURL)
+	mux.HandleFunc("/api/shorten", handler.HandleCreateShortUrl)
 
 	serverErr := make(chan error, 1)
 	go func() {

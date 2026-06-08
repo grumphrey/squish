@@ -19,10 +19,6 @@ func NewUrlHandler(svc services.UrlService, fs embed.FS) *UrlHandler {
 	return &UrlHandler{svc: svc, fs: fs}
 }
 
-type CreateShortUrlRequest struct {
-	LongURL string `json:"url"`
-}
-
 // Handler for landing page
 func (h *UrlHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFileFS(w, r, h.fs, "static/index.html")
@@ -38,7 +34,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	long_url, err := h.svc.FindLongUrl(short_url)
+	long_url, err := h.svc.FindLongUrl(r.Context(), short_url)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
 		h.HandleError(w, r, http.StatusNotFound)
@@ -65,15 +61,19 @@ func (h *UrlHandler) HandleError(w http.ResponseWriter, r *http.Request, status 
 }
 
 // Handler to process long URLs to be shortened
-func (h *UrlHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Add("Allow", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	decoded, err := utils.Decode[CreateShortUrlRequest](r)
-	long_url := decoded.LongURL
+	type RequestData struct {
+		LongURL string `json:"url"`
+	}
+
+	requestData, err := utils.Decode[RequestData](r)
+	long_url := requestData.LongURL
 	if err != nil {
 		log.Printf("creating short url: invalid json", err)
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -89,7 +89,7 @@ func (h *UrlHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 		// frontend also does validation.
 	}
 
-	short_url, err := h.svc.CreateShortUrl(long_url)
+	short_url, err := h.svc.CreateShortUrl(r.Context(), long_url)
 	if err != nil {
 		log.Printf("creating short url: %w", err)
 		http.Error(w, "could not create short url", http.StatusInternalServerError)
