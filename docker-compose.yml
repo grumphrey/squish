@@ -1,14 +1,36 @@
 services:
+  certbot: # set up HTTPS with letsencrypt and certbot
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - nginx
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/etc/nginx/static:ro # mount static files
+      - ./certbot/conf:/etc/letsencrypt # shared volume between nginx and certbot services
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - app
+    restart: unless-stopped
+
   app:
     build: .
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/urlshortener # docker will read from .env
     depends_on:
       postgres:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine
@@ -16,8 +38,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} # docker will read from .env
       - POSTGRES_DB=urlshortener
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/init.sql # init tables
       - pgdata:/var/lib/postgresql/data
