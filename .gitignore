@@ -24,9 +24,13 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# secrets
 .env
+*.pem
 
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# default files
+mime.types
