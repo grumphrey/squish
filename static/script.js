@@ -135,3 +135,15 @@ function tick() {
 }
 
 tick();
+
+// Focus input box with '/' key but ignoring case when user already typing
+document.addEventListener("keydown", (e) => {
+  if (
+    e.key === "/" &&
+    document.activeElement.tagName !== "INPUT" &&
+    document.activeElement.tagName !== "TEXTAREA"
+  ) {
+    e.preventDefault();
+    document.querySelector("input").focus();
+  }
+});
