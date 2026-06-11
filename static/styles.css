@@ -163,11 +163,18 @@ h2 {
   max-width: 580px;
   margin: 0 auto;
   background: var(--s-gray);
-  border: 1px solid var(--s-border);
+  border: 2.5px solid var(--s-border);
   border-radius: 12px;
   padding: 6px 6px 6px 18px;
   align-items: center;
   width: 100%;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.hero-input-row:focus-within {
+  border-color: var(--s-orange-light);
+  box-shadow: 0 0 0 2px rgba(59, 109, 17, 0.15);
 }
 .hero-input-row input {
   flex: 1;
@@ -179,7 +186,7 @@ h2 {
   color: var(--s-black);
 }
 .hero-input-row.invalid {
-  border: 2px solid #e74c3c;
+  border: 3px solid #e74c3c;
   transition: border-color 0.1s;
 }
 .hint {
