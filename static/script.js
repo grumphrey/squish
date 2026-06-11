@@ -1,3 +1,37 @@
+const el = document.getElementById("tw");
+const taglines = [
+  "Sometimes less is better.",
+  "Shrink it. Send it. Done.",
+  "Your link, but make it cute.",
+  "Life's too short for long links.",
+  "We put URLs on a diet.",
+  "Shrinking links, not dreams.",
+];
+let i = 0,
+  charIdx = 0,
+  deleting = false;
+let tlds = [];
+
+tick();
+fetchTLDs();
+
+// Allow Enter key to trigger shorten
+document.getElementById("urlInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") shortenLink();
+});
+
+// Focus input box with '/' key but ignoring case when user already typing
+document.addEventListener("keydown", (e) => {
+  if (
+    e.key === "/" &&
+    document.activeElement.tagName !== "INPUT" &&
+    document.activeElement.tagName !== "TEXTAREA"
+  ) {
+    e.preventDefault();
+    document.querySelector("input").focus();
+  }
+});
+
 function validateURL(input) {
   try {
     // Prepend https:// if no protocol is present
@@ -37,8 +71,9 @@ async function shortenLink() {
   document.querySelector(".hint").textContent = "";
 
   const payload = { url };
-  // TODO: loading spinner
+
   try {
+    showSpinner();
     const response = await fetch("/api/shorten", {
       method: "POST",
       headers: {
@@ -52,8 +87,8 @@ async function shortenLink() {
       throw new Error(`${response.status} from server`);
     }
 
-    const result = await response.json();
-    const shortUrl = window.location.origin + "/" + result.short_url;
+    const data = await response.json();
+    const shortUrl = window.location.origin + "/" + data.short_url;
 
     // Display short url to user
     document.getElementById("shortUrl").textContent = shortUrl;
@@ -68,6 +103,8 @@ async function shortenLink() {
     document.querySelector(".hint").textContent = err;
     input.focus();
     return;
+  } finally {
+    hideSpinner();
   }
 }
 
@@ -81,12 +118,6 @@ function copyLink() {
   }, 2000);
 }
 
-// Allow Enter key to trigger shorten
-document.getElementById("urlInput").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") shortenLink();
-});
-
-let tlds = [];
 async function fetchTLDs() {
   const url = "https://data.iana.org/TLD/tlds-alpha-by-domain.txt";
   const response = await fetch(url);
@@ -97,21 +128,6 @@ async function fetchTLDs() {
     .filter((line) => line && !line.startsWith("#"))
     .map((line) => line.trim().toLowerCase());
 }
-fetchTLDs();
-
-const el = document.getElementById("tw");
-const taglines = [
-  "Sometimes less is better.",
-  "Shrink it. Send it. Done.",
-  "Your link, but make it cute.",
-  "Life's too short for long links.",
-  "We put URLs on a diet.",
-  "Shrinking links, not dreams.",
-];
-let i = 0,
-  charIdx = 0,
-  deleting = false;
-
 function tick() {
   const current = taglines[i];
 
@@ -134,16 +150,14 @@ function tick() {
   setTimeout(tick, deleting ? 60 : 110);
 }
 
-tick();
+function showSpinner() {
+  document.getElementById("spinner").classList.add("active");
+  document.getElementById("fetch-btn").disabled = true; // prevent double-clicks
+  document.getElementById("shorten-text").style.display = "none";
+}
 
-// Focus input box with '/' key but ignoring case when user already typing
-document.addEventListener("keydown", (e) => {
-  if (
-    e.key === "/" &&
-    document.activeElement.tagName !== "INPUT" &&
-    document.activeElement.tagName !== "TEXTAREA"
-  ) {
-    e.preventDefault();
-    document.querySelector("input").focus();
-  }
-});
+function hideSpinner() {
+  document.getElementById("spinner").classList.remove("active");
+  document.getElementById("fetch-btn").disabled = false;
+  document.getElementById("shorten-text").style.display = "inline";
+}

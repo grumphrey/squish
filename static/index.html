@@ -48,7 +48,10 @@
           type="text"
           placeholder="Paste your long URL here…"
         />
-        <button onclick="shortenLink()">Shorten link</button>
+        <button id="fetch-btn" onclick="shortenLink()">
+          <span id="shorten-text">Shorten link</span>
+          <span id="spinner"></span>
+        </button>
       </div>
       <div class="hint"></div>
       <div id="shortResult" class="short-result">
