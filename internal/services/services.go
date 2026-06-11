@@ -3,8 +3,10 @@ package services
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/base64"
 	"fmt"
+	"image"
 	"io"
 	"net/url"
 
@@ -18,7 +20,7 @@ import (
 type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
-	CreateQRCode(host string, short_url string) (string, error)
+	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
 }
 
 type urlService struct {
@@ -50,7 +52,7 @@ func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string,
 }
 
 // Return a QR code containing the given URL as a base 64 encoded string.
-func (s *urlService) CreateQRCode(host string, short_url string) (string, error) {
+func (s *urlService) CreateQRCode(host string, short_url string, fs embed.FS) (string, error) {
 	u := &url.URL{
 		Scheme: "https",
 		Host:   host,
@@ -63,10 +65,21 @@ func (s *urlService) CreateQRCode(host string, short_url string) (string, error)
 		return "", fmt.Errorf("creating qr code using %s: %w", url, err)
 	}
 
-	// options := []standard.ImageOption(standard.WithCircleShape())
+	img, err := loadEmbeddedImage(fs, "static/assets/dog-logo-qr.png")
+	if err != nil {
+		return "", fmt.Errorf("creating qr code using logo: %w", err)
+	}
+	options := []standard.ImageOption{
+		// standard.WithQRWidth(8),
+		// standard.WithBorderWidth(18),
+		// standard.WithFgColorRGBHex("#ff6600"),
+		// standard.WithBgColorRGBHex("#000000"),
+		// standard.WithLogoSafeZone(),
+		standard.WithLogoImage(img),
+	}
 
 	var buf bytes.Buffer
-	writer := standard.NewWithWriter(nopWriteCloser{&buf})
+	writer := standard.NewWithWriter(nopWriteCloser{&buf}, options...)
 	if err := qrc.Save(writer); err != nil { // writes qr code to buf
 		return "", fmt.Errorf("creating qr code: writing to buffer: %w", err)
 	}
@@ -82,4 +95,15 @@ type nopWriteCloser struct {
 
 func (nopWriteCloser) Close() error {
 	return nil
+}
+
+func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
+	f, err := fsys.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("loading image from embedded filesys: %w", err)
+	}
+	defer f.Close()
+
+	img, _, err := image.Decode(f)
+	return img, err
 }

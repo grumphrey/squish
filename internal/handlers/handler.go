@@ -95,7 +95,7 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		http.Error(w, "could not create short url", http.StatusInternalServerError)
 	}
 
-	encodedQRCode, err := h.svc.CreateQRCode(r.Host, short_url)
+	encodedQRCode, err := h.svc.CreateQRCode(r.Host, short_url, h.fs)
 
 	// NOTE: need to export fields. since json/encoding uses reflection at runtime
 	type createShortURLResponse struct {
