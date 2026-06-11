@@ -293,6 +293,41 @@ h2 {
   outline-offset: 4px;
   background: #ffffff;
 }
+.shine-image {
+  position: relative;
+  display: inline-block;
+}
+
+.shine-image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  z-index: 1;
+  transition: none;
+}
+
+.shine-image:hover::before {
+  animation: shine 0.6s ease-in-out;
+}
+
+@keyframes shine {
+  0% {
+    left: -75%;
+  }
+  100% {
+    left: 125%;
+  }
+}
 .copy-btn {
   background: var(--s-orange);
   color: white;
