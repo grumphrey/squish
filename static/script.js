@@ -53,7 +53,11 @@ function validateURL(input) {
 }
 
 async function createShortLink() {
+  // Clean up: remove previous results
   document.getElementById("shortResult").classList.remove("show");
+  document.getElementById("qr-img").style.display = "none";
+  document.querySelector(".qr-result").style.display = "none";
+
   const input = document.getElementById("urlInput");
   const parsedInput = input.value.trim();
   const url = validateURL(parsedInput);
@@ -89,12 +93,14 @@ async function createShortLink() {
     const { qr_code, short_url } = await response.json();
     const shortUrl = window.location.origin + "/" + short_url;
 
-    // Display short url to user
+    // Display short url + QR to user
     document.getElementById("shortUrl").textContent = shortUrl;
     document.getElementById("shortResult").classList.add("show");
     document.getElementById("urlInput").value = "";
 
     document.getElementById("qr-img").src = qr_code;
+    document.getElementById("qr-img").style.display = "inline";
+    document.querySelector(".qr-result").style.display = "flex";
   } catch (err) {
     // Display error to user
     document
@@ -118,7 +124,16 @@ function copyLink() {
   }, 2000);
 }
 
+function downloadQR() {
+  const img = document.getElementById("qr-img");
+  const link = document.createElement("a");
+  link.href = img.src;
+  link.download = "qr-code.png";
+  link.click();
+}
+
 async function fetchTLDs() {
+  // TODO: might get rate limited? maybe just send from my own server
   const url = "https://data.iana.org/TLD/tlds-alpha-by-domain.txt";
   const response = await fetch(url);
   const text = await response.text();
