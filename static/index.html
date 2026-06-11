@@ -48,7 +48,7 @@
           type="text"
           placeholder="Paste your long URL here…"
         />
-        <button id="fetch-btn" onclick="shortenLink()">
+        <button id="fetch-btn" onclick="createShortLink()">
           <span id="shorten-text">Shorten link</span>
           <span id="spinner"></span>
         </button>
@@ -61,6 +61,8 @@
           <i class="ti ti-copy"></i> Copy
         </button>
       </div>
+
+      <img id="qr-img" width="100px" height="100px" />
     </section>
 
     <!-- FOOTER -->

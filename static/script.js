@@ -17,7 +17,7 @@ fetchTLDs();
 
 // Allow Enter key to trigger shorten
 document.getElementById("urlInput").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") shortenLink();
+  if (e.key === "Enter") createShortLink();
 });
 
 // Focus input box with '/' key but ignoring case when user already typing
@@ -52,7 +52,7 @@ function validateURL(input) {
   }
 }
 
-async function shortenLink() {
+async function createShortLink() {
   document.getElementById("shortResult").classList.remove("show");
   const input = document.getElementById("urlInput");
   const parsedInput = input.value.trim();
@@ -83,20 +83,20 @@ async function shortenLink() {
     });
 
     if (!response.ok) {
-      // TODO: gracefully handle error, maybe server can send json with error field
-      throw new Error(`${response.status} from server`);
+      throw new Error(`${response.status} from server`); // error is caught and displayed to user
     }
 
-    const data = await response.json();
-    const shortUrl = window.location.origin + "/" + data.short_url;
+    const { qr_code, short_url } = await response.json();
+    const shortUrl = window.location.origin + "/" + short_url;
 
     // Display short url to user
     document.getElementById("shortUrl").textContent = shortUrl;
     document.getElementById("shortResult").classList.add("show");
     document.getElementById("urlInput").value = "";
+
+    document.getElementById("qr-img").src = qr_code;
   } catch (err) {
-    console.error("Error sending data", err);
-    // Show error to user
+    // Display error to user
     document
       .querySelector(".hero-input-row")
       .classList.add("invalid", input.value !== "");

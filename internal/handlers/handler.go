@@ -68,12 +68,12 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	type RequestData struct {
+	type requestData struct {
 		LongURL string `json:"url"`
 	}
 
-	requestData, err := utils.Decode[RequestData](r)
-	long_url := requestData.LongURL
+	request, err := utils.Decode[requestData](r)
+	long_url := request.LongURL
 	if err != nil {
 		log.Printf("creating short url: invalid json", err)
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -95,7 +95,19 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		http.Error(w, "could not create short url", http.StatusInternalServerError)
 	}
 
-	if err := utils.Encode(w, r, http.StatusOK, map[string]string{"short_url": short_url}); err != nil {
+	encodedQRCode, err := h.svc.CreateQRCode(r.Host, short_url)
+
+	// NOTE: need to export fields. since json/encoding uses reflection at runtime
+	type createShortURLResponse struct {
+		QRCode   string `json:"qr_code"`
+		ShortURL string `json:"short_url"`
+	}
+	response := createShortURLResponse{
+		QRCode:   "data:image/png;base64," + encodedQRCode, // NOTE: tell browser to interpret as an image encoded in base64
+		ShortURL: short_url,
+	}
+
+	if err := utils.Encode(w, r, http.StatusOK, response); err != nil {
 		log.Printf("Encoding error: (%v)\n", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
