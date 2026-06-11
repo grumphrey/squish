@@ -28,10 +28,11 @@ func Decode[T any](r *http.Request) (T, error) {
 	return v, nil
 }
 
+const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" // should be safe to index into since ASCII
+
 // Convert given input in base 10 to base 62 (assuming positive numbers only)
 func Base62Encode(from int) (to string) {
 	// e.g. 123 -> need to divide repeatedly to get remainder. lookup remainder to base62 representation. return as string (the short url)
-	const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" // should be safe to index into since ASCII
 	result := []byte{}
 	var digit byte
 
@@ -45,7 +46,6 @@ func Base62Encode(from int) (to string) {
 
 // Convert given input from base 62 to base 10
 func Base62Decode(from string) (to int) {
-	const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	result := 0
 	for i := range from {
 		result = result*62 + strings.IndexByte(base62Alphabet, from[i]) // safe to index string since ASCII only
