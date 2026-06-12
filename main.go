@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 //go:embed static/*
@@ -41,17 +42,30 @@ func run() error {
 		return errors.New("env: DATABASE_URL")
 	}
 
-	db, err := pgxpool.New(context.Background(), dbURL)
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return fmt.Errorf("create connection pool: %w", err)
 	}
 	defer db.Close()
 	// connection to datastore is lazy
-	if err := db.Ping(context.Background()); err != nil {
+	if err := db.Ping(ctx); err != nil {
 		return fmt.Errorf("ping database: %w", err)
 	}
+	log.Println("Connected to postgres")
 
-	repo := repository.NewUrlRepository(db)
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDRESS"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+	defer rdb.Close()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return fmt.Errorf("ping redis: %w", err)
+	}
+	log.Println("Connected to redis")
+
+	repo := repository.NewUrlRepository(db, rdb)
 	service := services.NewUrlService(repo)
 	handler := handlers.NewUrlHandler(service, staticFiles)
 

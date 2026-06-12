@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 // UrlRepository defines storage operations.
@@ -13,14 +15,28 @@ type UrlRepository interface {
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
 	UpdateUrlVisitCount(ctx context.Context, id int) (int, error)
+	GetLongUrlByShortUrl(ctx context.Context, short_url string) (string, error)
+	SetLongUrlByShortUrl(ctx context.Context, short_url string, long_url string) error
 }
 
 type urlRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewUrlRepository(db *pgxpool.Pool) UrlRepository {
-	return &urlRepository{db: db}
+func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client) UrlRepository {
+	return &urlRepository{db: db, rdb: rdb}
+}
+
+// GetLongUrlByShortUrl returns the long URL that matches the given short URL by checking the cache.
+func (r *urlRepository) GetLongUrlByShortUrl(ctx context.Context, short_url string) (long_url string, err error) {
+	key := "url:" + short_url
+	val, err := r.rdb.Get(ctx, key).Result()
+	if err != nil {
+		return "", err
+	}
+
+	return val, nil
 }
 
 // GetLongUrlByID returns the long URL that matches the URL ID given.
@@ -55,6 +71,7 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 	return nil
 }
 
+// UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
 func (r *urlRepository) UpdateUrlVisitCount(ctx context.Context, id int) (int, error) {
 	var newCount int
 	err := r.db.QueryRow(ctx,
@@ -64,4 +81,15 @@ func (r *urlRepository) UpdateUrlVisitCount(ctx context.Context, id int) (int, e
 		return -1, err
 	}
 	return newCount, nil
+}
+
+// SetLongUrlByShortUrl caches the long URL (val) by short URL (key).
+func (r *urlRepository) SetLongUrlByShortUrl(ctx context.Context, short_url string, long_url string) error {
+	key := "url:" + short_url
+	val := long_url
+	var expirationTime time.Duration // default is 0, which means no expiration
+	if err := r.rdb.Set(ctx, key, val, expirationTime).Err(); err != nil {
+		return err
+	}
+	return nil
 }

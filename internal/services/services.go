@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log"
 	"net/url"
 
 	"url-shortener/internal/repository"
@@ -53,13 +54,27 @@ func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (strin
 }
 
 // FindLongUrl returns the corresponding long URL that matches the provided user-friendly short URL.
+// Checks the cache first, before querying database.
 func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string, error) {
-	url_id := utils.Base62Decode(short_url)
-
-	long_url, err := s.repo.GetLongUrlByID(ctx, url_id)
-	if err != nil {
-		return "", fmt.Errorf("finding long url in DB using '%s': %w", short_url, err)
+	long_url, err := s.repo.GetLongUrlByShortUrl(ctx, short_url)
+	if err == nil { // Cache hit
+		log.Printf("cache hit: (%v : %v)", short_url, long_url)
+		return long_url, nil
 	}
+	// Cache miss
+	log.Printf("cache miss: short_url: (%s): %v", short_url, err)
+
+	url_id := utils.Base62Decode(short_url)
+	long_url, err = s.repo.GetLongUrlByID(ctx, url_id)
+	if err != nil {
+		return "", fmt.Errorf("finding long url using id: (%s): %w", short_url, err)
+	}
+
+	// Cache the long_url obtained from database
+	if err := s.repo.SetLongUrlByShortUrl(ctx, short_url, long_url); err != nil {
+		log.Printf("could not cache (%s:%s)", short_url, long_url)
+	}
+
 	return long_url, nil
 }
 
