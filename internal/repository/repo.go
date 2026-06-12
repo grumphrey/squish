@@ -7,10 +7,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// UrlRepository defines storage operations.
 type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
+	UpdateUrlVisitCount(ctx context.Context, id int) (int, error)
 }
 
 type urlRepository struct {
@@ -51,4 +53,15 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 		log.Printf("updating long_urls with short_url value: no row matched")
 	}
 	return nil
+}
+
+func (r *urlRepository) UpdateUrlVisitCount(ctx context.Context, id int) (int, error) {
+	var newCount int
+	err := r.db.QueryRow(ctx,
+		"UPDATE long_urls SET click_count = click_count + 1 WHERE id = $1 RETURNING click_count",
+		id).Scan(&newCount)
+	if err != nil {
+		return -1, err
+	}
+	return newCount, nil
 }

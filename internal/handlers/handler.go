@@ -43,6 +43,14 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// At this point, we know there is a matching long url that exists for the short code
+	count, err := h.svc.UpdateVisitCount(r.Context(), short_url)
+	if err != nil {
+		log.Printf("error updating visit count: %v", err)
+	} else {
+		log.Printf("visit count %s: %v", short_url, count)
+	}
+
 	http.Redirect(w, r, long_url, http.StatusFound)
 }
 

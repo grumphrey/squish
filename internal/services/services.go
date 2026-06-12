@@ -21,6 +21,7 @@ type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
+	UpdateVisitCount(ctx context.Context, short_url string) (int, error)
 }
 
 type urlService struct {
@@ -108,7 +109,7 @@ func (nopWriteCloser) Close() error {
 	return nil
 }
 
-// Helper function to load an image from the embbedded file system.
+// Helper function to load an image from the embedded file system.
 func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
 	f, err := fsys.Open(path)
 	if err != nil {
@@ -118,4 +119,13 @@ func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
 
 	img, _, err := image.Decode(f)
 	return img, err
+}
+
+func (s *urlService) UpdateVisitCount(ctx context.Context, short_url string) (int, error) {
+	url_id := utils.Base62Decode(short_url)
+	count, err := s.repo.UpdateUrlVisitCount(ctx, url_id)
+	if err != nil {
+		return -1, fmt.Errorf("update url visit count: %w", err)
+	}
+	return count, nil
 }
