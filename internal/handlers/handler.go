@@ -19,12 +19,14 @@ func NewUrlHandler(svc services.UrlService, fs embed.FS) *UrlHandler {
 	return &UrlHandler{svc: svc, fs: fs}
 }
 
-// Handler for landing page
+// HandleIndex returns the index page.
+// NOTE: not currently used, this page is being served by nginx
 func (h *UrlHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFileFS(w, r, h.fs, "static/index.html")
 }
 
-// Handler for redirecting user to corresponding page given a short url
+// HandleRedirect retrieves the long URL from the corresponding short URL and redirects the user.
+// Returns 404 and redirects user to 404 page if short URL is not valid.
 func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
@@ -44,7 +46,8 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, long_url, http.StatusFound)
 }
 
-// Handler for unmatched routes
+// HandleError redirects the user to a 404 page.
+// TODO: refactor, doesn't really make sense to call another handler from an existing handler
 func (h *UrlHandler) HandleError(w http.ResponseWriter, r *http.Request, status int) {
 	if status == http.StatusNotFound {
 		f, err := h.fs.ReadFile("static/404.html")
@@ -61,6 +64,9 @@ func (h *UrlHandler) HandleError(w http.ResponseWriter, r *http.Request, status 
 }
 
 // Handler to process long URLs to be shortened
+// HandleCreateShortUrl handles POST /api/shorten.
+// Accepts a long URL, generates a unique short code via the URL service,
+// and produces a QR code image encoded as a base64 data URI.
 func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Add("Allow", "POST")

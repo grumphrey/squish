@@ -31,6 +31,8 @@ func NewUrlService(repo repository.UrlRepository) UrlService { // NOTE: factory 
 	return &urlService{repo: repo}
 }
 
+// CreateShortUrl creates the short, user friendly URL generated from the given long URL.
+// Returns an error if the short URL could not be generated.
 func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (string, error) {
 	url_id, err := s.repo.CreateLongUrl(ctx, long_url)
 	if err != nil {
@@ -49,6 +51,7 @@ func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (strin
 	return short_url, nil
 }
 
+// FindLongUrl returns the corresponding long URL that matches the provided user-friendly short URL.
 func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string, error) {
 	url_id := utils.Base62Decode(short_url)
 
@@ -59,7 +62,7 @@ func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string,
 	return long_url, nil
 }
 
-// Return a QR code containing the given URL as a base 64 encoded string.
+// CreateQRCode returns a QR code containing the given URL as a base 64 encoded string.
 func (s *urlService) CreateQRCode(host string, short_url string, fs embed.FS) (string, error) {
 	u := &url.URL{
 		Scheme: "https",
@@ -105,6 +108,7 @@ func (nopWriteCloser) Close() error {
 	return nil
 }
 
+// Helper function to load an image from the embbedded file system.
 func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
 	f, err := fsys.Open(path)
 	if err != nil {
