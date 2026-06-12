@@ -38,6 +38,14 @@ func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (strin
 	}
 
 	short_url := utils.Base62Encode(url_id) // Should never fail, since ID is guaranteed to be an integer obtained from database
+
+	// TODO: is it possible to fail updating the short_id? if so, maybe need to use a transaction? but leaky for service layer to handle transactions
+	// What happens if context gets cancelled after creating long url row but before updating with the calculated short url?
+	// Also, not exactly necessary to have a database column for short_url since its derived from ID anyway.
+	if err := s.repo.UpdateShortUrl(ctx, url_id, short_url); err != nil {
+		return "", fmt.Errorf("update short url in DB: %w", err)
+	}
+
 	return short_url, nil
 }
 

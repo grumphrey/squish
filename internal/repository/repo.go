@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -9,6 +10,7 @@ import (
 type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
+	UpdateShortUrl(ctx context.Context, id int, short_url string) error
 }
 
 type urlRepository struct {
@@ -33,4 +35,15 @@ func (r *urlRepository) CreateLongUrl(ctx context.Context, long_url string) (id 
 		return 0, err
 	}
 	return id, nil
+}
+
+func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url string) error {
+	result, err := r.db.Exec(ctx, "UPDATE long_urls SET short_url = $1 WHERE id = $2", short_url, id)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		log.Printf("updating long_urls with short_url value: no row matched")
+	}
+	return nil
 }
