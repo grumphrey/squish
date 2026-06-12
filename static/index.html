@@ -38,20 +38,35 @@
       href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
     />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/theme.js" defer></script>
     <script src="/static/script.js" defer></script>
   </head>
   <body>
-    <!-- NAV -->
+    <!-- TODO: template engine to reuse components across files.. or just use react-->
     <nav class="nav">
-      <img height="30px" src="/static/assets/longdog.png" />
-      <a href="/" class="nav-logo">squi<span>.</span>sh</a>
-      <!-- TODO: authentication? -->
-      <!-- <div class="nav-ctas"> -->
-      <!--   <button class="btn-primary">Log in</button> -->
-      <!-- </div> -->
+      <div class="nav-left">
+        <img height="30px" src="/static/assets/longdog.png" />
+        <a href="/" class="nav-logo">squi<span>.</span>sh</a>
+        <!-- TODO: authentication? -->
+        <!-- <div class="nav-ctas"> -->
+        <!--   <button class="btn-primary">Log in</button> -->
+        <!-- </div> -->
+      </div>
+
+      <div
+        id="toggle"
+        class="toggle-track"
+        role="switch"
+        aria-checked="false"
+        aria-label="Toggle dark mode"
+        tabindex="0"
+      >
+        <div class="toggle-thumb">
+          <i class="ti ti-sun" aria-hidden="true"></i>
+        </div>
+      </div>
     </nav>
 
-    <!-- HERO -->
     <section class="hero">
       <div class="hero-badge">
         <i class="ti ti-circle-check"></i>
@@ -84,7 +99,6 @@
           <i class="ti ti-copy"></i> Copy
         </button>
       </div>
-
       <div class="qr-result">
         <div class="shine-image">
           <img id="qr-img" alt="QR Code" />
@@ -95,7 +109,6 @@
       </div>
     </section>
 
-    <!-- FOOTER -->
     <footer>
       <a href="/" class="footer-logo">squi<span>.</span>sh</a>
       <div class="footer-middle">

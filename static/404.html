@@ -16,18 +16,29 @@
       href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
     />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/theme.js" defer></script>
   </head>
   <body>
-    <!-- NAV -->
     <nav class="nav">
-      <a href="#" class="nav-logo">squi<span>.</span>sh</a>
-      <!-- TODO: authentication? -->
-      <!-- <div class="nav-ctas"> -->
-      <!--   <button class="btn-primary">Log in</button> -->
-      <!-- </div> -->
+      <div class="nav-left">
+        <img height="30px" src="/static/assets/longdog.png" />
+        <a href="/" class="nav-logo">squi<span>.</span>sh</a>
+      </div>
+
+      <div
+        id="toggle"
+        class="toggle-track"
+        role="switch"
+        aria-checked="false"
+        aria-label="Toggle dark mode"
+        tabindex="0"
+      >
+        <div class="toggle-thumb">
+          <i class="ti ti-sun" aria-hidden="true"></i>
+        </div>
+      </div>
     </nav>
 
-    <!-- HERO -->
     <section class="hero">
       <p class="hero-preheader">Error 404 - Page not found</p>
       <h1 class="hero-headline">Nobody lives here.</h1>
@@ -44,7 +55,6 @@
       </div>
     </section>
 
-    <!-- FOOTER -->
     <footer>
       <a href="#" class="footer-logo">squi<span>.</span>sh</a>
       <div class="footer-middle">
