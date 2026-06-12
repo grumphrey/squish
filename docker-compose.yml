@@ -48,6 +48,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    # shm_size: 256mb
 
 volumes:
   pgdata:
