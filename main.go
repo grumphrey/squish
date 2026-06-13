@@ -82,6 +82,7 @@ func run() error {
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", handler.HandleRedirect)
 	mux.HandleFunc("/api/shorten", handler.HandleCreateShortUrl)
+	mux.HandleFunc("/health", handler.HandleHealth)
 
 	serverErr := make(chan error, 1)
 	go func() {

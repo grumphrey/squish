@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"url-shortener/internal/services"
 	"url-shortener/internal/utils"
@@ -17,6 +18,18 @@ type UrlHandler struct {
 
 func NewUrlHandler(svc services.UrlService, fs embed.FS) *UrlHandler {
 	return &UrlHandler{svc: svc, fs: fs}
+}
+
+func (h *UrlHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	data := map[string]string{
+		"status": "ok",
+		"time":   time.Now().UTC().Format(time.RFC3339),
+	}
+	if err := utils.Encode(w, r, http.StatusOK, data); err != nil {
+		log.Printf("Health check encoding error: (%v)\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleIndex returns the index page.
