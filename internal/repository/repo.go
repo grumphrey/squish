@@ -136,7 +136,10 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 		return models.Geolocation{}, fmt.Errorf("geoip record has no data for %s", ipAddr)
 	}
 
+	// TODO: refactor
 	var lat, lng float64
+	var region string
+
 	if record.Location.HasCoordinates() {
 		lat = *record.Location.Latitude
 		lng = *record.Location.Longitude
@@ -144,10 +147,17 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 		lat = 0
 		lng = 0
 	}
+
+	if len(record.Subdivisions) > 0 {
+		region = record.Subdivisions[0].Names.English
+	} else {
+		region = ""
+	}
+
 	geolocation := models.Geolocation{
 		Continent:    record.Continent.Code,
 		Country_code: record.Country.ISOCode,
-		Region:       record.Subdivisions[0].Names.English,
+		Region:       region,
 		City:         record.City.Names.English,
 		Latitude:     lat,
 		Longitude:    lng,
