@@ -2,10 +2,17 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/netip"
 	"time"
 
+	"url-shortener/internal/models"
+	"url-shortener/internal/utils"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/oschwald/geoip2-golang/v2"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,7 +21,10 @@ type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
-	UpdateUrlVisitCount(ctx context.Context, id int) (int, error)
+	CreateRedirectMetrics(ctx context.Context, id int, metrics models.RedirectEventMetrics) error
+	GetIPAddressMetrics(ctx context.Context, ipAddr string) (models.Geolocation, error)
+
+	// Caching
 	GetLongUrlByShortUrl(ctx context.Context, short_url string) (string, error)
 	SetLongUrlByShortUrl(ctx context.Context, short_url string, long_url string) error
 }
@@ -22,10 +32,11 @@ type UrlRepository interface {
 type urlRepository struct {
 	db  *pgxpool.Pool
 	rdb *redis.Client
+	gdb *geoip2.Reader
 }
 
-func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client) UrlRepository {
-	return &urlRepository{db: db, rdb: rdb}
+func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) UrlRepository {
+	return &urlRepository{db: db, rdb: rdb, gdb: gdb}
 }
 
 // GetLongUrlByShortUrl returns the long URL that matches the given short URL by checking the cache.
@@ -72,15 +83,30 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 }
 
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
-func (r *urlRepository) UpdateUrlVisitCount(ctx context.Context, id int) (int, error) {
-	var newCount int
-	err := r.db.QueryRow(ctx,
-		"UPDATE long_urls SET click_count = click_count + 1 WHERE id = $1 RETURNING click_count",
-		id).Scan(&newCount)
-	if err != nil {
-		return -1, err
+func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics models.RedirectEventMetrics) error {
+	query := `INSERT INTO url_redirect_events (
+		short_url_id, ip_address, country_code, region, city, latitude, longitude, user_agent, os, browser
+	) VALUES (
+		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, @UserAgent, @OS, @Browser
+	)`
+	args := pgx.NamedArgs{
+		"ShortURLID":  id,
+		"IPAddress":   utils.Nullable(metrics.IPAddress),
+		"CountryCode": utils.Nullable(metrics.Geolocation.Country_code),
+		"Region":      utils.Nullable(metrics.Geolocation.Region),
+		"City":        utils.Nullable(metrics.Geolocation.City),
+		"Latitude":    utils.Nullable(metrics.Geolocation.Latitude),
+		"Longitude":   utils.Nullable(metrics.Geolocation.Longitude),
+		"UserAgent":   utils.Nullable(metrics.UserAgentStr),
+		"OS":          utils.Nullable(metrics.UserAgent.OS),
+		"Browser":     utils.Nullable(metrics.UserAgent.Browser),
 	}
-	return newCount, nil
+
+	_, err := r.db.Exec(ctx, query, args)
+	if err != nil {
+		return fmt.Errorf("could not create redirect metrics: %w", err)
+	}
+	return nil
 }
 
 // SetLongUrlByShortUrl caches the long URL (val) by short URL (key).
@@ -92,4 +118,40 @@ func (r *urlRepository) SetLongUrlByShortUrl(ctx context.Context, short_url stri
 		return err
 	}
 	return nil
+}
+
+// GetIPAdressMetrics returns the parsed geolocation data from the given IP address.
+// NOTE: context unused since geo db is a file. But can be used in future if the database is changed to require network calls.
+// NOTE: the function could return pointer, but would have to do nil check. Not sure if struct is large enough to justify
+func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) (models.Geolocation, error) {
+	ip, err := netip.ParseAddr(ipAddr)
+	if err != nil {
+		return models.Geolocation{}, fmt.Errorf("could not parse ip address %s: %w", ipAddr, err)
+	}
+	record, err := r.gdb.City(ip)
+	if err != nil {
+		return models.Geolocation{}, fmt.Errorf("could not get geoip record for %s: %w", ipAddr, err)
+	}
+	if !record.HasData() {
+		return models.Geolocation{}, fmt.Errorf("geoip record has no data for %s", ipAddr)
+	}
+
+	var lat, lng float64
+	if record.Location.HasCoordinates() {
+		lat = *record.Location.Latitude
+		lng = *record.Location.Longitude
+	} else {
+		lat = 0
+		lng = 0
+	}
+	geolocation := models.Geolocation{
+		Continent:    record.Continent.Code,
+		Country_code: record.Country.ISOCode,
+		Region:       record.Subdivisions[0].Names.English,
+		City:         record.City.Names.English,
+		Latitude:     lat,
+		Longitude:    lng,
+	}
+
+	return geolocation, nil
 }

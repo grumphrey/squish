@@ -30,6 +30,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB} # docker will read from .env
       - REDIS_ADDRESS=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - ./data/geoip:/var/lib/geoip:ro # data dependencies (i.e. geoip database)
     depends_on:
       postgres:
         condition: service_healthy

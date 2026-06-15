@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"url-shortener/internal/models"
 	"url-shortener/internal/services"
 	"url-shortener/internal/utils"
 )
@@ -40,6 +41,7 @@ func (h *UrlHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 // HandleRedirect retrieves the long URL from the corresponding short URL and redirects the user.
 // Returns 404 and redirects user to 404 page if short URL is not valid.
+// Also updates metrics for each short url redirection. TODO: maybe move out logic to unblock main flow?
 func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
@@ -49,6 +51,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find matching long URL we stored for the user previously
 	long_url, err := h.svc.FindLongUrl(r.Context(), short_url)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
@@ -57,12 +60,12 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// At this point, we know there is a matching long url that exists for the short code
-	count, err := h.svc.UpdateVisitCount(r.Context(), short_url)
-	if err != nil {
-		log.Printf("error updating visit count: %v", err)
-	} else {
-		log.Printf("visit count %s: %v", short_url, count)
+	event := models.RedirectEvent{
+		ShortURL:  short_url,
+		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
+		UserAgent: r.Header.Get("User-Agent"),
 	}
+	h.svc.EmitRedirectEvent(r.Context(), event) // okay to fail... not critical
 
 	http.Redirect(w, r, long_url, http.StatusFound)
 }

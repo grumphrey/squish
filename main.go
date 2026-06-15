@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/oschwald/geoip2-golang/v2"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -65,7 +66,13 @@ func run() error {
 	}
 	log.Println("Connected to redis")
 
-	repo := repository.NewUrlRepository(db, rdb)
+	gdb, err := geoip2.Open("/var/lib/geoip/GeoLite2-City.mmdb")
+	if err != nil {
+		return fmt.Errorf("could not open geolocation database: %w", err)
+	}
+	defer gdb.Close()
+
+	repo := repository.NewUrlRepository(db, rdb, gdb)
 	service := services.NewUrlService(repo)
 	handler := handlers.NewUrlHandler(service, staticFiles)
 

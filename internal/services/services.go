@@ -11,9 +11,11 @@ import (
 	"log"
 	"net/url"
 
+	"url-shortener/internal/models"
 	"url-shortener/internal/repository"
 	"url-shortener/internal/utils"
 
+	"github.com/mileusna/useragent"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
@@ -22,7 +24,7 @@ type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
-	UpdateVisitCount(ctx context.Context, short_url string) (int, error)
+	EmitRedirectEvent(ctx context.Context, event models.RedirectEvent)
 }
 
 type urlService struct {
@@ -56,12 +58,13 @@ func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (strin
 // FindLongUrl returns the corresponding long URL that matches the provided user-friendly short URL.
 // Checks the cache first, before querying database.
 func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string, error) {
+	// Look inside cache first, return if cache hit
 	long_url, err := s.repo.GetLongUrlByShortUrl(ctx, short_url)
 	if err == nil { // Cache hit
 		log.Printf("cache hit: (%v : %v)", short_url, long_url)
 		return long_url, nil
 	}
-	// Cache miss
+	// Cache miss, so retrieve from database instead
 	log.Printf("cache miss: short_url: (%s): %v", short_url, err)
 
 	url_id := utils.Base62Decode(short_url)
@@ -136,11 +139,29 @@ func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
 	return img, err
 }
 
-func (s *urlService) UpdateVisitCount(ctx context.Context, short_url string) (int, error) {
-	url_id := utils.Base62Decode(short_url)
-	count, err := s.repo.UpdateUrlVisitCount(ctx, url_id)
-	if err != nil {
-		return -1, fmt.Errorf("update url visit count: %w", err)
+// EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
+func (s *urlService) EmitRedirectEvent(ctx context.Context, event models.RedirectEvent) {
+	// Get geolocation based on ip address
+	geolocation, err := s.repo.GetIPAddressMetrics(ctx, event.IPAddress)
+	if err != nil { // could not get geolocation
+		log.Printf("could not get geolocation data for %s: %v", event.IPAddress, err)
 	}
-	return count, nil
+
+	// Parse user agent string from request header
+	ua := useragent.Parse(event.UserAgent)
+	fmt.Printf("user agent: %s", ua.String)
+	metrics := models.RedirectEventMetrics{
+		IPAddress:   event.IPAddress,
+		Geolocation: geolocation,
+		UserAgent: models.UserAgent{
+			OS:      ua.OS,
+			Browser: ua.Name,
+		},
+		UserAgentStr: event.UserAgent,
+	}
+
+	url_id := utils.Base62Decode(event.ShortURL)
+	if err := s.repo.CreateRedirectMetrics(ctx, url_id, metrics); err != nil {
+		log.Printf("could not update redirect metrics: %w", err)
+	}
 }
