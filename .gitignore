@@ -28,11 +28,13 @@ go.work.sum
 # secrets
 .env
 *.pem
-*.local
+certbot/
 
 # Editor/IDE
 # .idea/
 # .vscode/
 
-# default files
-mime.types
+old/
+
+# Data dependencies (e.g. geoip database etc.)
+data/
