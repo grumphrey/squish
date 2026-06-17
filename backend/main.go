@@ -85,7 +85,6 @@ func run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// mux.Handle("/static/", http.FileServerFS(staticFiles)) // serve from embedded filesystem. also served by nginx
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", handler.HandleRedirect)
 	mux.HandleFunc("/api/shorten", handler.HandleCreateShortUrl)

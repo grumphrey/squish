@@ -47,7 +47,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 
 	if err := utils.ValidateShortUrl(short_url); err != nil {
 		log.Printf("redirecting: %v", short_url, err)
-		h.HandleError(w, r, http.StatusNotFound)
+		http.Error(w, "Invalid short URL", http.StatusNotFound) // must return 404 for nginx to intercept
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	long_url, err := h.svc.FindLongUrl(r.Context(), short_url)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
-		h.HandleError(w, r, http.StatusNotFound)
+		http.Error(w, "Invalid short URL", http.StatusNotFound)
 		return
 	}
 

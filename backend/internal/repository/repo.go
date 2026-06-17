@@ -23,6 +23,7 @@ type UrlRepository interface {
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
 	CreateRedirectMetrics(ctx context.Context, id int, metrics models.RedirectEventMetrics) error
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (models.Geolocation, error)
+	// GetURLMetrics(ctx context.Context, short_url string) (models. , error)
 
 	// Caching
 	GetLongUrlByShortUrl(ctx context.Context, short_url string) (string, error)
@@ -92,7 +93,7 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metri
 	args := pgx.NamedArgs{
 		"ShortURLID":  id,
 		"IPAddress":   utils.Nullable(metrics.IPAddress),
-		"CountryCode": utils.Nullable(metrics.Geolocation.Country_code),
+		"CountryCode": utils.Nullable(metrics.Geolocation.CountryCode),
 		"Region":      utils.Nullable(metrics.Geolocation.Region),
 		"City":        utils.Nullable(metrics.Geolocation.City),
 		"Latitude":    utils.Nullable(metrics.Geolocation.Latitude),
@@ -155,12 +156,12 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 	}
 
 	geolocation := models.Geolocation{
-		Continent:    record.Continent.Code,
-		Country_code: record.Country.ISOCode,
-		Region:       region,
-		City:         record.City.Names.English,
-		Latitude:     lat,
-		Longitude:    lng,
+		Continent:   record.Continent.Code,
+		CountryCode: record.Country.ISOCode,
+		Region:      region,
+		City:        record.City.Names.English,
+		Latitude:    lat,
+		Longitude:   lng,
 	}
 
 	return geolocation, nil
