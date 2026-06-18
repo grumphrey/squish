@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-query";
 import useTypewriter from "../hooks/useTypewriter";
 import Spinner from "./Spinner";
-import { Tabs } from "radix-ui";
+import { Tabs, Checkbox } from "radix-ui";
 
 const taglines = [
   "Sometimes less is better.",
@@ -35,6 +35,8 @@ export default function HeroLanding() {
   });
   const [longURL, setLongURL] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ActiveTabOption>("short-url");
+  const [qrCodeChecked, setQrCodeChecked] =
+    useState<Checkbox.CheckedState>(false);
 
   const shortURL = data?.short_url;
   const QRCode = data?.qr_code;
@@ -85,6 +87,21 @@ export default function HeroLanding() {
             isPending={isPending}
             activeTab={activeTab}
           />
+          <div className="url-checkbox-container">
+            <Checkbox.Root
+              id="qrcode"
+              className="url-checkbox-root"
+              checked={qrCodeChecked}
+              onCheckedChange={(checked) => setQrCodeChecked(checked)}
+            >
+              <Checkbox.Indicator className="url-checkbox-indicator">
+                <i className="ti ti-check" />
+              </Checkbox.Indicator>
+            </Checkbox.Root>
+            <label className="url-checkbox-label" htmlFor="qrcode">
+              Also create a QR Code for this link
+            </label>
+          </div>
         </Tabs.Content>
 
         <Tabs.Content value="qr-code">
@@ -95,6 +112,7 @@ export default function HeroLanding() {
             isPending={isPending}
             activeTab={activeTab}
           />
+          <div className="url-checkbox-container vis-hidden" />
         </Tabs.Content>
       </Tabs.Root>
 
@@ -102,6 +120,7 @@ export default function HeroLanding() {
         activeTab={activeTab}
         shortURL={shortURL}
         QRCode={QRCode}
+        qrCodeChecked={qrCodeChecked}
       />
     </>
   );
@@ -212,6 +231,7 @@ interface ShortURLResultProps {
   shortURL: string | undefined;
   QRCode: string | undefined;
   activeTab: ActiveTabOption;
+  qrCodeChecked: Checkbox.CheckedState;
 }
 
 type CopyButtonText = "Copy" | "Copied!";
@@ -219,7 +239,12 @@ type CopyButtonText = "Copy" | "Copied!";
 // Shows the short url + QR code returned from backend, if available
 // Allows user to copy short url to clipboard with a button.
 // Allows user to download the QR code as an image.
-function ShortURLResult({ shortURL, QRCode, activeTab }: ShortURLResultProps) {
+function ShortURLResult({
+  shortURL,
+  QRCode,
+  activeTab,
+  qrCodeChecked,
+}: ShortURLResultProps) {
   const [copyBtnText, setCopyBtnText] = useState<CopyButtonText>("Copy");
   const qrImgRef = useRef<HTMLImageElement>(null);
 
@@ -256,16 +281,18 @@ function ShortURLResult({ shortURL, QRCode, activeTab }: ShortURLResultProps) {
           </button>
         </div>
       )}
-      {QRCode && activeTab == "qr-code" && (
-        <div className="qr-result">
-          <div className="shine-image">
-            <img id="qr-img" alt="QR Code" src={QRCode} ref={qrImgRef} />
+      {QRCode &&
+        (activeTab == "qr-code" ||
+          (activeTab == "short-url" && qrCodeChecked)) && (
+          <div className="qr-result">
+            <div className="shine-image">
+              <img id="qr-img" alt="QR Code" src={QRCode} ref={qrImgRef} />
+            </div>
+            <button className="qr-download-button" onClick={downloadQRCode}>
+              <i className="ti ti-download" /> Download QR Code
+            </button>
           </div>
-          <button className="qr-download-button" onClick={downloadQRCode}>
-            <i className="ti ti-download" /> Download QR Code
-          </button>
-        </div>
-      )}
+        )}
     </>
   );
 }

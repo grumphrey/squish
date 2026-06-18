@@ -522,3 +522,68 @@ footer {
   color: var(--color-text);
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
+
+.url-checkbox-container {
+  display: flex;
+  align-items: center;
+  max-width: 580px;
+  margin: 10px auto;
+  padding-left: 10px;
+  min-height: 30px;
+}
+/* used to prevent ugly effect from shifting elements when changing tabs */
+.vis-hidden {
+  visibility: hidden;
+}
+
+/* the checkbox */
+.url-checkbox-root {
+  all: unset;
+  background-color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.url-checkbox-root:hover {
+  border-color: #94a3b8;
+}
+.url-checkbox-root:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.url-checkbox-root[data-state="checked"] {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.url-checkbox-root[data-state="indeterminate"] {
+  background-color: #64748b;
+  border-color: #64748b;
+}
+
+.url-checkbox-root[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* the checkmark */
+.url-checkbox-indicator {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.url-checkbox-label {
+  font-family: var(--font-secondary);
+  padding-left: 15px;
+  font-size: 14px;
+  line-height: 1;
+}
