@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-query";
 import useTypewriter from "../hooks/useTypewriter";
 import Spinner from "./Spinner";
+import { Tabs } from "radix-ui";
 
 const taglines = [
   "Sometimes less is better.",
@@ -22,6 +23,8 @@ const taglines = [
   "Shrinking links, not dreams.",
 ];
 
+type ActiveTabOption = "short-url" | "qr-code";
+
 export default function HeroLanding() {
   const { mutate, data, isPending } = useMutation<
     GetShortURLResponse,
@@ -31,6 +34,7 @@ export default function HeroLanding() {
     mutationFn: getShortURL,
   });
   const [longURL, setLongURL] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<ActiveTabOption>("short-url");
 
   const shortURL = data?.short_url;
   const QRCode = data?.qr_code;
@@ -53,12 +57,42 @@ export default function HeroLanding() {
         <p className="hero-sub">Simple, no fuss.</p>
       </div>
 
-      <HeroInputRow
-        longURL={longURL}
-        setLongURL={setLongURL}
-        onSubmit={mutate}
-        isPending={isPending}
-      />
+      <Tabs.Root
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as ActiveTabOption)}
+        className="url-tabs-root"
+      >
+        <Tabs.List className="url-tabs-list">
+          <Tabs.Trigger className="url-tabs-trigger" value="short-url">
+            <i className="ti ti-link" />
+            Short URL
+          </Tabs.Trigger>
+          <Tabs.Trigger className="url-tabs-trigger" value="qr-code">
+            <i className="ti ti-qrcode" />
+            QR Code
+          </Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="short-url">
+          <HeroInputRow
+            longURL={longURL}
+            setLongURL={setLongURL}
+            onSubmit={mutate}
+            isPending={isPending}
+            activeTab={activeTab}
+          />
+        </Tabs.Content>
+
+        <Tabs.Content value="qr-code">
+          <HeroInputRow
+            longURL={longURL}
+            setLongURL={setLongURL}
+            onSubmit={mutate}
+            isPending={isPending}
+            activeTab={activeTab}
+          />
+        </Tabs.Content>
+      </Tabs.Root>
+
       <ShortURLResult shortURL={shortURL} QRCode={QRCode} />
     </>
   );
@@ -69,6 +103,7 @@ interface HeroInputRowProps {
   setLongURL: Dispatch<SetStateAction<string>>;
   onSubmit: UseMutateFunction<GetShortURLResponse, Error, string, unknown>;
   isPending: boolean;
+  activeTab: ActiveTabOption;
 }
 
 function HeroInputRow({
@@ -76,6 +111,7 @@ function HeroInputRow({
   setLongURL,
   onSubmit,
   isPending,
+  activeTab,
 }: HeroInputRowProps) {
   // need to handle error when cannot fetch tlds. fallback values?
   const { data: tlds } = useQuery({
@@ -149,7 +185,13 @@ function HeroInputRow({
           }}
         />
         <button type="button" id="fetch-btn" onClick={createShortLink}>
-          {isPending ? <Spinner /> : <span id="shorten-text">Shorten</span>}
+          {isPending ? (
+            <Spinner />
+          ) : (
+            <span id="shorten-text">
+              {activeTab == "short-url" ? "Shorten" : "Generate QR"}
+            </span>
+          )}
         </button>
       </div>
       {error && <div className="hint">{error}</div>}

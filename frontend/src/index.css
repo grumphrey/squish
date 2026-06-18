@@ -283,10 +283,10 @@ h2 {
   border: none;
   border-radius: 8px;
   padding: 10px 22px;
+  font-family: var(--font-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  font-family: var(--font-primary);
   white-space: nowrap;
   transition: background 0.15s;
   display: flex;
@@ -473,4 +473,52 @@ footer {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.url-tabs-root {
+  width: 100%;
+}
+
+.url-tabs-list {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem 0.8rem 0 0;
+  background-color: var(--color-border);
+  padding: 0.5rem;
+  color: hsl(240 3.8% 46.1%);
+}
+
+.url-tabs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.url-tabs-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(240 5.9% 90%);
+}
+
+.url-tabs-trigger:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.url-tabs-trigger[data-state="active"] {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
