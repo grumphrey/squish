@@ -26,7 +26,7 @@ const taglines = [
 type ActiveTabOption = "short-url" | "qr-code";
 
 export default function HeroLanding() {
-  const { mutate, data, isPending } = useMutation<
+  const { mutate, data, isPending, reset } = useMutation<
     GetShortURLResponse,
     Error,
     string
@@ -38,6 +38,11 @@ export default function HeroLanding() {
 
   const shortURL = data?.short_url;
   const QRCode = data?.qr_code;
+
+  const changeURLTab = (val: ActiveTabOption) => {
+    setActiveTab(val);
+    reset();
+  };
 
   return (
     <>
@@ -59,7 +64,7 @@ export default function HeroLanding() {
 
       <Tabs.Root
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as ActiveTabOption)}
+        onValueChange={(val) => changeURLTab(val as ActiveTabOption)}
         className="url-tabs-root"
       >
         <Tabs.List className="url-tabs-list">
@@ -93,7 +98,11 @@ export default function HeroLanding() {
         </Tabs.Content>
       </Tabs.Root>
 
-      <ShortURLResult shortURL={shortURL} QRCode={QRCode} />
+      <ShortURLResult
+        activeTab={activeTab}
+        shortURL={shortURL}
+        QRCode={QRCode}
+      />
     </>
   );
 }
@@ -202,6 +211,7 @@ function HeroInputRow({
 interface ShortURLResultProps {
   shortURL: string | undefined;
   QRCode: string | undefined;
+  activeTab: ActiveTabOption;
 }
 
 type CopyButtonText = "Copy" | "Copied!";
@@ -209,7 +219,7 @@ type CopyButtonText = "Copy" | "Copied!";
 // Shows the short url + QR code returned from backend, if available
 // Allows user to copy short url to clipboard with a button.
 // Allows user to download the QR code as an image.
-function ShortURLResult({ shortURL, QRCode }: ShortURLResultProps) {
+function ShortURLResult({ shortURL, QRCode, activeTab }: ShortURLResultProps) {
   const [copyBtnText, setCopyBtnText] = useState<CopyButtonText>("Copy");
   const qrImgRef = useRef<HTMLImageElement>(null);
 
@@ -234,7 +244,7 @@ function ShortURLResult({ shortURL, QRCode }: ShortURLResultProps) {
 
   return (
     <>
-      {shortURL && (
+      {shortURL && activeTab == "short-url" && (
         <div id="shortResult" className="short-result">
           <i className="ti ti-paperclip" />
           <span id="shortUrl">{displayURL}</span>
@@ -246,7 +256,7 @@ function ShortURLResult({ shortURL, QRCode }: ShortURLResultProps) {
           </button>
         </div>
       )}
-      {QRCode && (
+      {QRCode && activeTab == "qr-code" && (
         <div className="qr-result">
           <div className="shine-image">
             <img id="qr-img" alt="QR Code" src={QRCode} ref={qrImgRef} />
