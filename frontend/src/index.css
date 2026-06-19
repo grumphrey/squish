@@ -269,10 +269,11 @@ h2 {
 }
 .hint {
   display: block;
+  /* visibility: hidden; */
   font-size: 0.85em;
   color: var(--color-red);
   margin-top: 4px;
-  min-height: 1em;
+  min-height: 20px;
 }
 .hero-input-row input::placeholder {
   color: var(--color-text-muted);

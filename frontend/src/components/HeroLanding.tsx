@@ -222,7 +222,7 @@ function HeroInputRow({
           )}
         </button>
       </div>
-      {error && <div className="hint">{error}</div>}
+      <div className={`hint ${error ? "" : "vis-hidden"}`}>{error}</div>
     </>
   );
 }
@@ -249,6 +249,7 @@ function ShortURLResult({
   const qrImgRef = useRef<HTMLImageElement>(null);
 
   const displayURL = window.location.origin + "/" + shortURL;
+  // const showQRCode = (QRCode  && activeTab == "qr-code") || (activeTab == "qr-code" && ) TODO
 
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url).catch(() => {});
