@@ -1,4 +1,4 @@
-package repository
+package urls
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"net/netip"
 	"time"
 
-	"url-shortener/internal/models"
 	"url-shortener/internal/utils"
 
 	"github.com/jackc/pgx/v5"
@@ -21,8 +20,8 @@ type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
-	CreateRedirectMetrics(ctx context.Context, id int, metrics models.RedirectEventMetrics) error
-	GetIPAddressMetrics(ctx context.Context, ipAddr string) (models.Geolocation, error)
+	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
+	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
 	// GetURLMetrics(ctx context.Context, short_url string) (models. , error)
 
 	// Caching
@@ -84,7 +83,7 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 }
 
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
-func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics models.RedirectEventMetrics) error {
+func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
 		short_url_id, ip_address, country_code, region, city, latitude, longitude, user_agent, os, browser
 	) VALUES (
@@ -124,17 +123,17 @@ func (r *urlRepository) SetLongUrlByShortUrl(ctx context.Context, short_url stri
 // GetIPAdressMetrics returns the parsed geolocation data from the given IP address.
 // NOTE: context unused since geo db is a file. But can be used in future if the database is changed to require network calls.
 // NOTE: the function could return pointer, but would have to do nil check. Not sure if struct is large enough to justify
-func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) (models.Geolocation, error) {
+func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error) {
 	ip, err := netip.ParseAddr(ipAddr)
 	if err != nil {
-		return models.Geolocation{}, fmt.Errorf("could not parse ip address %s: %w", ipAddr, err)
+		return Geolocation{}, fmt.Errorf("could not parse ip address %s: %w", ipAddr, err)
 	}
 	record, err := r.gdb.City(ip)
 	if err != nil {
-		return models.Geolocation{}, fmt.Errorf("could not get geoip record for %s: %w", ipAddr, err)
+		return Geolocation{}, fmt.Errorf("could not get geoip record for %s: %w", ipAddr, err)
 	}
 	if !record.HasData() {
-		return models.Geolocation{}, fmt.Errorf("geoip record has no data for %s", ipAddr)
+		return Geolocation{}, fmt.Errorf("geoip record has no data for %s", ipAddr)
 	}
 
 	// TODO: refactor
@@ -155,7 +154,7 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 		region = ""
 	}
 
-	geolocation := models.Geolocation{
+	geolocation := Geolocation{
 		Continent:   record.Continent.Code,
 		CountryCode: record.Country.ISOCode,
 		Region:      region,

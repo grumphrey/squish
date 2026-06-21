@@ -1,4 +1,4 @@
-package services
+package urls
 
 import (
 	"bytes"
@@ -11,8 +11,6 @@ import (
 	"log"
 	"net/url"
 
-	"url-shortener/internal/models"
-	"url-shortener/internal/repository"
 	"url-shortener/internal/utils"
 
 	"github.com/mileusna/useragent"
@@ -24,14 +22,14 @@ type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
-	EmitRedirectEvent(ctx context.Context, event models.RedirectEvent)
+	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 }
 
 type urlService struct {
-	repo repository.UrlRepository
+	repo UrlRepository
 }
 
-func NewUrlService(repo repository.UrlRepository) UrlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
+func NewUrlService(repo UrlRepository) UrlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
 	return &urlService{repo: repo}
 }
 
@@ -140,7 +138,7 @@ func loadEmbeddedImage(fsys embed.FS, path string) (image.Image, error) {
 }
 
 // EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
-func (s *urlService) EmitRedirectEvent(ctx context.Context, event models.RedirectEvent) {
+func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent) {
 	// Get geolocation based on ip address
 	geolocation, err := s.repo.GetIPAddressMetrics(ctx, event.IPAddress)
 	if err != nil { // could not get geolocation
@@ -150,10 +148,10 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event models.Redirec
 	// Parse user agent string from request header
 	ua := useragent.Parse(event.UserAgent)
 	fmt.Printf("user agent: %s", ua.String)
-	metrics := models.RedirectEventMetrics{
+	metrics := RedirectEventMetrics{
 		IPAddress:   event.IPAddress,
 		Geolocation: geolocation,
-		UserAgent: models.UserAgent{
+		UserAgent: UserAgent{
 			OS:      ua.OS,
 			Browser: ua.Name,
 		},

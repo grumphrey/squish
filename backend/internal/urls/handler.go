@@ -1,24 +1,23 @@
-package handlers
+package urls
 
 import (
 	"embed"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	"url-shortener/internal/models"
-	"url-shortener/internal/services"
 	"url-shortener/internal/utils"
 )
 
 type UrlHandler struct {
-	svc services.UrlService
-	fs  embed.FS
+	URLService UrlService
+	fs         embed.FS
 }
 
-func NewUrlHandler(svc services.UrlService, fs embed.FS) *UrlHandler {
-	return &UrlHandler{svc: svc, fs: fs}
+func NewUrlHandler(URLService UrlService, fs embed.FS) *UrlHandler {
+	return &UrlHandler{URLService: URLService, fs: fs}
 }
 
 func (h *UrlHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +51,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find matching long URL we stored for the user previously
-	long_url, err := h.svc.FindLongUrl(r.Context(), short_url)
+	long_url, err := h.URLService.FindLongUrl(r.Context(), short_url)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
 		http.Error(w, "Invalid short URL", http.StatusNotFound)
@@ -60,12 +59,12 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// At this point, we know there is a matching long url that exists for the short code
-	event := models.RedirectEvent{
+	event := RedirectEvent{
 		ShortURL:  short_url,
 		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
 		UserAgent: r.Header.Get("User-Agent"),
 	}
-	h.svc.EmitRedirectEvent(r.Context(), event) // okay to fail... not critical
+	h.URLService.EmitRedirectEvent(r.Context(), event) // okay to fail... not critical
 
 	http.Redirect(w, r, long_url, http.StatusFound)
 }
@@ -119,13 +118,13 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		// frontend also does validation.
 	}
 
-	short_url, err := h.svc.CreateShortUrl(r.Context(), long_url)
+	short_url, err := h.URLService.CreateShortUrl(r.Context(), long_url)
 	if err != nil {
 		log.Printf("creating short url: %w", err)
 		http.Error(w, "could not create short url", http.StatusInternalServerError)
 	}
 
-	encodedQRCode, err := h.svc.CreateQRCode(r.Host, short_url, h.fs)
+	encodedQRCode, err := h.URLService.CreateQRCode(r.Host, short_url, h.fs)
 
 	// NOTE: need to export fields. since json/encoding uses reflection at runtime
 	type createShortURLResponse struct {
@@ -144,3 +143,43 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 	}
 	log.Printf("Created short url: %v", short_url)
 }
+
+func (h *UrlHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	// Check user credentials.
+	// if valid -> create JWT and give to user
+	// if invalid -> send back 400
+	if r.Method != http.MethodPost {
+		w.Header().Add("Allow", "POST")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	type LoginRequest struct {
+		UserEmail    string `json:"email"`
+		UserPassword string `json:"password"`
+	}
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("login: invalid json", err)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+	}
+
+	// err = h.URLService.ValidateUserLogin(request.UserEmail, request.UserPassword)
+	// if err != nil { // TODO: check what type of error.. and respond with appropriate error message
+	// 	log.Printf("login: could not validate user", err)
+	// 	http.Error(w, "Could not validate user", http.StatusNotFound)
+	// 	return
+	// }
+	//
+	// token, err := h.URLService.GenerateTokens(request.UserEmail)
+	// if err != nil {
+	// 	// TODO
+	// 	return
+	// }
+
+	// TODO: user is valid and token obtained, now we send token to user
+}
+
+func (h *UrlHandler) HandleSignUp(w http.ResponseWriter, r *http.Request)  {}
+func (h *UrlHandler) HandleLogout(w http.ResponseWriter, r *http.Request)  {}
+func (h *UrlHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {}

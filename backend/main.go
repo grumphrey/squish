@@ -72,9 +72,10 @@ func run() error {
 	}
 	defer gdb.Close()
 
-	repo := repository.NewUrlRepository(db, rdb, gdb)
-	service := services.NewUrlService(repo)
-	handler := handlers.NewUrlHandler(service, staticFiles)
+	repo := urls.NewUrlRepository(db, rdb, gdb)
+	// TODO: add auth service
+	url_service := urls.NewUrlService(repo)
+	handler := urls.NewUrlHandler(url_service, staticFiles)
 
 	mux := http.NewServeMux()
 	server := &http.Server{
