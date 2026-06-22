@@ -31,6 +31,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB} # docker will read from .env
       - REDIS_ADDRESS=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
     volumes:
       - ./data/geoip:/var/lib/geoip:ro # data dependencies (i.e. geoip database)
     depends_on:
@@ -59,7 +61,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} # docker will read from .env
@@ -68,9 +70,9 @@ services:
        - "5432:5432" # expose to connect dbeaver
     volumes:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/init.sql # init tables
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
