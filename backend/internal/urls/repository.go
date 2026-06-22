@@ -35,7 +35,7 @@ type urlRepository struct {
 	gdb *geoip2.Reader
 }
 
-func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) UrlRepository {
+func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) *urlRepository {
 	return &urlRepository{db: db, rdb: rdb, gdb: gdb}
 }
 

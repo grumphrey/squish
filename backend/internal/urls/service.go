@@ -18,6 +18,7 @@ import (
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
 
+// UrlService defines the interface for short URL operations.
 type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
@@ -29,7 +30,7 @@ type urlService struct {
 	repo UrlRepository
 }
 
-func NewUrlService(repo UrlRepository) UrlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
+func NewUrlService(repo UrlRepository) *urlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
 	return &urlService{repo: repo}
 }
 
