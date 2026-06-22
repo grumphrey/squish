@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS long_urls;
 DROP TABLE IF EXISTS url_redirect_events;
+DROP TABLE IF EXISTS users;
 
 CREATE TABLE long_urls ( -- TODO: confusing - maybe rename to short urls...
   id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY (START WITH 1000000000), -- NOTE: only works in single database instance. maybe replace with uuid
@@ -22,7 +23,18 @@ CREATE TABLE url_redirect_events (
   user_agent TEXT,
   os VARCHAR(50),
   browser VARCHAR(50)
-)
+);
+
+CREATE TABLE users ( -- TODO: add foreign key from long_urls.user to users.id
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  hashed_password VARCHAR(100) NOT NULL,
+  roles TEXT[] DEFAULT ARRAY['user'],
+  status VARCHAR(20) DEFAULT 'active',
+  last_login_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Test values
 -- INSERT INTO long_urls (long_url) VALUES ('http://example.com');

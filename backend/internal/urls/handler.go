@@ -2,7 +2,6 @@ package urls
 
 import (
 	"embed"
-	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -143,43 +142,3 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 	}
 	log.Printf("Created short url: %v", short_url)
 }
-
-func (h *UrlHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	// Check user credentials.
-	// if valid -> create JWT and give to user
-	// if invalid -> send back 400
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	type LoginRequest struct {
-		UserEmail    string `json:"email"`
-		UserPassword string `json:"password"`
-	}
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("login: invalid json", err)
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-	}
-
-	// err = h.URLService.ValidateUserLogin(request.UserEmail, request.UserPassword)
-	// if err != nil { // TODO: check what type of error.. and respond with appropriate error message
-	// 	log.Printf("login: could not validate user", err)
-	// 	http.Error(w, "Could not validate user", http.StatusNotFound)
-	// 	return
-	// }
-	//
-	// token, err := h.URLService.GenerateTokens(request.UserEmail)
-	// if err != nil {
-	// 	// TODO
-	// 	return
-	// }
-
-	// TODO: user is valid and token obtained, now we send token to user
-}
-
-func (h *UrlHandler) HandleSignUp(w http.ResponseWriter, r *http.Request)  {}
-func (h *UrlHandler) HandleLogout(w http.ResponseWriter, r *http.Request)  {}
-func (h *UrlHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {}

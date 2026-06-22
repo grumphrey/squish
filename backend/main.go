@@ -12,9 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"url-shortener/internal/handlers"
-	"url-shortener/internal/repository"
-	"url-shortener/internal/services"
+	"url-shortener/internal/auth"
+	"url-shortener/internal/urls"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -24,6 +23,10 @@ import (
 
 //go:embed static/*
 var staticFiles embed.FS
+var (
+	ErrNoEnvVars        = errors.New(".env not found")
+	ErrNoEnvDatabaseURL = errors.New("DATABASE_URL not found")
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -35,12 +38,12 @@ func main() {
 func run() error {
 	err := godotenv.Load()
 	if err != nil && !os.IsNotExist(err) {
-		return errors.New("load .env file")
+		return ErrNoEnvVars
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		return errors.New("env: DATABASE_URL")
+		return ErrNoEnvDatabaseURL
 	}
 
 	ctx := context.Background()
@@ -68,14 +71,22 @@ func run() error {
 
 	gdb, err := geoip2.Open("/var/lib/geoip/GeoLite2-City.mmdb")
 	if err != nil {
-		return fmt.Errorf("could not open geolocation database: %w", err)
+		return fmt.Errorf("starting geolocation database: %w", err)
 	}
 	defer gdb.Close()
 
-	repo := urls.NewUrlRepository(db, rdb, gdb)
-	// TODO: add auth service
-	url_service := urls.NewUrlService(repo)
-	handler := urls.NewUrlHandler(url_service, staticFiles)
+	authConfig, err := auth.NewConfig()
+	if err != nil {
+		return fmt.Errorf("init JWT config: %w", err)
+	}
+	authRepository := auth.NewRedisTokenStore(rdb)
+	jwtService := auth.NewJWTService(authConfig, authRepository)
+	userRepository := auth.NewUserRepository(db)
+	userService := auth.NewUserService(userRepository)
+	authHandler := auth.NewAuthHandler(jwtService, userService)
+	urlRepository := urls.NewUrlRepository(db, rdb, gdb)
+	urlService := urls.NewUrlService(urlRepository)
+	urlHandler := urls.NewUrlHandler(urlService, staticFiles)
 
 	mux := http.NewServeMux()
 	server := &http.Server{
@@ -87,9 +98,13 @@ func run() error {
 	}
 
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
-	mux.HandleFunc("/", handler.HandleRedirect)
-	mux.HandleFunc("/api/shorten", handler.HandleCreateShortUrl)
-	mux.HandleFunc("/health", handler.HandleHealth)
+	mux.HandleFunc("/", urlHandler.HandleRedirect)
+	mux.HandleFunc("/api/shorten", urlHandler.HandleCreateShortUrl)
+	mux.HandleFunc("/health", urlHandler.HandleHealth)
+	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
+	mux.HandleFunc("/api/auth/signup", authHandler.HandleSignup)
+	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)
+	mux.HandleFunc("/api/auth/refresh", authHandler.HandleRefresh)
 
 	serverErr := make(chan error, 1)
 	go func() {
