@@ -1,6 +1,12 @@
+import { useState, type Dispatch, type SetStateAction } from "react";
 import logo from "../assets/longdog.png";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { Dialog, Checkbox } from "radix-ui";
+import {
+  Dialog,
+  Checkbox,
+  unstable_PasswordToggleField as PasswordToggleField,
+} from "radix-ui";
 
 export default function Navbar() {
   return (
@@ -53,6 +59,16 @@ function LoginButton({ ref, ...props }: any) {
 }
 
 function LoginDialog() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: any) => {
+    e.preventDefault();
+    console.log("Submitting form");
+    login(email, password);
+  };
+
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
@@ -73,7 +89,7 @@ function LoginDialog() {
             </Dialog.Description>
           </div>
 
-          <div className="login-form-stack">
+          <form onSubmit={handleSubmit} className="login-form-stack">
             <div className="login-field">
               <label className="login-label" htmlFor="email">
                 Email
@@ -82,8 +98,12 @@ function LoginDialog() {
               <input
                 className="login-input"
                 id="email"
-                placeholder="you@example.com"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
               />
             </div>
 
@@ -92,7 +112,10 @@ function LoginDialog() {
                 Password
               </label>
 
-              <input className="login-input" id="password" type="password" />
+              <LoginPasswordField
+                password={password}
+                setPassword={setPassword}
+              />
             </div>
 
             <div className="login-remember-row">
@@ -115,11 +138,12 @@ function LoginDialog() {
                 Forgot password?
               </button>
             </div>
-          </div>
-
-          <div className="login-dialog-footer">
-            <button className="login-button login-button--full">Sign In</button>
-          </div>
+            <div className="login-dialog-footer">
+              <button className="login-button login-button--full" type="submit">
+                Sign In
+              </button>
+            </div>
+          </form>
 
           <p className="login-dialog-signup">
             Don't have an account?{" "}
@@ -134,5 +158,34 @@ function LoginDialog() {
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function LoginPasswordField({
+  password,
+  setPassword,
+}: {
+  password: string;
+  setPassword: Dispatch<SetStateAction<string>>;
+}) {
+  return (
+    <PasswordToggleField.Root>
+      <div className="login-input login-password-input-container">
+        <PasswordToggleField.Input
+          className="login-password-input"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
+        <PasswordToggleField.Toggle className="login-password-toggle">
+          <PasswordToggleField.Icon
+            visible={<i className="ti ti-eye" />}
+            hidden={<i className="ti ti-eye-closed" />}
+          />
+        </PasswordToggleField.Toggle>
+      </div>
+    </PasswordToggleField.Root>
   );
 }
