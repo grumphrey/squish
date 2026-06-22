@@ -45,7 +45,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	short_url := strings.TrimPrefix(r.URL.Path, "/")
 
 	if err := utils.ValidateShortUrl(short_url); err != nil {
-		log.Printf("redirecting: %v", short_url, err)
+		log.Printf("redirecting: %v", err)
 		http.Error(w, "Invalid short URL", http.StatusNotFound) // must return 404 for nginx to intercept
 		return
 	}
