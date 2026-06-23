@@ -1,18 +1,18 @@
-DROP TABLE IF EXISTS long_urls;
+DROP TABLE IF EXISTS short_urls;
 DROP TABLE IF EXISTS url_redirect_events;
 DROP TABLE IF EXISTS users;
 
-CREATE TABLE long_urls ( -- TODO: confusing - maybe rename to short urls...
+CREATE TABLE short_urls (
   id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY (START WITH 1000000000), -- NOTE: only works in single database instance. maybe replace with uuid
+  short_url TEXT UNIQUE, -- short url is derived from id (keep in case we migrate to using uuid)
   long_url TEXT NOT NULL,
-  -- TODO: short url is calculated based on id, so maybe no need to insert short url. since its a derived value. but convenient to view?
-  short_url TEXT UNIQUE, -- each short_url should only have 1 long_url matched
+  user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE url_redirect_events (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  short_url_id INT REFERENCES long_urls(id),
+  short_url_id INT REFERENCES short_urls(id),
   accessed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   ip_address INET,
   country_code CHAR(2),
@@ -25,7 +25,7 @@ CREATE TABLE url_redirect_events (
   browser VARCHAR(50)
 );
 
-CREATE TABLE users ( -- TODO: add foreign key from long_urls.user to users.id
+CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   email VARCHAR(100) UNIQUE NOT NULL,

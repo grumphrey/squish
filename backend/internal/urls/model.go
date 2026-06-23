@@ -36,7 +36,7 @@ type URLMetrics struct {
 	Clicks int64
 	// select count(distinct(ip_addr)) as unique_visitors from table where shorturlid=<id>
 	UniqueVisitors int64
-	CreatedAt      time.Time // select created_at from long_urls where shorturl=<shorturl>
+	CreatedAt      time.Time // select created_at from short_urls where shorturl=<shorturl>
 	LastAccessedAt time.Time // sort by ascending.. accessed_at
 
 	// TODO: what else? design dashboard first?
