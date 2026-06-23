@@ -7,9 +7,14 @@ import { routeTree } from "./routeTree.gen";
 
 import "./index.css";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
 
 const router = createRouter({
   routeTree,
+  // https://tanstack.com/router/latest/docs/guide/authenticated-routes
+  // auth will initially be undefined
+  // We'll be passing down the auth state from within a React component
+  context: { auth: undefined! },
 });
 const queryClient = new QueryClient();
 
@@ -18,12 +23,24 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+
+// Wrap RouterProvider in a React component in order to access state from auth hook
+function App() {
+  const auth = useAuth();
+  // Don't render router until silent refresh completes — avoids flash-redirect to /login
+  // TODO
+  // if (auth.isLoading) return <FullPageSpinner />;
+  return <RouterProvider router={router} context={{ auth }} />;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ReactQueryDevtools initialIsOpen={false} position="bottom" />
       <ThemeProvider>
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
