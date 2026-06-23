@@ -9,7 +9,7 @@ import LoginDialog from "@/features/auth/LoginDialog";
 import SignupDialog from "@/features/auth/SignupDialog";
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [signInOpen, setSignInOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -23,7 +23,7 @@ export default function Navbar() {
       </div>
 
       <div className="nav-right">
-        {!user && (
+        {!user && !isLoading && (
           <SignupDialog
             open={signInOpen}
             setOpen={setSignInOpen}

@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContext>(null!);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // TODO: true on mount for silent refresh
+  const [isLoading, setIsLoading] = useState(true); // true on mount for silent refresh
 
   // Silently refresh on page load, exchange the httpOnly refresh cookie for a new access token
   useEffect(() => {
@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         tokenStore.set(data.access_token);
         const { email, user_id } = decodeBrowserJwt(data.access_token);
         setUser({ email: email, userID: user_id });
+        // TODO: navigate to dashboard?
       })
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
