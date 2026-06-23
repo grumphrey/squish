@@ -63,7 +63,7 @@ function LogoutButton() {
   };
 
   return (
-    <button className="login-button" onClick={handleLogout}>
+    <button className="cta-button navbar-logout-button" onClick={handleLogout}>
       Sign out
     </button>
   );
@@ -71,7 +71,7 @@ function LogoutButton() {
 
 function LoginButton({ ref, ...props }: any) {
   return (
-    <button ref={ref} {...props} className="login-button">
+    <button ref={ref} {...props} className="cta-button navbar-login-button">
       Log In
     </button>
   );
@@ -197,7 +197,7 @@ function LoginDialog() {
             </div>
 
             <div className="login-dialog-footer">
-              <button className="login-button login-button--full" type="submit">
+              <button className="cta-button login-button--full" type="submit">
                 Sign In
               </button>
             </div>

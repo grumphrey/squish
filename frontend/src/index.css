@@ -126,13 +126,7 @@ body {
   gap: 20px;
 }
 
-.login-button {
-  /*   all: unset; */
-  /*   padding: 5px 10px; */
-  /*   border-radius: 20px; */
-  /* } */
-  /**/
-  /* .btn-orange { */
+.cta-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -152,24 +146,32 @@ body {
     box-shadow 150ms ease;
 }
 
-.login-button:hover {
+.cta-button:hover {
   background-color: #ea580c; /* orange-600 */
 }
 
-.login-button:active {
+.cta-button:active {
   background-color: #c2410c; /* orange-700 */
 }
 
-.login-button:focus-visible {
+.cta-button:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px #ffffff,
     0 0 0 4px #fb923c; /* orange-400 ring */
 }
 
-.login-button:disabled {
+.cta-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.navbar-login-button {
+}
+
+.navbar-logout-button {
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-primary-light);
 }
 
 .toggle-track {
