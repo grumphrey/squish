@@ -2,6 +2,7 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import logo from "../assets/longdog.png";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Dialog,
   Checkbox,
@@ -9,6 +10,8 @@ import {
 } from "radix-ui";
 
 export default function Navbar() {
+  const { user } = useAuth();
+
   return (
     <nav className="nav">
       <div className="nav-left">
@@ -19,7 +22,7 @@ export default function Navbar() {
       </div>
 
       <div className="nav-right">
-        <LoginDialog />
+        {user ? <LogoutButton /> : <LoginDialog />}
         <ThemeButton />
       </div>
     </nav>
@@ -50,27 +53,73 @@ function ThemeButton() {
   );
 }
 
+function LogoutButton() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/" });
+  };
+
+  return (
+    <button className="login-button" onClick={handleLogout}>
+      Sign out
+    </button>
+  );
+}
+
 function LoginButton({ ref, ...props }: any) {
   return (
     <button ref={ref} {...props} className="login-button">
-      Log in
+      Log In
     </button>
   );
 }
 
 function LoginDialog() {
-  const { login } = useAuth();
+  const { signup, login } = useAuth();
+  const navigate = useNavigate();
+
+  const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: any) => {
+  // Submit login credentials to server
+  const handleLogin = async (e: any) => {
     e.preventDefault();
-    console.log("Submitting form");
-    login(email, password);
+    try {
+      await login(email, password);
+      setOpen(false);
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+    }
+  };
+
+  // Submit sign up form to server.
+  // If successful, close dialog, then navigate to dashboard
+  // If unsuccessful, display error message
+  const handleSignup = async () => {
+    try {
+      await signup(email, password);
+      setOpen(false);
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+    }
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    setError("");
+    setEmail("");
+    setPassword("");
   };
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
         <LoginButton />
       </Dialog.Trigger>
@@ -89,7 +138,7 @@ function LoginDialog() {
             </Dialog.Description>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form-stack">
+          <form onSubmit={handleLogin} className="login-form-stack">
             <div className="login-field">
               <label className="login-label" htmlFor="email">
                 Email
@@ -138,6 +187,15 @@ function LoginDialog() {
                 Forgot password?
               </button>
             </div>
+
+            <div className={`login-dialog-error ${error ? "" : "vis-hidden"}`}>
+              <i className="ti ti-exclamation-circle login-dialog-error-icon" />
+              <div className="login-dialog-error-text">
+                <h5 className="login-dialog-error-title">Error</h5>
+                <p className="login-dialog-error-desc">{error}</p>
+              </div>
+            </div>
+
             <div className="login-dialog-footer">
               <button className="login-button login-button--full" type="submit">
                 Sign In
@@ -147,7 +205,11 @@ function LoginDialog() {
 
           <p className="login-dialog-signup">
             Don't have an account?{" "}
-            <button className="login-text-link text-link--medium" type="button">
+            <button
+              className="login-text-link text-link--medium"
+              type="button"
+              onClick={handleSignup}
+            >
               Sign up
             </button>
           </p>
