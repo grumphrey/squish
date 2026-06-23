@@ -30,7 +30,8 @@ export default function SignupDialog({
   // Submit sign up form to server.
   // If successful, close dialog, then navigate to dashboard
   // If unsuccessful, display error message
-  const handleSignup = async () => {
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     try {
       await signup(email, password);
       setOpen(false);
