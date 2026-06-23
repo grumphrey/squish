@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"url-shortener/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -32,22 +33,21 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
 
 	// Validate credentials
 	user, err := h.userService.ValidateCredentials(r.Context(), req.Email, req.Password)
 	if err != nil {
-		// Use a generic message to prevent user enumeration
-		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		utils.WriteError(w, http.StatusUnauthorized, "ERR_INVALID_CREDENTIALS", "Invalid email/password")
 		return
 	}
 
 	// Generate token pair
 	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
 	if err != nil {
-		http.Error(w, "failed to generate tokens", http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true, // Always use HTTPS in production
 		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/auth/refresh",
+		Path:     "/api/auth",
 		MaxAge:   int(7 * 24 * time.Hour / time.Second),
 	})
 
@@ -86,14 +86,14 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 		// Fall back to request body
 		var req RefreshRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+			utils.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request")
 			return
 		}
 		refreshToken = req.RefreshToken
 	}
 
 	if refreshToken == "" {
-		http.Error(w, "refresh token required", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request")
 		return
 	}
 
@@ -104,14 +104,14 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 	// Get user to retrieve current roles
 	user, err := h.userService.GetUserByID(r.Context(), claims.UserID)
 	if err != nil {
-		http.Error(w, "user not found", http.StatusUnauthorized)
+		utils.WriteError(w, http.StatusInternalServerError, "INVALID_USER", "User not found")
 		return
 	}
 
 	// Perform token refresh with rotation
 	tokenPair, err := h.jwtService.RefreshTokens(r.Context(), refreshToken, user.Email, user.Roles)
 	if err != nil {
-		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/auth/refresh",
+		Path:     "/api/auth",
 		MaxAge:   int(7 * 24 * time.Hour / time.Second),
 	})
 
@@ -152,7 +152,7 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/auth/refresh",
+		Path:     "/api/auth",
 		MaxAge:   -1, // Delete the cookie
 	})
 
@@ -174,20 +174,24 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 	}
 	var req SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
 
 	// TODO: validate email + password
 	if req.Email == "" || req.Password == "" {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_SIGNUP", "Invalid email/password")
 		return
 	}
 
 	// Create user in database if doesn't exist
 	user, err := h.userService.SignupUser(r.Context(), req.Email, req.Password)
 	if err != nil {
-		http.Error(w, "failed to create user", http.StatusInternalServerError)
+		if err == ErrExistingUser {
+			utils.WriteError(w, http.StatusBadRequest, "ERR_EXISTING_USER", "User already exists")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_CREATING_USER", "Could not create user")
 		return
 	}
 
@@ -195,8 +199,7 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 	// Generate token pair
 	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
 	if err != nil {
-		http.Error(w, "failed to generate tokens", http.StatusInternalServerError)
-		// TODO: maybe instead of error, just say signed up successfully. then let user log in (since main operation was successful)
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
 	}
 
@@ -207,7 +210,7 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true, // Always use HTTPS in production
 		SameSite: http.SameSiteStrictMode,
-		Path:     "/api/auth/refresh",
+		Path:     "/api/auth",
 		MaxAge:   int(7 * 24 * time.Hour / time.Second),
 	})
 

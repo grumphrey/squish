@@ -97,3 +97,19 @@ func Nullable[T comparable](v T) *T {
 	}
 	return &v
 }
+
+type ErrorResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// Helper function for sending error as JSON back to client instead of using http.Error
+func WriteError(w http.ResponseWriter, status int, code string, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	json.NewEncoder(w).Encode(ErrorResponse{
+		Code:    code,
+		Message: message,
+	})
+}
