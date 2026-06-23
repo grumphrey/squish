@@ -85,7 +85,10 @@ function LogoutButton() {
   );
 }
 
-export function LoginButton({ ref, ...props }: any) {
+export function LoginButton({
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<"button">) {
   return (
     <button ref={ref} {...props} className="cta-button navbar-login-button">
       Log In
@@ -94,7 +97,10 @@ export function LoginButton({ ref, ...props }: any) {
   );
 }
 
-export function SignupButton({ ref, ...props }: any) {
+export function SignupButton({
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<"button">) {
   return (
     <button ref={ref} {...props} className="cta-button navbar-signup-button">
       Sign Up

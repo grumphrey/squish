@@ -28,7 +28,7 @@ export default function LoginDialog({
   // const validateInput = () => {};
 
   // Submit login credentials to server
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await login(email, password);
@@ -135,9 +135,7 @@ export default function LoginDialog({
 
           <div className="separator-row">
             <div className="separator" />
-
             <span className="separator-text">Or continue with</span>
-
             <div className="separator" />
           </div>
 
