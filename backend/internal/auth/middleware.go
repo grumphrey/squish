@@ -57,6 +57,50 @@ func AuthMiddleware(jwtService *JWTService) func(http.Handler) http.Handler {
 	}
 }
 
+// TODO: compose middleware instead of creating new function
+// Optional authentication: extracts user's access token but does not block and return HTTP error if token is missing.
+// To allow a service to be used by both authenticated users and guests.
+func OptionalAuthMiddleware(jwtService *JWTService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Extract the Authorization header
+			authHeader := r.Header.Get("Authorization")
+			// If no header, just continue with next handler as per typical flow
+			if authHeader == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Verify Bearer token format
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
+				http.Error(w, "invalid authorization header format", http.StatusUnauthorized)
+				return
+			}
+
+			tokenString := parts[1]
+
+			// Validate the token
+			claims, err := jwtService.ValidateAccessToken(r.Context(), tokenString)
+			if err != nil {
+				switch {
+				case errors.Is(err, ErrExpiredToken):
+					http.Error(w, "token expired", http.StatusUnauthorized)
+				case errors.Is(err, ErrTokenRevoked):
+					http.Error(w, "token revoked", http.StatusUnauthorized)
+				default:
+					http.Error(w, "invalid token", http.StatusUnauthorized)
+				}
+				return
+			}
+
+			// Add claims to the request context
+			ctx := context.WithValue(r.Context(), ClaimsContextKey, claims)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 // GetClaimsFromContext extracts the JWT claims from the request context.
 func GetClaimsFromContext(ctx context.Context) (*CustomClaims, bool) {
 	claims, ok := ctx.Value(ClaimsContextKey).(*CustomClaims)

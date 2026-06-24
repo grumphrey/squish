@@ -19,6 +19,7 @@ import (
 type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
+	CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
 	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
@@ -64,6 +65,15 @@ func (r *urlRepository) GetLongUrlByID(ctx context.Context, id int) (long_url st
 // Returns 0 if the row could not be inserted into the database.
 func (r *urlRepository) CreateLongUrl(ctx context.Context, long_url string) (id int, err error) {
 	err = r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url) VALUES ($1) RETURNING id", long_url).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (r *urlRepository) CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (id int, err error) {
+	log.Printf("Creating long url for user: %s", userID)
+	err = r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url, user_id) VALUES ($1, $2) RETURNING id", long_url, userID).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

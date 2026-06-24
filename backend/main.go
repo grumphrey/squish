@@ -84,6 +84,8 @@ func run() error {
 	userRepository := auth.NewUserRepository(db)
 	userService := auth.NewUserService(userRepository)
 	authHandler := auth.NewAuthHandler(jwtService, userService)
+	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
+
 	urlRepository := urls.NewUrlRepository(db, rdb, gdb)
 	urlService := urls.NewUrlService(urlRepository)
 	urlHandler := urls.NewUrlHandler(urlService, staticFiles)
@@ -99,7 +101,7 @@ func run() error {
 
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", urlHandler.HandleRedirect)
-	mux.HandleFunc("/api/shorten", urlHandler.HandleCreateShortUrl)
+	mux.Handle("/api/shorten", extractUser(http.HandlerFunc(urlHandler.HandleCreateShortUrl)))
 	mux.HandleFunc("/health", urlHandler.HandleHealth)
 	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
 	mux.HandleFunc("/api/auth/signup", authHandler.HandleSignup)

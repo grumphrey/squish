@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"url-shortener/internal/auth"
 	"url-shortener/internal/utils"
 )
 
@@ -108,6 +109,7 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Validate user input is a valid URL.
 	if err := utils.ValidateLongUrl(long_url); err != nil {
 		log.Printf("creating short url: invalid long url provided: %w", err)
 		http.Error(w, "invalid long url", http.StatusBadRequest)
@@ -117,12 +119,26 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		// frontend also does validation.
 	}
 
-	short_url, err := h.URLService.CreateShortUrl(r.Context(), long_url)
-	if err != nil {
-		log.Printf("creating short url: %w", err)
-		http.Error(w, "could not create short url", http.StatusInternalServerError)
+	// Create short URL mapping and store entry in database.
+	var short_url string
+	ctx := r.Context()
+	claims, ok := auth.GetClaimsFromContext(ctx)
+
+	if ok { // user is logged in, create short url mapping with user id
+		short_url, err = h.URLService.CreateShortUrlWithUser(ctx, long_url, claims.UserID)
+		if err != nil {
+			http.Error(w, "could not create short url", http.StatusInternalServerError)
+			return
+		}
+	} else { // guest user, create short url mapping without user id
+		short_url, err = h.URLService.CreateShortUrl(ctx, long_url)
+		if err != nil {
+			http.Error(w, "could not create short url", http.StatusInternalServerError)
+			return
+		}
 	}
 
+	// Generate QR code for created short URL.
 	encodedQRCode, err := h.URLService.CreateQRCode(r.Host, short_url, h.fs)
 
 	// NOTE: need to export fields. since json/encoding uses reflection at runtime

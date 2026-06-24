@@ -21,6 +21,7 @@ import (
 // UrlService defines the interface for short URL operations.
 type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
+	CreateShortUrlWithUser(ctx context.Context, long_url string, userID string) (string, error)
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
 	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
@@ -47,6 +48,22 @@ func (s *urlService) CreateShortUrl(ctx context.Context, long_url string) (strin
 	// TODO: is it possible to fail updating the short_id? if so, maybe need to use a transaction? but leaky for service layer to handle transactions
 	// What happens if context gets cancelled after creating long url row but before updating with the calculated short url?
 	// Also, not exactly necessary to have a database column for short_url since its derived from ID anyway.
+	if err := s.repo.UpdateShortUrl(ctx, url_id, short_url); err != nil {
+		return "", fmt.Errorf("update short url in DB: %w", err)
+	}
+
+	return short_url, nil
+}
+
+// TODO: Copy of CreateShortUrl service, but with additional userID argument.
+// Maybe better to use variadic arguments or other methods?
+func (s *urlService) CreateShortUrlWithUser(ctx context.Context, long_url string, userID string) (string, error) {
+	url_id, err := s.repo.CreateLongUrlWithUser(ctx, long_url, userID)
+	if err != nil {
+		return "", fmt.Errorf("insert long url into DB: %w", err)
+	}
+
+	short_url := utils.Base62Encode(url_id)
 	if err := s.repo.UpdateShortUrl(ctx, url_id, short_url); err != nil {
 		return "", fmt.Errorf("update short url in DB: %w", err)
 	}
