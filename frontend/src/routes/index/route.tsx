@@ -10,6 +10,7 @@ import { Checkbox } from "radix-ui";
 
 import URLTabs, { TabContent } from "./-components/URLTabs";
 import ShortURLResult from "./-components/ShortURLResult";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -121,15 +122,7 @@ export interface GetShortURLResponse {
 // Throws an error if server returns non-successful status code.
 async function getShortURL(longURL: string): Promise<GetShortURLResponse> {
   const payload = { url: longURL };
-  const response = await fetch("/api/shorten", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await api.post<GetShortURLResponse>("/shorten", payload);
 
-  if (!response.ok) throw new Error(`${response.status} from server`);
-
-  return response.json();
+  return response.data;
 }

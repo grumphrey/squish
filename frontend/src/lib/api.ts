@@ -5,6 +5,7 @@ export const api = axios.create({ baseURL: "/api" });
 
 // Request interceptor
 // Attach access token to every request
+// NOTE: remember to use the custom axios instance
 api.interceptors.request.use((config) => {
   const token = tokenStore.get();
   if (token) config.headers.Authorization = `Bearer ${token}`;
