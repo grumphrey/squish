@@ -1,5 +1,7 @@
+import styles from "./LoginDialog.module.css";
+
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { IconLogin } from "@tabler/icons-react";
+import { IconLogin, IconX } from "@tabler/icons-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -7,7 +9,7 @@ import { Dialog, Checkbox } from "radix-ui";
 import { LoginButton } from "@/components/Navbar";
 import PasswordField from "@/features/auth/PasswordField";
 import GoogleButton from "@/features/auth/GoogleButton";
-import DialogError from "./DialogError";
+import DialogError from "@/features/auth/DialogError";
 
 export default function LoginDialog({
   open,
@@ -60,28 +62,28 @@ export default function LoginDialog({
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="login-dialog-overlay" />
+        <Dialog.Overlay className={styles.dialogOverlay} />
 
-        <Dialog.Content className="login-dialog-content">
-          <div className="login-dialog-header">
-            <Dialog.Title className="login-dialog-title">
+        <Dialog.Content className={styles.dialogContent}>
+          <div className={styles.dialogHeader}>
+            <Dialog.Title className={styles.dialogTitle}>
               Welcome back
               <IconLogin stroke={2} height="20px" />
             </Dialog.Title>
 
-            <Dialog.Description className="login-dialog-description">
+            <Dialog.Description className={styles.dialogDescription}>
               Enter your credentials to access your account.
             </Dialog.Description>
           </div>
 
-          <form onSubmit={handleLogin} className="login-form-stack">
-            <div className="login-field">
-              <label className="login-label" htmlFor="email">
+          <form onSubmit={handleLogin} className={styles.formStack}>
+            <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="email">
                 Email
               </label>
 
               <input
-                className="login-input"
+                className={styles.loginInput}
                 id="email"
                 type="email"
                 value={email}
@@ -92,59 +94,57 @@ export default function LoginDialog({
               />
             </div>
 
-            <div className="login-field">
-              <label className="login-label" htmlFor="password">
+            <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="password">
                 Password
               </label>
 
               <PasswordField password={password} setPassword={setPassword} />
             </div>
 
-            <div className="login-remember-row">
-              <div className="login-checkbox-group">
-                <Checkbox.Root id="login-remember" className="login-checkbox">
-                  <Checkbox.Indicator className="login-checkbox-indicator">
-                    ✓
-                  </Checkbox.Indicator>
+            <div className={styles.rememberRow}>
+              <div className={styles.checkboxContainer}>
+                <Checkbox.Root
+                  id="login-remember"
+                  className={styles.checkboxRoot}
+                >
+                  <Checkbox.Indicator>✓</Checkbox.Indicator>
                 </Checkbox.Root>
 
                 <label
-                  className="login-label label--small label--normal"
+                  className={`${styles.loginLabel} ${styles.rememberLabel}`}
                   htmlFor="login-remember"
                 >
                   Remember me
                 </label>
               </div>
 
-              <button className="login-text-link" type="button">
+              <button className={styles.linkText} type="button">
                 Forgot password?
               </button>
             </div>
 
             {error && <DialogError message={error} />}
 
-            <div className="login-dialog-footer">
-              <button
-                className="cta-button login-dialog-signin-button"
-                type="submit"
-              >
+            <div className={styles.dialogFooter}>
+              <button className={`${styles.loginBtn} cta-button`} type="submit">
                 Sign In
               </button>
             </div>
           </form>
 
-          <div className="separator-row">
-            <div className="separator" />
-            <span className="separator-text">Or continue with</span>
-            <div className="separator" />
+          <div className={styles.separatorContainer}>
+            <div className={styles.separator} />
+            <span className={styles.separatorText}>Or continue with</span>
+            <div className={styles.separator} />
           </div>
 
           <GoogleButton />
 
-          <p className="login-dialog-signup">
+          <p className={styles.dialogSignup}>
             Don't have an account?{" "}
             <button
-              className="login-text-link text-link--medium"
+              className={styles.linkText}
               type="button"
               onClick={handleSignup}
             >
@@ -152,8 +152,8 @@ export default function LoginDialog({
             </button>
           </p>
 
-          <Dialog.Close className="login-dialog-close" aria-label="Close">
-            <i className="ti ti-x" />
+          <Dialog.Close className={styles.dialogClose} aria-label="Close">
+            <IconX />
           </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>

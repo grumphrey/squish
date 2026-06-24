@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { IconLogin } from "@tabler/icons-react";
+import styles from "./Navbar.module.css";
 import logo from "@/assets/longdog.png";
+
+import { useState } from "react";
+import { IconLogin, IconMoon, IconSun } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { useAuth } from "@/context/AuthContext";
@@ -14,15 +16,15 @@ export default function Navbar() {
   const [loginOpen, setLoginOpen] = useState(false);
 
   return (
-    <nav className="nav">
-      <div className="nav-left">
-        <img height="30px" src={logo} />
-        <a href="/" className="nav-logo">
+    <nav className={styles.navbar}>
+      <div className={styles.navLeft}>
+        <img src={logo} />
+        <a href="/" className={styles.navLogo}>
           squi<span>.</span>sh
         </a>
       </div>
 
-      <div className="nav-right">
+      <div className={styles.navRight}>
         {!user && !isLoading && (
           <SignupDialog
             open={signInOpen}
@@ -52,18 +54,15 @@ function ThemeButton() {
   return (
     <div
       id="toggle"
-      className={`toggle-track ${isDark ? "dark" : ""}`}
+      className={`${styles.toggleTrack} ${isDark ? styles.dark : ""}`}
       role="switch"
       onClick={toggleTheme}
       aria-checked={isDark}
       aria-label="Toggle dark mode"
       tabIndex={0}
     >
-      <div className="toggle-thumb">
-        <i
-          className={`ti ${isDark ? "ti-moon" : "ti-sun"}`}
-          aria-hidden="true"
-        ></i>
+      <div className={styles.toggleThumb}>
+        {isDark ? <IconMoon /> : <IconSun />}
       </div>
     </div>
   );
@@ -79,7 +78,10 @@ function LogoutButton() {
   };
 
   return (
-    <button className="cta-button navbar-logout-button" onClick={handleLogout}>
+    <button
+      className={`cta-button ${styles.logoutButton}`}
+      onClick={handleLogout}
+    >
       Sign out
     </button>
   );
@@ -90,7 +92,7 @@ export function LoginButton({
   ...props
 }: React.ComponentPropsWithRef<"button">) {
   return (
-    <button ref={ref} {...props} className="cta-button navbar-login-button">
+    <button ref={ref} {...props} className={`cta-button ${styles.loginButton}`}>
       Log In
       <IconLogin stroke={2} height="20px" />
     </button>
@@ -102,7 +104,11 @@ export function SignupButton({
   ...props
 }: React.ComponentPropsWithRef<"button">) {
   return (
-    <button ref={ref} {...props} className="cta-button navbar-signup-button">
+    <button
+      ref={ref}
+      {...props}
+      className={`cta-button ${styles.signupButton}`}
+    >
       Sign Up
     </button>
   );

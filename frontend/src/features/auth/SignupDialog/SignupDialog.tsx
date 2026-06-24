@@ -1,5 +1,7 @@
+import styles from "./SignupDialog.module.css";
+
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { IconUserCircle } from "@tabler/icons-react";
+import { IconUserCircle, IconX } from "@tabler/icons-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -7,7 +9,7 @@ import { Dialog, Checkbox } from "radix-ui";
 import { SignupButton } from "@/components/Navbar";
 import PasswordField from "@/features/auth/PasswordField";
 import GoogleButton from "@/features/auth/GoogleButton";
-import DialogError from "./DialogError";
+import DialogError from "@/features/auth/DialogError";
 
 export default function SignupDialog({
   open,
@@ -62,28 +64,28 @@ export default function SignupDialog({
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="login-dialog-overlay" />
+        <Dialog.Overlay className={styles.dialogOverlay} />
 
-        <Dialog.Content className="login-dialog-content">
-          <div className="login-dialog-header">
-            <Dialog.Title className="login-dialog-title">
+        <Dialog.Content className={styles.dialogContent}>
+          <div className={styles.dialogHeader}>
+            <Dialog.Title className={styles.dialogTitle}>
               Create your account
               <IconUserCircle stroke={2} />
             </Dialog.Title>
 
-            <Dialog.Description className="login-dialog-description">
+            <Dialog.Description className={styles.dialogDescription}>
               Track your URL metrics.
             </Dialog.Description>
           </div>
 
-          <form onSubmit={handleSignup} className="login-form-stack">
-            <div className="login-field">
-              <label className="login-label" htmlFor="email">
+          <form onSubmit={handleSignup} className={styles.formStack}>
+            <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="email">
                 Email
               </label>
 
               <input
-                className="login-input"
+                className={styles.loginInput}
                 id="email"
                 type="email"
                 value={email}
@@ -94,24 +96,25 @@ export default function SignupDialog({
               />
             </div>
 
-            <div className="login-field">
-              <label className="login-label" htmlFor="password">
+            <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="password">
                 Password
               </label>
 
               <PasswordField password={password} setPassword={setPassword} />
             </div>
 
-            <div className="login-remember-row">
-              <div className="login-checkbox-group">
-                <Checkbox.Root id="login-remember" className="login-checkbox">
-                  <Checkbox.Indicator className="login-checkbox-indicator">
-                    ✓
-                  </Checkbox.Indicator>
+            <div className={styles.rememberRow}>
+              <div className={styles.checkboxContainer}>
+                <Checkbox.Root
+                  id="login-remember"
+                  className={styles.checkboxRoot}
+                >
+                  <Checkbox.Indicator>✓</Checkbox.Indicator>
                 </Checkbox.Root>
 
                 <label
-                  className="login-label label--small label--normal"
+                  className={`${styles.loginLabel} ${styles.rememberLabel}`}
                   htmlFor="login-remember"
                 >
                   Remember me
@@ -121,28 +124,25 @@ export default function SignupDialog({
 
             {error && <DialogError message={error} />}
 
-            <div className="login-dialog-footer">
-              <button
-                className="cta-button login-dialog-signin-button"
-                type="submit"
-              >
+            <div className={styles.dialogFooter}>
+              <button className={`${styles.loginBtn} cta-button`} type="submit">
                 Sign Up
               </button>
             </div>
           </form>
 
-          <div className="separator-row">
-            <div className="separator" />
-            <span className="separator-text">Or continue with</span>
-            <div className="separator" />
+          <div className={styles.separatorContainer}>
+            <div className={styles.separator} />
+            <span className={styles.separatorText}>Or continue with</span>
+            <div className={styles.separator} />
           </div>
 
           <GoogleButton />
 
-          <p className="login-dialog-signup">
+          <p className={styles.dialogSignup}>
             Already have an account?{" "}
             <button
-              className="login-text-link text-link--medium"
+              className={styles.linkText}
               type="button"
               onClick={handleLogin}
             >
@@ -150,8 +150,8 @@ export default function SignupDialog({
             </button>
           </p>
 
-          <Dialog.Close className="login-dialog-close" aria-label="Close">
-            <i className="ti ti-x" />
+          <Dialog.Close className={styles.dialogClose} aria-label="Close">
+            <IconX />
           </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>

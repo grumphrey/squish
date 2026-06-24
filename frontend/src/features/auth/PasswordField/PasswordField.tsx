@@ -1,4 +1,6 @@
+import styles from "./PasswordField.module.css";
 import { type Dispatch, type SetStateAction } from "react";
+
 import { unstable_PasswordToggleField as PasswordToggleField } from "radix-ui";
 
 export default function PasswordField({
@@ -10,9 +12,9 @@ export default function PasswordField({
 }) {
   return (
     <PasswordToggleField.Root>
-      <div className="login-input login-password-input-container">
+      <div className={`${styles.loginInput} ${styles.passwordInputContainer}`}>
         <PasswordToggleField.Input
-          className="login-password-input"
+          className={styles.passwordInput}
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -20,7 +22,7 @@ export default function PasswordField({
           autoComplete="current-password"
           minLength={8}
         />
-        <PasswordToggleField.Toggle className="login-password-toggle">
+        <PasswordToggleField.Toggle className={styles.passwordToggle}>
           <PasswordToggleField.Icon
             visible={<i className="ti ti-eye" />}
             hidden={<i className="ti ti-eye-closed" />}

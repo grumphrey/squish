@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { api } from "../lib/api";
-import { tokenStore } from "../lib/auth";
 import axios from "axios";
+import { api } from "@/lib/api";
+import { tokenStore } from "@/features/auth/auth";
 
 interface User {
   userID: string;

@@ -1,0 +1,75 @@
+.heroBadge {
+  background: var(--color-green-tint);
+  color: var(--color-green-primary);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 4px 12px;
+  margin-bottom: 28px;
+  border: 1px solid var(--color-green-accent);
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.heroTitle {
+  color: var(--color-text);
+  font-family: var(--font-secondary);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -1.8px;
+
+  margin-bottom: 22px;
+}
+
+.heroTitleHighlight {
+  color: var(--color-primary);
+}
+
+.typewriterCursor {
+  background: var(--color-primary);
+
+  display: inline-block;
+  height: 1.2em;
+  width: 4px;
+  margin-left: 6px;
+
+  vertical-align: text-bottom;
+  animation: blink 0.75s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.heroSubtitleContainer {
+  margin: 0 auto 40px;
+}
+
+.heroSubtitle {
+  font-size: 17px;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+  max-width: 560px;
+  font-weight: 400;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 40px;
+    height: 160px;
+  }
+  .heroSubtitle {
+    font-size: 15px;
+  }
+}

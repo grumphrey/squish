@@ -1,8 +1,7 @@
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
-import { type AuthContext } from "../context/AuthContext";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import Hero from "../components/Hero";
+import { type AuthContext } from "@/context/AuthContext";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // Pass authentication state from auth context to tanstack router
 interface RouterContext {
@@ -17,9 +16,9 @@ function RootComponent() {
   return (
     <div className="app">
       <Navbar />
-      <Hero>
+      <section className="hero">
         <Outlet />
-      </Hero>
+      </section>
       <Footer />
     </div>
   );

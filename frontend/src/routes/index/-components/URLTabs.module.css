@@ -1,0 +1,114 @@
+.tabsRoot {
+  width: 100%;
+}
+
+.tabsList {
+  background-color: var(--color-border);
+  color: hsl(240 3.8% 46.1%);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 0.5rem;
+  border-radius: 0.8rem 0.8rem 0 0;
+}
+
+.tabsTrigger {
+  background: transparent;
+  color: inherit;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.75rem;
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tabsTrigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(240 5.9% 90%);
+}
+
+.tabsTrigger:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tabsTrigger[data-state="active"] {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  max-width: 580px;
+  margin: 10px auto;
+  padding-left: 10px;
+  min-height: 30px;
+}
+/* the squarish checkbox */
+.checkboxRoot {
+  all: unset;
+  background-color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.checkboxRoot:hover {
+  border-color: #94a3b8;
+}
+.checkboxRoot:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.checkboxRoot[data-state="checked"] {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkboxRoot[data-state="indeterminate"] {
+  background-color: #64748b;
+  border-color: #64748b;
+}
+
+.checkboxRoot[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* the checkmark within the checkbox */
+.checkboxIndicator {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkboxLabel {
+  font-family: var(--font-secondary);
+  padding-left: 15px;
+  font-size: 14px;
+  line-height: 1;
+}

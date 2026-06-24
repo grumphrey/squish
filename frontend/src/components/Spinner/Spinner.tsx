@@ -1,3 +1,5 @@
+import styles from "./Spinner.module.css";
+
 interface SpinnerProps {
   size?: number;
   thickness?: number;
@@ -11,7 +13,7 @@ export default function Spinner({ size = 16, thickness = 2 }: SpinnerProps) {
         height: `${size}px`,
         border: `${thickness}px solid rgba(255, 255, 255, 0.35)`,
       }}
-      id="spinner"
+      className={styles.spinner}
     />
   );
 }

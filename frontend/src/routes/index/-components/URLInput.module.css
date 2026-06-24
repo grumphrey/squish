@@ -1,0 +1,73 @@
+.inputRow {
+  background: var(--color-surface);
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  max-width: 580px;
+  padding: 6px 6px 6px 18px;
+  margin: 0 auto;
+  border: 2.5px solid var(--color-border);
+  border-radius: 12px;
+
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.inputRow:focus-within {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(59, 109, 17, 0.15);
+}
+.inputRow.invalid {
+  border: 3px solid var(--color-red);
+  transition: border-color 0.1s;
+}
+
+.inputRow input {
+  background: transparent;
+  color: var(--color-text);
+
+  flex: 1;
+  border: none;
+  outline: none;
+
+  font-size: 16px;
+  font-family: var(--font-primary);
+}
+.inputRow input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.inputRow button {
+  background: var(--color-primary);
+  color: var(--color-text);
+
+  display: flex;
+
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.inputRow button:hover {
+  background: var(--color-primary-dark);
+}
+
+.inputError {
+  color: var(--color-red);
+
+  min-height: 20px;
+  margin-top: 4px;
+
+  display: block;
+  font-size: 0.85em;
+}
