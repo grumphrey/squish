@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"url-shortener/internal/auth"
+	"url-shortener/internal/metrics"
 	"url-shortener/internal/urls"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -84,11 +85,16 @@ func run() error {
 	userRepository := auth.NewUserRepository(db)
 	userService := auth.NewUserService(userRepository)
 	authHandler := auth.NewAuthHandler(jwtService, userService)
+	protected := auth.AuthMiddleware(jwtService)
 	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
 
 	urlRepository := urls.NewUrlRepository(db, rdb, gdb)
 	urlService := urls.NewUrlService(urlRepository)
 	urlHandler := urls.NewUrlHandler(urlService, staticFiles)
+
+	metricsRepository := metrics.NewMetricsRepository(db)
+	metricsService := metrics.NewMetricsService(metricsRepository)
+	metricsHandler := metrics.NewMetricsHandler(metricsService)
 
 	mux := http.NewServeMux()
 	server := &http.Server{
@@ -99,6 +105,7 @@ func run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// TODO: extract routes into each domain handler as a RegisterRoutes method
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", urlHandler.HandleRedirect)
 	mux.Handle("/api/shorten", extractUser(http.HandlerFunc(urlHandler.HandleCreateShortUrl)))
@@ -107,6 +114,7 @@ func run() error {
 	mux.HandleFunc("/api/auth/signup", authHandler.HandleSignup)
 	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)
 	mux.HandleFunc("/api/auth/refresh", authHandler.HandleRefresh)
+	mux.Handle("/api/metrics/urls", protected(http.HandlerFunc(metricsHandler.HandleGetURLs)))
 
 	serverErr := make(chan error, 1)
 	go func() {
