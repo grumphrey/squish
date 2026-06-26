@@ -18,7 +18,8 @@ CREATE TABLE short_urls (
   short_url TEXT UNIQUE, -- short url is derived from id (keep in case we migrate to using uuid)
   long_url TEXT NOT NULL,
   user_id UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE url_redirect_events (
