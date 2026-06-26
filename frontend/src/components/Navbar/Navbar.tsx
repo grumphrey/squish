@@ -11,6 +11,7 @@ import LoginDialog from "@/features/auth/LoginDialog";
 import SignupDialog from "@/features/auth/SignupDialog";
 
 export default function Navbar() {
+  const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [signInOpen, setSignInOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -32,6 +33,16 @@ export default function Navbar() {
             toggleLogin={setLoginOpen}
           />
         )}
+
+        {user && !isLoading && (
+          <button
+            className={`${styles.analyticsBtn} cta-button`}
+            onClick={() => navigate({ to: "/dashboard" })}
+          >
+            Analytics
+          </button>
+        )}
+
         {user ? (
           <LogoutButton />
         ) : (
@@ -41,6 +52,7 @@ export default function Navbar() {
             toggleSignup={setSignInOpen}
           />
         )}
+
         <ThemeButton />
       </div>
     </nav>

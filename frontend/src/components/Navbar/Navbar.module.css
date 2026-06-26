@@ -44,6 +44,10 @@
   gap: 20px;
 }
 
+.analyticsBtn {
+  background-color: var(--color-primary);
+}
+
 .signupButton {
   background-color: var(--color-elevated);
 }

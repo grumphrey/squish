@@ -6,6 +6,10 @@
   padding: 0;
 }
 
+li {
+  list-style-type: none;
+}
+
 :root {
   --color-primary: #ff5c00;
   --color-primary-light: #ff8c4a;
