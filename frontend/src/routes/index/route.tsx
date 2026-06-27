@@ -35,7 +35,7 @@ function RouteComponent() {
   const QRCode = data?.qr_code;
 
   return (
-    <>
+    <section className="hero">
       <div className={styles.heroBadge}>
         <IconCircleCheck height="16px" />
         <span>Free to use!</span>
@@ -88,7 +88,7 @@ function RouteComponent() {
         QRCode={QRCode}
         qrCodeChecked={qrCodeChecked}
       />
-    </>
+    </section>
   );
 }
 

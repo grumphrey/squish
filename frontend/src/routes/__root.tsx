@@ -16,9 +16,9 @@ function RootComponent() {
   return (
     <div className="app">
       <Navbar />
-      <section className="hero">
+      <main className="layout">
         <Outlet />
-      </section>
+      </main>
       <Footer />
     </div>
   );

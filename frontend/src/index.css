@@ -6,10 +6,6 @@
   padding: 0;
 }
 
-li {
-  list-style-type: none;
-}
-
 :root {
   --color-primary: #ff5c00;
   --color-primary-light: #ff8c4a;
@@ -64,6 +60,10 @@ li {
   --color-destructive-border: rgba(248, 113, 113, 0.35);
 }
 
+li {
+  list-style-type: none;
+}
+
 body {
   font-family: var(--font-primary);
   background: var(--color-bg);
@@ -74,10 +74,25 @@ body {
 }
 
 .app {
-  overflow-x: hidden;
+  min-height: 100vh;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+
+  overflow-x: hidden;
+}
+
+.layout {
+  height: 100%;
+  width: 100%;
+  max-width: 1500px;
+
+  display: flex;
+  flex: 1;
+  overflow-y: auto;
+
+  padding: 80px 48px 64px;
+  margin: 0 auto;
 }
 
 .hero {
@@ -91,7 +106,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
 }
 
 /* used to prevent ugly effect from html elements shifting positions when a new element is added to container, 
