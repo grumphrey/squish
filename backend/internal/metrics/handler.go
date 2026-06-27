@@ -57,3 +57,27 @@ type ShortURLResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 	Active    bool      `json:"is_active"`
 }
+
+// Get device metrics for all short URLs created by the user
+// i.e. browser, OS, country code
+func (h *metricsHandler) HandleGetDeviceMetrics(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Retrieve the user ID from the access-token through request context
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Query database for all short URLs based on this user ID.
+	metricsMap, err := h.metricsService.GetTotalDeviceMetrics(ctx, claims.UserID)
+	if err != nil {
+		// TODO: error handling
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metricsMap)
+}
