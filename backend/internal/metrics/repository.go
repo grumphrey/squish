@@ -88,6 +88,7 @@ func (r *metricsRepository) GetTotalDeviceMetrics(ctx context.Context, userID st
 
 // TODO: might be more appropriate to put this function in urls package
 // GetURLsByUserID returns a list of 'short_urls' records that belong to a particular user.
+// URLs ordered by creation date, newest first.
 func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
 	query := `SELECT 
 			s.id AS id, 
@@ -99,12 +100,14 @@ func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string) 
 		FROM short_urls s 
 		JOIN users u
 		ON s.user_id=u.id 
-		WHERE s.user_id=$1`
+		WHERE s.user_id=$1 
+		ORDER BY s.created_at DESC`
 
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	shortURLs, err := pgx.CollectRows(rows, pgx.RowToStructByName[ShortURLRecord])
 	if err != nil {
