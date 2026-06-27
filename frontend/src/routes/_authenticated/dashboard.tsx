@@ -1,13 +1,14 @@
 import styles from "./dashboard.module.css";
 import { api } from "@/lib/api";
 import {
+  IconArrowNarrowLeft,
   IconArrowNarrowRight,
   IconCheck,
   IconCopy,
   IconLink,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -15,12 +16,72 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
+
+  return (
+    <section className={styles.dashboard}>
+      <div className={styles.breadcrumbs} onClick={() => navigate({ to: "/" })}>
+        <IconArrowNarrowLeft />
+        <a>Home</a>
+      </div>
+
+      <h1 className={styles.dashboardTitle}>Analytics</h1>
+
+      <h3 className={styles.dashboardSubtitle}>Summary</h3>
+      <DeviceMetricsList />
+
+      <h3 className={styles.dashboardSubtitle}>My links</h3>
+      <URLsList />
+    </section>
+  );
+}
+
+interface DeviceMetrics {
+  browser: Record<string, number>[] | null;
+  os: Record<string, number>[] | null;
+  country_code: Record<string, number>[] | null;
+}
+
+function DeviceMetricsList() {
+  const { data, isPending, error } = useQuery({
+    queryKey: ["deviceMetrics"],
+    queryFn: () =>
+      api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
+  });
+
+  // TODO: proper loading state/skeleton
+  if (isPending) return <div>Loading...</div>;
+  if (error) return <div>Error loading URLs</div>;
   return (
     <>
-      <span>Hello "/_authenticated/dashboard"!</span>
-      <br />
-      <URLsList />
+      <div className={styles.metricsContainer}>
+        <MetricsBox />
+        <div>
+          Browsers:{" "}
+          {data.browser?.map((b) =>
+            Object.entries(b).map(([key, value]) => {
+              console.log(key, value);
+              return (
+                <div>
+                  {key} : {value}
+                </div>
+              );
+            }),
+          )}
+        </div>
+      </div>
     </>
+  );
+}
+
+function MetricsBox() {
+  const todonumber = 500;
+
+  return (
+    <div className={styles.metricsBox}>
+      <h5 className={styles.metricsLabel}>Total clicks</h5>
+      <div className={styles.metricsValue}>{todonumber}</div>
+    </div>
   );
 }
 
