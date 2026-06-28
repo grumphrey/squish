@@ -1,6 +1,4 @@
 import styles from "./dashboard.module.css";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/lib/api";
 import {
   IconArrowNarrowLeft,
   IconArrowNarrowRight,
@@ -8,12 +6,19 @@ import {
   IconCopy,
   IconLink,
 } from "@tabler/icons-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { api } from "@/lib/api";
+
 import BrowserMetrics from "./-components/BrowserMetrics";
 import CountryMetrics from "./-components/CountryMetrics";
 import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
+import VisitTimelineMetrics, {
+  type DailyTotalVisits,
+} from "./-components/VisitTimelineMetrics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -21,11 +26,29 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { data, isPending, error } = useQuery({
+
+  // Get device metrics (browser, device type, OS, country)
+  const {
+    data: metricsData,
+    isPending: isMetricsLoading,
+    error: metricsError,
+  } = useQuery({
     queryKey: ["deviceMetrics"],
     queryFn: () =>
       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
-    // refresh query on page focus
+  });
+
+  // Get daily visits metrics for the past 7 days
+  const {
+    data: visitsData,
+    isPending: isVisitsLoading,
+    error: visitsError,
+  } = useQuery({
+    queryKey: ["dailyTotalVisits"],
+    queryFn: () =>
+      api
+        .get<DailyTotalVisits[]>("/metrics/visits/daily")
+        .then((res) => res.data),
   });
 
   return (
@@ -36,36 +59,42 @@ function RouteComponent() {
       </div>
 
       <h1 className={styles.dashboardTitle}>Analytics</h1>
-
-      <h3 className={styles.dashboardSubtitle}>Summary</h3>
-      {/* <div className={styles.metricsContainer}> */}
-      {/*   <MetricsBox /> */}
-      {/* </div> */}
+      <div>
+        <h3 className={styles.dashboardSubtitle}>Summary</h3>
+        <Separator />
+      </div>
 
       <div className={styles.metricsContainer}>
-        {/* <Card className="flex flex-col font-sans"> */}
-        {/*   <CardHeader className="items-center pb-0"> */}
-        {/*     <CardTitle>Total Visits</CardTitle> */}
-        {/*   </CardHeader> */}
-        {/**/}
-        {/*   <CardContent className="flex-1 pb-0">500</CardContent> */}
-        {/* </Card> */}
-        <BrowserMetrics
-          data={data?.browser}
-          isPending={isPending}
-          error={error}
+        <VisitTimelineMetrics
+          data={visitsData}
+          isPending={isVisitsLoading}
+          error={visitsError}
         />
-        {/* <OSMetrics/> */}
+        <Card className="max-w-[350px] max-h-[300px]">
+          <CardHeader>
+            <CardTitle>Total Clicks</CardTitle>
+          </CardHeader>
+          <CardContent>TODO</CardContent>
+        </Card>
+      </div>
+
+      <div className={styles.metricsContainer}>
+        <BrowserMetrics
+          data={metricsData?.browser}
+          isPending={isMetricsLoading}
+          error={metricsError}
+        />
         <DeviceTypeMetrics
-          data={data?.device_type}
-          isPending={isPending}
-          error={error}
+          data={metricsData?.device_type}
+          isPending={isMetricsLoading}
+          error={metricsError}
         />
         <CountryMetrics
-          data={data?.country_code}
-          isPending={isPending}
-          error={error}
+          data={metricsData?.country_code}
+          isPending={isMetricsLoading}
+          error={metricsError}
         />
+        {/* TODO: <OSMetrics/> */}
       </div>
 
       <h3 className={styles.dashboardSubtitle}>My links</h3>
@@ -80,49 +109,6 @@ interface DeviceMetrics {
   country_code: Record<string, number>[] | null;
   device_type: Record<string, number>[] | null;
 }
-
-// function DeviceMetricsList() {
-//   const { data, isPending, error } = useQuery({
-//     queryKey: ["deviceMetrics"],
-//     queryFn: () =>
-//       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
-//   });
-//
-//   // TODO: proper loading state/skeleton
-//   if (isPending) return <div>Loading...</div>;
-//   if (error) return <div>Error loading URLs</div>;
-//   return (
-//     <>
-//       <div className={styles.metricsContainer}>
-//         <MetricsBox />
-//         <div>
-//           Browsers:{" "}
-//           {data.browser?.map((b) =>
-//             Object.entries(b).map(([key, value]) => {
-//               console.log(key, value);
-//               return (
-//                 <div>
-//                   {key} : {value}
-//                 </div>
-//               );
-//             }),
-//           )}
-//         </div>
-//       </div>
-//     </>
-//   );
-// }
-
-// function MetricsBox() {
-//   const todonumber = 500;
-//
-//   return (
-//     <div className={styles.metricsBox}>
-//       <h5 className={styles.metricsLabel}>Total clicks</h5>
-//       <div className={styles.metricsValue}>{todonumber}</div>
-//     </div>
-//   );
-// }
 
 function URLsList() {
   const { data, isPending, error } = useQuery({
