@@ -59,7 +59,7 @@ type ShortURLResponse struct {
 }
 
 // Get device metrics for all short URLs created by the user
-// i.e. browser, OS, country code
+// i.e. browser, OS, country code, device type
 func (h *metricsHandler) HandleGetDeviceMetrics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -80,4 +80,46 @@ func (h *metricsHandler) HandleGetDeviceMetrics(w http.ResponseWriter, r *http.R
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(metricsMap)
+}
+
+func (h *metricsHandler) HandleGetTotalVisitsByDayPastWeek(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Retrieve the user ID from the access-token through request context
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get a list of dates and the total number of visits on each day, grouped by device type, from the past week.
+	dailyVisits, err := h.metricsService.GetTotalVisitsByDayPastWeek(ctx, claims.UserID)
+	if err != nil {
+		// TODO: error handling
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Format response
+	type TotalVisitsByDayResponse struct {
+		Date    string `json:"date"`
+		Mobile  int64  `json:"mobile"`
+		Desktop int64  `json:"desktop"`
+		Other   int64  `json:"other"`
+		Total   int64  `json:"total"`
+	}
+	result := make([]TotalVisitsByDayResponse, len(dailyVisits))
+
+	for i, d := range dailyVisits {
+		result[i] = TotalVisitsByDayResponse{
+			Date:    d.Date.Format("2006-01-02"),
+			Mobile:  d.Mobile,
+			Desktop: d.Desktop,
+			Other:   d.Other,
+			Total:   d.Total,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }

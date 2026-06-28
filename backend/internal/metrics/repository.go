@@ -98,6 +98,61 @@ func (r *metricsRepository) GetTotalDeviceMetrics(ctx context.Context, userID st
 	return grouped, nil
 }
 
+// Get total visit count per day of all short URLs created by this user, over the past week.
+func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, userID string) ([]DailyTotalVisits, error) {
+	// query := `SELECT COUNT(*) FROM short_url_metrics WHERE user_id=$1`
+	// query := `SELECT
+	// 		date_trunc('day', accessed_at) AS date,
+	// 		COUNT(*) AS visits
+	// 	FROM short_url_metrics
+	// 	WHERE user_id=$1
+	// 	GROUP BY date_trunc('day', accessed_at)
+	// 	HAVING date_trunc('day', accessed_at) >= NOW() - INTERVAL '7 day'
+	// 	ORDER BY date DESC
+	// `
+
+	// CTE:
+	// 	Group into (URL access date + device type), only keeping metrics from past 7 days.
+	// 	Get the total number of visits for each (day + device type)
+	// Query:
+	// 	Group into URL access date, sum up visits for each device type + total visits
+	query := `
+		WITH counts as 
+			(SELECT 
+				date_trunc('day', accessed_at) AS date, 
+				device_type,
+				COUNT(*) AS visits 
+			FROM short_url_metrics 
+			WHERE user_id=$1 
+			GROUP BY date_trunc('day', accessed_at), device_type 
+			HAVING date_trunc('day', accessed_at) >= NOW() - INTERVAL '7 day' 
+			ORDER BY date DESC) 
+
+		SELECT 
+			date,
+			SUM(CASE WHEN device_type = 'mobile'  THEN visits ELSE 0 END) AS mobile, 
+			SUM(CASE WHEN device_type = 'desktop' THEN visits ELSE 0 END) AS desktop, 
+			SUM(CASE WHEN device_type NOT IN ('mobile', 'desktop') THEN visits ELSE 0 END) AS other, 
+			SUM(visits) AS total 
+		FROM counts 
+		GROUP BY date 
+		ORDER BY date DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dailyVisits, err := pgx.CollectRows(rows, pgx.RowToStructByName[DailyTotalVisits])
+	if err != nil {
+		return nil, err
+	}
+
+	return dailyVisits, nil
+}
+
 // TODO: might be more appropriate to put this function in urls package
 // GetURLsByUserID returns a list of 'short_urls' records that belong to a particular user.
 // URLs ordered by creation date, newest first.
@@ -137,4 +192,12 @@ type ShortURLRecord struct {
 	UserID    string    `db:"user_id"`
 	CreatedAt time.Time `db:"created_at"`
 	Active    bool      `db:"is_active"`
+}
+
+type DailyTotalVisits struct {
+	Date    time.Time `db:"date"`
+	Mobile  int64     `db:"mobile"`
+	Desktop int64     `db:"desktop"`
+	Other   int64     `db:"other"`
+	Total   int64     `db:"total"`
 }
