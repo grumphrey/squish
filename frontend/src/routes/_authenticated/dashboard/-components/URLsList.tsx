@@ -4,12 +4,24 @@ import {
   IconCheck,
   IconCopy,
   IconLink,
+  IconPlus,
 } from "@tabler/icons-react";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { useNavigate } from "@tanstack/react-router";
 
 export default function URLsList() {
+  const navigate = useNavigate();
   const { data, isPending, error } = useQuery({
     queryKey: ["urls"],
     queryFn: () =>
@@ -20,10 +32,31 @@ export default function URLsList() {
       }),
   });
 
-  // TODO: proper loading state/skeleton
+  // TODO:
+  // Loading skeleton
+  // Error state
   if (isPending) return <div>Loading...</div>;
   if (error) return <div>Error loading URLs</div>;
-  if (!data) return <div>No data</div>;
+  if (data.length === 0)
+    return (
+      <Empty className="font-sans">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <IconLink />
+          </EmptyMedia>
+          <EmptyTitle>Start linking up.</EmptyTitle>
+          <EmptyDescription>
+            You haven&apos;t created any short URLs yet. Get started by creating
+            your first short URL.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="flex-row justify-center gap-2">
+          <Button onClick={() => navigate({ to: "/" })}>
+            <IconPlus /> Create Short URL
+          </Button>
+        </EmptyContent>
+      </Empty>
+    );
 
   return (
     <ul className={styles.urlRootContainer}>

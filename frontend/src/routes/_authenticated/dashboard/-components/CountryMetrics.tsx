@@ -1,13 +1,4 @@
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-import {
   Card,
   CardContent,
   CardDescription,
@@ -20,7 +11,23 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { IconChartBar } from "@tabler/icons-react";
 
 interface CountryMetricsProps {
   data: Record<string, number>[] | null | undefined;
@@ -69,6 +76,21 @@ export default function CountryMetrics({
 }
 
 function CountryMetricsBarChart({ data }: { data: ChartData }) {
+  if (data.length === 0)
+    return (
+      <Empty className="font-sans">
+        <EmptyHeader>
+          <EmptyMedia>
+            <IconChartBar stroke={2} />
+          </EmptyMedia>
+          <EmptyTitle>No data to display.</EmptyTitle>
+          <EmptyDescription>
+            No geographical data has been recorded yet.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+
   return (
     <ChartContainer config={chartConfig} className="h-50 w-full">
       <BarChart

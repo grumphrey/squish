@@ -13,8 +13,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { Pie, PieChart } from "recharts";
+import { IconChartPie } from "@tabler/icons-react";
 
 interface BrowserPieChartDataItem {
   browser: string;
@@ -40,11 +48,11 @@ export default function BrowserMetrics({
     chartData = [];
   }
 
-  // TODO: proper loading state/skeleton
-  // Empty state?
+  // TODO:
+  // Loading skeleton
+  // Error state
   if (isPending) return <div>Loading...</div>;
   if (error) return null;
-  if (!chartData) return null;
 
   return (
     <Card className="flex flex-col font-sans">
@@ -61,6 +69,21 @@ export default function BrowserMetrics({
 }
 
 function BrowserMetricsPieChart({ data }: { data: ChartData }) {
+  if (data.length === 0)
+    return (
+      <Empty className="font-sans">
+        <EmptyHeader>
+          <EmptyMedia>
+            <IconChartPie stroke={2} />
+          </EmptyMedia>
+          <EmptyTitle>No data to display.</EmptyTitle>
+          <EmptyDescription>
+            No browser metrics have been recorded yet.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+
   return (
     <ChartContainer
       config={browserChartConfig}

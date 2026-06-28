@@ -2,6 +2,13 @@ import { Pie, PieChart, Sector } from "recharts";
 import type { PieSectorShapeProps } from "recharts/types/polar/Pie";
 
 import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -17,6 +24,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
+import { IconChartDonut } from "@tabler/icons-react";
 
 const chartConfig = {
   visitors: {
@@ -90,6 +98,21 @@ export default function DeviceTypeMetrics({
 }
 
 function DeviceTypeMetricsDonutChart({ data }: { data: ChartData }) {
+  if (data.length === 0)
+    return (
+      <Empty className="font-sans">
+        <EmptyHeader>
+          <EmptyMedia>
+            <IconChartDonut stroke={2} />
+          </EmptyMedia>
+          <EmptyTitle>No data to display.</EmptyTitle>
+          <EmptyDescription>
+            No device types have been recorded yet.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+
   return (
     <ChartContainer
       config={chartConfig}
