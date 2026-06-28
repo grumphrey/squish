@@ -1,5 +1,3 @@
-import { Pie, PieChart } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
@@ -8,7 +6,15 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
+import { Pie, PieChart } from "recharts";
 
 interface BrowserPieChartDataItem {
   browser: string;
@@ -43,7 +49,8 @@ export default function BrowserMetrics({
   return (
     <Card className="flex flex-col font-sans">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Browser</CardTitle>
+        <CardTitle>Browsers</CardTitle>
+        <CardDescription>All-Time</CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 pb-0">
@@ -108,7 +115,15 @@ const browserChartConfig = {
     color: "var(--color-chart-other)",
   },
 } satisfies ChartConfig;
-const KNOWN_BROWSERS = ["chrome", "safari", "firefox"];
+
+const KNOWN_BROWSERS = [
+  "chrome",
+  "safari",
+  "firefox",
+  "opera",
+  "brave",
+  "edge",
+];
 
 const processChartData = (
   data: Record<string, number>[],

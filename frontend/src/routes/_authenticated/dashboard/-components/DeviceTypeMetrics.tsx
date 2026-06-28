@@ -1,7 +1,13 @@
 import { Pie, PieChart, Sector } from "recharts";
 import type { PieSectorShapeProps } from "recharts/types/polar/Pie";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
@@ -74,6 +80,7 @@ export default function DeviceTypeMetrics({
     <Card className="flex flex-col font-sans">
       <CardHeader className="items-center pb-0">
         <CardTitle>Device Type</CardTitle>
+        <CardDescription>All-Time</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <DeviceTypeMetricsDonutChart data={chartData} />

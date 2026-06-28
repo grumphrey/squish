@@ -1,16 +1,15 @@
 import styles from "./dashboard.module.css";
+import { IconArrowNarrowLeft } from "@tabler/icons-react";
 import {
-  IconArrowNarrowLeft,
-  IconArrowNarrowRight,
-  IconCheck,
-  IconCopy,
-  IconLink,
-} from "@tabler/icons-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { api } from "@/lib/api";
 
 import BrowserMetrics from "./-components/BrowserMetrics";
@@ -19,6 +18,7 @@ import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
 import VisitTimelineMetrics, {
   type DailyTotalVisits,
 } from "./-components/VisitTimelineMetrics";
+import URLsList from "./-components/URLsList";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -59,7 +59,7 @@ function RouteComponent() {
       </div>
 
       <h1 className={styles.dashboardTitle}>Analytics</h1>
-      <div>
+      <div className={styles.dashboardHeader}>
         <h3 className={styles.dashboardSubtitle}>Summary</h3>
         <Separator />
       </div>
@@ -70,12 +70,30 @@ function RouteComponent() {
           isPending={isVisitsLoading}
           error={visitsError}
         />
-        <Card className="max-w-[350px] max-h-[300px]">
-          <CardHeader>
-            <CardTitle>Total Clicks</CardTitle>
-          </CardHeader>
-          <CardContent>TODO</CardContent>
-        </Card>
+
+        <div className="flex flex-col max-w-[320px] font-sans gap-5">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Total Visits</CardTitle>
+              <CardDescription>All-Time</CardDescription>
+            </CardHeader>
+            {/* TODO */}
+            <CardContent className="flex text-6xl items-center justify-center h-full pb-12">
+              2000
+            </CardContent>
+          </Card>
+
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Unique Visitors</CardTitle>
+              <CardDescription>All-Time</CardDescription>
+            </CardHeader>
+            {/* TODO */}
+            <CardContent className="flex text-6xl items-center justify-center h-full pb-12">
+              123
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className={styles.metricsContainer}>
@@ -97,7 +115,11 @@ function RouteComponent() {
         {/* TODO: <OSMetrics/> */}
       </div>
 
-      <h3 className={styles.dashboardSubtitle}>My links</h3>
+      <div className={styles.dashboardHeader}>
+        <h3 className={styles.dashboardSubtitle}>My links</h3>
+        <Separator />
+      </div>
+
       <URLsList />
     </section>
   );
@@ -109,101 +131,3 @@ interface DeviceMetrics {
   country_code: Record<string, number>[] | null;
   device_type: Record<string, number>[] | null;
 }
-
-function URLsList() {
-  const { data, isPending, error } = useQuery({
-    queryKey: ["urls"],
-    queryFn: () =>
-      api.get<ShortURLRecord[]>("/metrics/urls").then((res) => {
-        return res.data.map((urlRecord) => {
-          return { ...urlRecord, created_at: new Date(urlRecord.created_at) };
-        });
-      }),
-  });
-
-  // TODO: proper loading state/skeleton
-  if (isPending) return <div>Loading...</div>;
-  if (error) return <div>Error loading URLs</div>;
-  if (!data) return <div>No data</div>;
-
-  return (
-    <ul className={styles.urlRootContainer}>
-      {data.map((record) => (
-        <li className={styles.urlListItemContainer} key={record.short_url}>
-          {<ShortURLRecord {...record} />}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function CopyURLButton({ shortURL }: { shortURL: string }) {
-  const [copying, setCopying] = useState(false);
-
-  // Copy url into  clipboard and show tick icon for 2 seconds.
-  const handleClick = () => {
-    const url = window.location.origin + "/" + shortURL;
-    navigator.clipboard.writeText(url).catch(() => {});
-
-    setCopying(true);
-    setTimeout(() => {
-      setCopying(false);
-    }, 2000);
-  };
-
-  return (
-    <button className={styles.copyButton} type="button" onClick={handleClick}>
-      {copying ? <IconCheck /> : <IconCopy />}
-    </button>
-  );
-}
-
-function ShortURLRecord({
-  short_url,
-  long_url,
-  is_active,
-  created_at,
-}: ShortURLRecord) {
-  return (
-    <>
-      <div className={styles.urlContainer}>
-        {is_active ? (
-          <div className={styles.urlActive} />
-        ) : (
-          <div className={styles.urlInactive} />
-        )}
-
-        <div className={styles.urlLinks}>
-          <div className={styles.urlShort}>
-            <IconLink />
-            <span>{window.location.hostname + "/" + short_url}</span>
-          </div>
-          <div className={styles.urlLong}>
-            <IconArrowNarrowRight stroke={2} />
-            <span> {long_url}</span>
-          </div>
-        </div>
-
-        <div className={styles.urlCreatedDate}>
-          <span>Created </span>
-          <span>{dateFormatter.format(created_at)}</span>
-        </div>
-      </div>
-
-      <CopyURLButton shortURL={short_url} />
-    </>
-  );
-}
-
-interface ShortURLRecord {
-  short_url: string;
-  long_url: string;
-  is_active: boolean;
-  created_at: Date;
-}
-
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});

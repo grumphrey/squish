@@ -34,26 +34,6 @@ interface CountryBarChartDataItem {
   visitors: number;
   // fill: string;
 }
-const processChartData = (
-  data: Record<string, number>[],
-): CountryBarChartDataItem[] => {
-  // Converts backend response shape for metrics data to a suitable shape to be passed into Rechart library.
-  const metricsData = data.map((obj) => {
-    const key = Object.keys(obj)[0];
-    const countryCode = key.toUpperCase();
-    const country = countries.find((c) => c.code == key.toUpperCase()) ?? {
-      name: "Other",
-      emoji: "",
-    };
-    return {
-      countryCode,
-      country: `${country?.name} ${country?.emoji}`,
-      visitors: obj[key],
-      // fill: `var(--color-${idx})`, // customize colour of each bar in chartConfig
-    };
-  });
-  return metricsData;
-};
 
 export default function CountryMetrics({
   data,
@@ -78,20 +58,12 @@ export default function CountryMetrics({
     <Card className="font-sans">
       <CardHeader>
         <CardTitle>Countries</CardTitle>
-        <CardDescription>Top 5</CardDescription>
+        <CardDescription>Top 5 All-Time</CardDescription>
       </CardHeader>
 
       <CardContent>
         <CountryMetricsBarChart data={chartData} />
       </CardContent>
-      {/* <CardFooter className="flex-col items-start gap-2 text-sm"> */}
-      {/*   <div className="flex gap-2 leading-none font-medium"> */}
-      {/*     Trending up by 5.2% this month <TrendingUp className="h-4 w-4" /> */}
-      {/*   </div> */}
-      {/*   <div className="leading-none text-muted-foreground"> */}
-      {/*     Showing total visitors for the last 6 months */}
-      {/*   </div> */}
-      {/* </CardFooter> */}
     </Card>
   );
 }
@@ -168,7 +140,29 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const processChartData = (
+  data: Record<string, number>[],
+): CountryBarChartDataItem[] => {
+  // Converts backend response shape for metrics data to a suitable shape to be passed into Rechart library.
+  const metricsData = data.map((obj) => {
+    const key = Object.keys(obj)[0];
+    const countryCode = key.toUpperCase();
+    const country = countries.find((c) => c.code == key.toUpperCase()) ?? {
+      name: "Other",
+      emoji: "",
+    };
+    return {
+      countryCode,
+      country: `${country?.name} ${country?.emoji}`,
+      visitors: obj[key],
+      // fill: `var(--color-${idx})`, // customize colour of each bar in chartConfig
+    };
+  });
+  return metricsData;
+};
+
 // TODO: need to match country codes returned by maxmind db
+// Store in countries.json file instead?
 const countries = [
   { code: "AD", name: "Andorra", emoji: "🇦🇩" },
   { code: "AE", name: "United Arab Emirates", emoji: "🇦🇪" },

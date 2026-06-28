@@ -44,8 +44,7 @@ export default function VisitTimelineMetrics({
   // TODO: proper loading state/skeleton
   // Empty state?
   if (isPending) return <div>Loading...</div>;
-  if (error) return null;
-  if (!chartData) return null;
+  if (error || !chartData) return null;
 
   return (
     <Card className="max-w-[660px] font-sans">
@@ -69,7 +68,7 @@ function VisitsAreaChart({ data }: { data: ChartData }) {
         data={data}
         margin={{
           left: 25,
-          right: 12,
+          right: 25,
           top: 12,
         }}
       >
