@@ -1,6 +1,5 @@
-DROP TABLE IF EXISTS short_urls;
-DROP TABLE IF EXISTS url_redirect_events;
-DROP TABLE IF EXISTS users;
+-- db init script
+-- mount into docker
 
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -34,10 +33,21 @@ CREATE TABLE url_redirect_events (
   longitude float8,
   user_agent TEXT,
   os VARCHAR(50),
-  browser VARCHAR(50)
+  browser VARCHAR(50),
+  device VARCHAR(50),
+  device_type VARCHAR(50) -- TODO: enums (bot, desktop, tablet, mobile, other)
 );
 
+CREATE VIEW short_url_metrics AS 
+SELECT s.id AS short_url_id, s.short_url, s.long_url, s.created_at AS url_created_at, 
+  u.id AS user_id, u.email, e.accessed_at, e.ip_address, e.country_code, e.os, e.browser, e.device, e.device_type, 
+  COUNT(e.id) OVER (PARTITION BY s.id) AS total_clicks
+FROM short_urls s 
+JOIN users u               ON s.user_id=u.id 
+JOIN url_redirect_events e ON e.short_url_id=s.id;
+
 -- Test values
+-- INSERT INTO users (email, hashed_password) 
 -- INSERT INTO long_urls (long_url) VALUES ('http://example.com');
 -- INSERT INTO long_urls (long_url) VALUES ('https://google.com');
 -- INSERT INTO long_urls (long_url) VALUES ('https://wikipedia.org');

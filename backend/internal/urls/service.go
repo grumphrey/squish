@@ -170,8 +170,10 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 		IPAddress:   event.IPAddress,
 		Geolocation: geolocation,
 		UserAgent: UserAgent{
-			OS:      ua.OS,
-			Browser: ua.Name,
+			OS:         ua.OS,
+			Browser:    ua.Name,
+			Device:     ua.Device,
+			DeviceType: getDeviceType(ua),
 		},
 		UserAgentStr: event.UserAgent,
 	}
@@ -179,5 +181,21 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 	url_id := utils.Base62Decode(event.ShortURL)
 	if err := s.repo.CreateRedirectMetrics(ctx, url_id, metrics); err != nil {
 		log.Printf("could not update redirect metrics: %w", err)
+	}
+}
+
+// Helper function to get device type string based on the bool fields exposed by UserAgent struct.
+func getDeviceType(ua useragent.UserAgent) string {
+	switch {
+	case ua.Bot:
+		return "bot"
+	case ua.Mobile:
+		return "mobile"
+	case ua.Tablet:
+		return "tablet"
+	case ua.Desktop:
+		return "desktop"
+	default:
+		return "unknown"
 	}
 }

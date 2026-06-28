@@ -19,37 +19,49 @@ func NewMetricsRepository(db *pgxpool.Pool) *metricsRepository {
 type MetricToValueCountMap = map[string][]map[string]int64
 
 // Get total device metrics of all short URLs created by this user.
-// This includes: OS, browser, country code.
+// This includes: OS, browser, country code, device type
 func (r *metricsRepository) GetTotalDeviceMetrics(ctx context.Context, userID string) (MetricToValueCountMap, error) {
 	// Use single query to reduce network RTT
 	// Or maybe can batch multiple queries together, will be neater
 	query := `
 		WITH events AS (
-			SELECT e.browser, e.os, e.country_code
+			SELECT e.browser, e.os, e.country_code, e.device_type
 			FROM short_urls s
 			JOIN users u ON s.user_id = u.id
 			JOIN url_redirect_events e ON e.short_url_id = s.id 
 			WHERE u.id=$1
 		)
-		SELECT 'browser'      AS dimension, 
+		(SELECT 'browser'      AS dimension, 
 						browser       AS value, 
 						COUNT(*) 			AS count 
 		FROM events 
 		GROUP BY browser 
+		ORDER BY COUNT(*) DESC)
 		UNION ALL 
 
-		SELECT 'os'           AS dimension, 
+		(SELECT 'os'           AS dimension, 
 						os            AS value, 
 						COUNT(*) 			AS count 
 		FROM events 
 		GROUP BY os 
+		ORDER BY COUNT(*) DESC)
 		UNION ALL 
 
-		SELECT 'country_code' AS dimension, 
+		(SELECT 'device_type'  AS dimension, 
+						device_type   AS value, 
+						COUNT(*) 			AS count 
+		FROM events 
+		GROUP BY device_type 
+		ORDER BY COUNT(*) DESC)
+		UNION ALL 
+
+		(SELECT 'country_code' AS dimension, 
 						country_code  AS value, 
 						COUNT(*) 			AS count 
 		FROM events 
-		GROUP BY country_code;
+		GROUP BY country_code 
+		ORDER BY COUNT(*) DESC 
+		LIMIT 5);
 	`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {

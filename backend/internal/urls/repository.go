@@ -95,9 +95,9 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
 func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
-		short_url_id, ip_address, country_code, region, city, latitude, longitude, user_agent, os, browser
+		short_url_id, ip_address, country_code, region, city, latitude, longitude, user_agent, os, browser, device, device_type
 	) VALUES (
-		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, @UserAgent, @OS, @Browser
+		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, @UserAgent, @OS, @Browser, @Device, @DeviceType
 	)`
 	args := pgx.NamedArgs{
 		"ShortURLID":  id,
@@ -110,6 +110,8 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metri
 		"UserAgent":   utils.Nullable(metrics.UserAgentStr),
 		"OS":          utils.Nullable(metrics.UserAgent.OS),
 		"Browser":     utils.Nullable(metrics.UserAgent.Browser),
+		"Device":      utils.Nullable(metrics.UserAgent.Device),
+		"DeviceType":  utils.Nullable(metrics.UserAgent.DeviceType),
 	}
 
 	_, err := r.db.Exec(ctx, query, args)

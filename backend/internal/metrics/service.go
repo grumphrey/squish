@@ -27,7 +27,7 @@ func (s *metricsService) GetTotalDeviceMetrics(ctx context.Context, userID strin
 	}
 
 	// If key is not in map, then set the key but with nil value
-	expectedKeys := []string{"browser", "os", "country_code"}
+	expectedKeys := []string{"browser", "os", "country_code", "device_type"}
 	for _, key := range expectedKeys {
 		if _, exists := metricMap[key]; !exists {
 			metricMap[key] = nil
