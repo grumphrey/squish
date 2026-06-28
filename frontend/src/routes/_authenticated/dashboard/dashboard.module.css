@@ -46,7 +46,16 @@
 
 .metricsContainer {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
 }
+.metricsContainer > * {
+  flex-grow: 1;
+  height: 100%;
+  width: 100%;
+}
+
 .metricsBox {
   border: 2px solid var(--color-border);
   border-radius: 20px;
@@ -198,5 +207,9 @@
   }
   .copyButton svg {
     height: 14px;
+  }
+  /* TODO: mobile view */
+  .metricsContainer {
+    flex-direction: column;
   }
 }

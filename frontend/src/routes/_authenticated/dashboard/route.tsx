@@ -12,6 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import BrowserMetrics from "./-components/BrowserMetrics";
+import CountryMetrics from "./-components/CountryMetrics";
+import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -40,7 +42,7 @@ function RouteComponent() {
       {/*   <MetricsBox /> */}
       {/* </div> */}
 
-      <div>
+      <div className={styles.metricsContainer}>
         {/* <Card className="flex flex-col font-sans"> */}
         {/*   <CardHeader className="items-center pb-0"> */}
         {/*     <CardTitle>Total Visits</CardTitle> */}
@@ -54,7 +56,16 @@ function RouteComponent() {
           error={error}
         />
         {/* <OSMetrics/> */}
-        {/* <CountryMetrics/> */}
+        <DeviceTypeMetrics
+          data={data?.device_type}
+          isPending={isPending}
+          error={error}
+        />
+        <CountryMetrics
+          data={data?.country_code}
+          isPending={isPending}
+          error={error}
+        />
       </div>
 
       <h3 className={styles.dashboardSubtitle}>My links</h3>
@@ -67,6 +78,7 @@ interface DeviceMetrics {
   browser: Record<string, number>[] | null;
   os: Record<string, number>[] | null;
   country_code: Record<string, number>[] | null;
+  device_type: Record<string, number>[] | null;
 }
 
 // function DeviceMetricsList() {

@@ -90,8 +90,10 @@
   --color-primary-dark: #e05500;
   --color-primary-tint: #2e1a0e;
 
-  --color-bg: #121212;
-  --color-surface: #2c2c2c;
+  /* --color-bg: #121212; */
+  --color-bg: #0a0a0a;
+  /* --color-surface: #2c2c2c; */
+  --color-surface: #171717;
   --color-border: #333333;
   --color-elevated: #555555;
 
@@ -248,8 +250,8 @@ body {
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  /* --card: oklch(0.205 0 0); */
-  --card: var(--color-surface);
+  --card: oklch(0.205 0 0);
+  /* --card: var(--color-surface); */
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
