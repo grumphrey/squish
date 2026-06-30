@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/chart";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { IconChartDonut } from "@tabler/icons-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig = {
   visitors: {
@@ -80,7 +81,20 @@ export default function DeviceTypeMetrics({
 
   // TODO: proper loading state/skeleton
   // Empty state?
-  if (isPending) return <div>Loading...</div>;
+  if (isPending)
+    return (
+      <Card className="max-w-[660px]">
+        <CardHeader className="gap-2.5">
+          <Skeleton className="w-1/2 h-6" />
+          <Skeleton className="w-1/4 h-5" />
+        </CardHeader>
+
+        <CardContent>
+          <Skeleton className="w-full h-70" />
+        </CardContent>
+      </Card>
+    );
+
   if (error) return null;
   if (!chartData) return null;
 

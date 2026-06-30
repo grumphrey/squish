@@ -7,9 +7,12 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -18,7 +21,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { useNavigate } from "@tanstack/react-router";
 
 export default function URLsList() {
   const navigate = useNavigate();
@@ -35,8 +37,22 @@ export default function URLsList() {
   // TODO:
   // Loading skeleton
   // Error state
-  if (isPending) return <div>Loading...</div>;
+  if (isPending)
+    return (
+      <Card className="flex flex-row items-center w-full">
+        <CardHeader className="gap-1.5">
+          <Skeleton className="h-3 w-3 rounded-full" />
+        </CardHeader>
+
+        <CardContent className="h-5 h-5 w-full">
+          <Skeleton className="w-1/3 h-2 mb-1" />
+          <Skeleton className="w-1/2 h-2" />
+        </CardContent>
+      </Card>
+    );
+
   if (error) return <div>Error loading URLs</div>;
+
   if (data.length === 0)
     return (
       <Empty className="font-sans">

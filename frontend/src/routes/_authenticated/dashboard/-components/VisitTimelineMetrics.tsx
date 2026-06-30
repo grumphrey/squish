@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/chart";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface DailyTotalVisits {
   date: string;
@@ -43,7 +44,20 @@ export default function VisitTimelineMetrics({
 
   // TODO: proper loading state/skeleton
   // Empty state?
-  if (isPending) return <div>Loading...</div>;
+  if (isPending)
+    return (
+      <Card className="max-w-[660px]">
+        <CardHeader className="gap-2.5">
+          <Skeleton className="w-1/2 h-6" />
+          <Skeleton className="w-1/4 h-5" />
+        </CardHeader>
+
+        <CardContent className="h-full">
+          <Skeleton className="w-full h-full" />
+        </CardContent>
+      </Card>
+    );
+
   if (error || !chartData) return null;
 
   return (
