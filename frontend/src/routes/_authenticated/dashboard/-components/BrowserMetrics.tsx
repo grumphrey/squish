@@ -76,7 +76,7 @@ export default function BrowserMetrics({
         <CardDescription>All-Time</CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 pb-0">
+      <CardContent className="flex-1 pb-0 h-full">
         <BrowserMetricsPieChart data={chartData} />
       </CardContent>
     </Card>
@@ -102,7 +102,7 @@ function BrowserMetricsPieChart({ data }: { data: ChartData }) {
   return (
     <ChartContainer
       config={browserChartConfig}
-      className="mx-auto aspect-square max-h-75 [&_.recharts-pie-label-text]:fill-foreground"
+      className="mx-auto aspect-square h-full [&_.recharts-pie-label-text]:fill-foreground"
     >
       <PieChart accessibilityLayer>
         <ChartTooltip

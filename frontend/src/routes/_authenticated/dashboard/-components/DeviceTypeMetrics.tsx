@@ -102,7 +102,8 @@ export default function DeviceTypeMetrics({
         <CardTitle>Device Type</CardTitle>
         <CardDescription>All-Time</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
+
+      <CardContent className="h-full flex-1 pb-0">
         <DeviceTypeMetricsDonutChart data={chartData} />
       </CardContent>
     </Card>
@@ -128,7 +129,7 @@ function DeviceTypeMetricsDonutChart({ data }: { data: ChartData }) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square max-h-[250px]"
+      className="mx-auto aspect-square h-full"
     >
       <PieChart>
         <ChartTooltip

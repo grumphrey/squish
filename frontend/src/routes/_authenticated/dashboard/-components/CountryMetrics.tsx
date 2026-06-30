@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/card";
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -80,7 +82,7 @@ export default function CountryMetrics({
         <CardDescription>Top 5 All-Time</CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="h-full">
         <CountryMetricsBarChart data={chartData} />
       </CardContent>
     </Card>
@@ -104,7 +106,7 @@ function CountryMetricsBarChart({ data }: { data: ChartData }) {
     );
 
   return (
-    <ChartContainer config={chartConfig} className="h-50 w-full">
+    <ChartContainer config={chartConfig} className="h-full w-full">
       <BarChart
         accessibilityLayer
         data={data}
@@ -128,7 +130,13 @@ function CountryMetricsBarChart({ data }: { data: ChartData }) {
           cursor={false}
           content={<ChartTooltipContent indicator="line" />}
         />
-        <Bar dataKey="visitors" fill="var(--color-visitors)" radius={4}>
+        <ChartLegend content={<ChartLegendContent />} />
+        <Bar
+          dataKey="visitors"
+          fill="var(--color-visitors)"
+          barSize={40}
+          radius={4}
+        >
           <LabelList
             dataKey="country"
             position="insideLeft"
