@@ -20,10 +20,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { Pie, PieChart } from "recharts";
 import { IconChartPie } from "@tabler/icons-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import ErrorAlert from "@/components/ErrorAlert";
 
 interface BrowserPieChartDataItem {
   browser: string;
@@ -66,7 +67,7 @@ export default function BrowserMetrics({
       </Card>
     );
 
-  if (error) return null;
+  if (error) return <ErrorAlert />;
 
   return (
     <Card className="flex flex-col font-sans">

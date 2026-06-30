@@ -14,6 +14,7 @@ import {
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorAlert from "@/components/ErrorAlert";
 
 export interface DailyTotalVisits {
   date: string;
@@ -42,8 +43,6 @@ export default function VisitTimelineMetrics({
     chartData = [];
   }
 
-  // TODO: proper loading state/skeleton
-  // Empty state?
   if (isPending)
     return (
       <Card className="max-w-[660px]">
@@ -58,7 +57,7 @@ export default function VisitTimelineMetrics({
       </Card>
     );
 
-  if (error || !chartData) return null;
+  if (error) return <ErrorAlert />;
 
   return (
     <Card className="max-w-[660px] font-sans">

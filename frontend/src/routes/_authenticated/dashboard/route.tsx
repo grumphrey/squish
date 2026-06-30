@@ -22,6 +22,7 @@ import URLsList from "./-components/URLsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import ErrorAlert from "@/components/ErrorAlert";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -216,6 +217,10 @@ function MetricCard({
     );
   }
 
+  if (error) {
+    return <ErrorAlert />;
+  }
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -223,8 +228,7 @@ function MetricCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex text-6xl items-center justify-center h-full pb-12">
-        {error ? "todo-error" : data}
-        {/* {TODO if 0... show empty state} */}
+        {data}
       </CardContent>
     </Card>
   );

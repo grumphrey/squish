@@ -26,6 +26,7 @@ import {
 import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { IconChartDonut } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorAlert from "@/components/ErrorAlert";
 
 const chartConfig = {
   visitors: {
@@ -79,8 +80,6 @@ export default function DeviceTypeMetrics({
     chartData = [];
   }
 
-  // TODO: proper loading state/skeleton
-  // Empty state?
   if (isPending)
     return (
       <Card className="max-w-[660px]">
@@ -95,8 +94,7 @@ export default function DeviceTypeMetrics({
       </Card>
     );
 
-  if (error) return null;
-  if (!chartData) return null;
+  if (error) return <ErrorAlert />;
 
   return (
     <Card className="flex flex-col font-sans">

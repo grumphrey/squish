@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { IconChartBar } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorAlert from "@/components/ErrorAlert";
 
 interface CountryMetricsProps {
   data: Record<string, number>[] | null | undefined;
@@ -56,8 +57,6 @@ export default function CountryMetrics({
     chartData = [];
   }
 
-  // TODO: proper loading state/skeleton
-  // Empty state?
   if (isPending)
     return (
       <Card className="max-w-[660px]">
@@ -71,8 +70,8 @@ export default function CountryMetrics({
         </CardContent>
       </Card>
     );
-  if (error) return null;
-  if (!chartData) return null;
+
+  if (error) return <ErrorAlert />;
 
   return (
     <Card className="font-sans">

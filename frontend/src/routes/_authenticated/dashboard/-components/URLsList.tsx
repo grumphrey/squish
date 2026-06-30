@@ -21,11 +21,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import ErrorAlert from "@/components/ErrorAlert";
 
 export default function URLsList() {
   const navigate = useNavigate();
   const { data, isPending, error } = useQuery({
-    queryKey: ["urls"],
+    queryKey: ["dashboard", "urls"],
     queryFn: () =>
       api.get<ShortURLRecord[]>("/metrics/urls").then((res) => {
         return res.data.map((urlRecord) => {
@@ -35,9 +36,6 @@ export default function URLsList() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // TODO:
-  // Loading skeleton
-  // Error state
   if (isPending)
     return (
       <Card className="flex flex-row items-center w-full">
@@ -52,7 +50,7 @@ export default function URLsList() {
       </Card>
     );
 
-  if (error) return <div>Error loading URLs</div>;
+  if (error) return <ErrorAlert />;
 
   if (data.length === 0)
     return (
