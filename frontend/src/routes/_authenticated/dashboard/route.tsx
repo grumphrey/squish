@@ -1,5 +1,5 @@
 import styles from "./dashboard.module.css";
-import { IconArrowNarrowLeft } from "@tabler/icons-react";
+import { IconArrowNarrowLeft, IconRefresh } from "@tabler/icons-react";
 import {
   Card,
   CardHeader,
@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { api } from "@/lib/api";
 
@@ -20,6 +20,8 @@ import VisitTimelineMetrics, {
 } from "./-components/VisitTimelineMetrics";
 import URLsList from "./-components/URLsList";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -27,44 +29,66 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Get device metrics (browser, device type, OS, country)
   const {
     data: metricsData,
     isPending: isMetricsLoading,
+    isFetching: isFetchingMetrics,
     error: metricsError,
   } = useQuery({
-    queryKey: ["deviceMetrics"],
+    queryKey: ["dashboard", "deviceMetrics"],
     queryFn: () =>
       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
+    // {
+    // return new Promise<DeviceMetrics>((resolve) => {
+    //   setTimeout(() => {
+    //     resolve(
+    //       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
+    //     );
+    //   }, 2000); // 2-second delay
+    // });
+    // },
+    staleTime: 1000 * 60 * 5,
   });
-  // TODO: set stale time, disable auto refetch, enabled=false + refresh button?
 
   // Get daily visits metrics for the past 7 days
   const {
     data: visitsData,
     isPending: isVisitsLoading,
+    isFetching: isFetchingVisits,
     error: visitsError,
   } = useQuery({
-    queryKey: ["dailyTotalVisits"],
+    queryKey: ["dashboard", "dailyTotalVisits"],
     queryFn: () =>
       api
         .get<DailyTotalVisits[]>("/metrics/visits/daily")
         .then((res) => res.data),
+    staleTime: 1000 * 60 * 5,
   });
 
   // Get total visits metrics all-time
   const {
     data: totalData,
     isPending: isTotalLoading,
+    isFetching: isFetchingTotal,
     error: totalError,
   } = useQuery({
-    queryKey: ["totalVisits"],
+    queryKey: ["dashboard", "totalVisits"],
     queryFn: () =>
       api
         .get<TotalVisitMetrics>("/metrics/visits/total")
         .then((res) => res.data),
+    staleTime: 1000 * 60 * 5,
   });
+
+  const isRefreshing = isFetchingMetrics || isFetchingVisits || isFetchingTotal;
+
+  // Refresh metrics data from backend
+  const handleRefreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  };
 
   return (
     <section className={styles.dashboard}>
@@ -73,7 +97,25 @@ function RouteComponent() {
         <a>Home</a>
       </div>
 
-      <h1 className={styles.dashboardTitle}>Analytics</h1>
+      <div className="flex justify-between">
+        <h1 className={styles.dashboardTitle}>Analytics</h1>
+        <Button
+          className="font-sans"
+          variant="outline"
+          onClick={handleRefreshAll}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <>
+              <Spinner data-icon="inline-start" /> Loading
+            </>
+          ) : (
+            <>
+              <IconRefresh /> Refresh
+            </>
+          )}
+        </Button>
+      </div>
       <div className={styles.dashboardHeader}>
         <h3 className={styles.dashboardSubtitle}>Summary</h3>
         <Separator />

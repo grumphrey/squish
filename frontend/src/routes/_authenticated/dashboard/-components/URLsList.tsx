@@ -32,6 +32,7 @@ export default function URLsList() {
           return { ...urlRecord, created_at: new Date(urlRecord.created_at) };
         });
       }),
+    staleTime: 1000 * 60 * 5,
   });
 
   // TODO:
