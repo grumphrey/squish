@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { api } from "@/lib/api";
 import { tokenStore } from "@/features/auth/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface User {
   userID: string;
@@ -39,9 +40,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // logout clears the refresh token in cookie, as well as revokes the access token server-side.
   // The access token is cleared from the token store client-side.
   const logout = async () => {
+    const queryClient = useQueryClient();
+
     await api.post("/auth/logout"); // POST here since we change server-side state
     tokenStore.clear();
     setUser(null);
+    queryClient.clear(); // Nuke query client cache
   };
 
   // login sends user credentials to the server to be verified.
