@@ -18,6 +18,34 @@ func NewMetricsRepository(db *pgxpool.Pool) *metricsRepository {
 
 type MetricToValueCountMap = map[string][]map[string]int64
 
+type TotalVisitMetrics struct {
+	Total  int64 `db:"total_visitors"`
+	Unique int64 `db:"unique_visitors"`
+}
+
+func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID string) (*TotalVisitMetrics, error) {
+	query := `
+		SELECT 
+			COUNT(*) 										AS total_visitors, 
+			COUNT(DISTINCT(ip_address)) AS unique_visitors 
+		FROM short_url_metrics 
+		WHERE user_id=$1`
+
+	// var
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	metrics, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[TotalVisitMetrics])
+	if err != nil {
+		return nil, err
+	}
+
+	return &metrics, nil
+}
+
 // Get total device metrics of all short URLs created by this user.
 // This includes: OS, browser, country code, device type
 func (r *metricsRepository) GetTotalDeviceMetrics(ctx context.Context, userID string) (MetricToValueCountMap, error) {

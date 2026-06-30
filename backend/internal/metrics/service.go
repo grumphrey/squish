@@ -70,3 +70,12 @@ func fillMissingDates(visitsByDay []DailyTotalVisits) []DailyTotalVisits {
 
 	return visitsByDay
 }
+
+func (s *metricsService) GetTotalVisitMetrics(ctx context.Context, userID string) (*TotalVisitMetrics, error) {
+	metrics, err := s.metricsRepository.GetTotalVisitMetrics(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return metrics, nil
+}

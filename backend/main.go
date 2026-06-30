@@ -117,6 +117,7 @@ func run() error {
 	mux.Handle("/api/metrics/urls", protected(http.HandlerFunc(metricsHandler.HandleGetURLs)))
 	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetDeviceMetrics)))
 	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsByDayPastWeek)))
+	mux.Handle("/api/metrics/visits/total", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitMetrics)))
 
 	serverErr := make(chan error, 1)
 	go func() {
