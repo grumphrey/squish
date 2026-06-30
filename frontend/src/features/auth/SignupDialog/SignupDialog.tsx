@@ -37,7 +37,7 @@ export default function SignupDialog({
     try {
       await signup(email, password);
       setOpen(false);
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/dashboard" }); // TODO: not working
     } catch (err) {
       if (err instanceof Error) setError(err.message);
     }
