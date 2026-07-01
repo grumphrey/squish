@@ -1,4 +1,4 @@
-import { Pie, PieChart, Sector } from "recharts";
+import { Pie, PieChart, Sector, Label } from "recharts";
 import type { PieSectorShapeProps } from "recharts/types/polar/Pie";
 
 import {
@@ -23,10 +23,10 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { IconChartDonut } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorAlert from "@/components/ErrorAlert";
+import { useMemo } from "react";
 
 const chartConfig = {
   visitors: {
@@ -72,7 +72,7 @@ export default function DeviceTypeMetrics({
   isPending,
   error,
 }: DeviceTypeMetricsProps) {
-  let chartData: ChartData;
+  let chartData: DeviceTypeDonutChartDataItem[];
   if (data) {
     // Transform data from backend for display
     chartData = processChartData(data);
@@ -110,7 +110,15 @@ export default function DeviceTypeMetrics({
   );
 }
 
-function DeviceTypeMetricsDonutChart({ data }: { data: ChartData }) {
+function DeviceTypeMetricsDonutChart({
+  data,
+}: {
+  data: DeviceTypeDonutChartDataItem[];
+}) {
+  const totalVisitors = useMemo(() => {
+    return data.reduce((acc, curr) => acc + curr.visitors, 0);
+  }, []);
+
   if (data.length === 0)
     return (
       <Empty className="font-sans">
@@ -149,7 +157,37 @@ function DeviceTypeMetricsDonutChart({ data }: { data: ChartData }) {
               <Sector {...props} outerRadius={outerRadius} />
             )
           }
-        />
+        >
+          <Label
+            content={({ viewBox }) => {
+              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                return (
+                  <text
+                    x={viewBox.cx}
+                    y={viewBox.cy}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    <tspan
+                      x={viewBox.cx}
+                      y={(viewBox.cy || 0) - 30}
+                      className="fill-foreground text-3xl font-bold"
+                    >
+                      {totalVisitors.toLocaleString()}
+                    </tspan>
+                    <tspan
+                      x={viewBox.cx}
+                      y={viewBox.cy}
+                      className="fill-muted-foreground"
+                    >
+                      Visitors
+                    </tspan>
+                  </text>
+                );
+              }
+            }}
+          />
+        </Pie>
         <ChartLegend
           content={<ChartLegendContent nameKey="deviceType" />}
           className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"

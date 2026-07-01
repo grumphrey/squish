@@ -45,7 +45,7 @@ export default function VisitTimelineMetrics({
 
   if (isPending)
     return (
-      <Card className="max-w-[660px]">
+      <Card className="basis-[660px]">
         <CardHeader className="gap-2.5">
           <Skeleton className="w-1/2 h-6" />
           <Skeleton className="w-1/4 h-5" />
@@ -60,7 +60,7 @@ export default function VisitTimelineMetrics({
   if (error) return <ErrorAlert />;
 
   return (
-    <Card className="max-w-[660px] font-sans">
+    <Card className="basis-[660px] font-sans">
       <CardHeader>
         <CardTitle>Total Visits</CardTitle>
         <CardDescription>In the past 7 days</CardDescription>

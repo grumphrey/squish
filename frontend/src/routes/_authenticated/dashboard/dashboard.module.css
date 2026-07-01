@@ -2,6 +2,7 @@
   max-width: 1000px;
   width: 100%;
   margin: 0 auto;
+  padding: 80px 30px;
 
   display: flex;
   flex-direction: column;
@@ -182,6 +183,10 @@
 }
 
 @media (max-width: 576px) {
+  .dashboard {
+    padding: 30px;
+  }
+
   .urlCreatedDate {
     display: flex;
     flex-direction: column;

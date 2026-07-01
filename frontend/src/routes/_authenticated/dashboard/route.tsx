@@ -132,7 +132,7 @@ function RouteComponent() {
           error={visitsError}
         />
 
-        <div className="flex flex-col max-w-[320px] font-sans gap-5">
+        <div className="flex flex-col basis-xs grow-0 shrink font-sans gap-5">
           <MetricCard
             data={totalData?.total_visitors}
             isPending={isTotalLoading}

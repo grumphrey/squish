@@ -76,7 +76,7 @@ export default function BrowserMetrics({
         <CardDescription>All-Time</CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 pb-0 h-full">
+      <CardContent className="flex-1 pb-0 h-full @sm:pb-6">
         <BrowserMetricsPieChart data={chartData} />
       </CardContent>
     </Card>
