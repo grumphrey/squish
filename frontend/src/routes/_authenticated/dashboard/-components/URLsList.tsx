@@ -7,7 +7,7 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { api } from "@/lib/api";
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,16 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import ErrorAlert from "@/components/ErrorAlert";
 
-export default function URLsList() {
+interface URLsListProps {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}
+export default function URLsList({ open, setOpen }: URLsListProps) {
   const navigate = useNavigate();
+
   const { data, isPending, error } = useQuery({
     queryKey: ["dashboard", "urls"],
     queryFn: () =>
@@ -74,13 +80,21 @@ export default function URLsList() {
     );
 
   return (
-    <ul className={styles.urlRootContainer}>
-      {data.map((record) => (
-        <li className={styles.urlListItemContainer} key={record.short_url}>
-          {<ShortURLRecord {...record} />}
-        </li>
-      ))}
-    </ul>
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="flex w-full flex-col gap-2"
+    >
+      <CollapsibleContent className="flex flex-col gap-2">
+        <ul className={styles.urlRootContainer}>
+          {data.map((record) => (
+            <li className={styles.urlListItemContainer} key={record.short_url}>
+              {<ShortURLRecord {...record} />}
+            </li>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
