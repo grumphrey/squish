@@ -8,6 +8,7 @@ import { routeTree } from "./routeTree.gen";
 import "./index.css";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
+import { Spinner } from "./components/ui/spinner.tsx";
 
 const router = createRouter({
   routeTree,
@@ -27,9 +28,8 @@ declare module "@tanstack/react-router" {
 // Wrap RouterProvider in a React component in order to access state from auth hook
 function App() {
   const auth = useAuth();
-  // Don't render router until silent refresh completes — avoids flash-redirect to /login
-  // TODO
-  // if (auth.isLoading) return <FullPageSpinner />;
+  // Don't render router until silent refresh completes
+  if (auth.isLoading) return <Spinner />;
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
