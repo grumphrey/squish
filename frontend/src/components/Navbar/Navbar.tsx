@@ -1,61 +1,118 @@
 import styles from "./Navbar.module.css";
 import logo from "@/assets/longdog.png";
 
-import { useState } from "react";
-import { IconLogin, IconMoon, IconSun } from "@tabler/icons-react";
-import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import {
+  IconChartBar,
+  IconHome,
+  IconLogin,
+  IconMoon,
+  IconSun,
+} from "@tabler/icons-react";
+import { useNavigate, Link } from "@tanstack/react-router";
 
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import LoginDialog from "@/features/auth/LoginDialog";
 import SignupDialog from "@/features/auth/SignupDialog";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+
+const navLinks = [
+  { label: "Home", href: "/", icon: <IconHome /> },
+  { label: "Analytics", href: "/dashboard", icon: <IconChartBar /> },
+];
 
 export default function Navbar() {
+  const [open, setOpen] = useState(false);
+
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [signInOpen, setSignInOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
+  // Close mobile navigation menu when screen size is desktop
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setOpen(false);
+    };
+
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
+
   return (
-    <nav className={styles.navbar}>
+    <header className={styles.navbar}>
       <div className={styles.navLeft}>
         <img src={logo} />
-        <a href="/" className={styles.navLogo}>
+        <Link to="/" className={styles.navLogo}>
           squi<span>.</span>sh
-        </a>
+        </Link>
       </div>
 
       <div className={styles.navRight}>
-        {!user && !isLoading && (
-          <SignupDialog
-            open={signInOpen}
-            setOpen={setSignInOpen}
-            toggleLogin={setLoginOpen}
-          />
-        )}
+        {/* Mobile menu */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild className="md:hidden">
+            <Button variant="ghost">
+              <Menu />
+            </Button>
+          </SheetTrigger>
 
-        {user && !isLoading && (
-          <button
-            className={`${styles.analyticsBtn} cta-button`}
-            onClick={() => navigate({ to: "/dashboard" })}
-          >
-            Analytics
-          </button>
-        )}
+          <SheetContent className="font-sans" side="right">
+            <nav className="flex flex-col gap-6 mt-8 p-5 font-semibold">
+              {navLinks.map((link) => {
+                return (
+                  <Link
+                    to={link.href}
+                    onClick={() => setOpen(false)}
+                    className="flex gap-1.5 items-center"
+                  >
+                    <div className="*:h-4">{link.icon}</div>
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </SheetContent>
+        </Sheet>
 
-        {user ? (
-          <LogoutButton />
-        ) : (
-          <LoginDialog
-            open={loginOpen}
-            setOpen={setLoginOpen}
-            toggleSignup={setSignInOpen}
-          />
-        )}
+        {/* Desktop menu TODO */}
+        <div className="gap-5 items-center hidden md:flex">
+          {!user && !isLoading && (
+            <SignupDialog
+              open={signInOpen}
+              setOpen={setSignInOpen}
+              toggleLogin={setLoginOpen}
+            />
+          )}
+
+          {user && !isLoading && (
+            <button
+              className={`${styles.analyticsBtn} cta-button`}
+              onClick={() => navigate({ to: "/dashboard" })}
+            >
+              Analytics
+            </button>
+          )}
+
+          {user ? (
+            <LogoutButton />
+          ) : (
+            <LoginDialog
+              open={loginOpen}
+              setOpen={setLoginOpen}
+              toggleSignup={setSignInOpen}
+            />
+          )}
+        </div>
 
         <ThemeButton />
       </div>
-    </nav>
+    </header>
   );
 }
 
