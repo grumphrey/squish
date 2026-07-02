@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"time"
+	"url-shortener/internal/urls"
 )
 
 type metricsService struct {
@@ -13,7 +14,7 @@ func NewMetricsService(r *metricsRepository) *metricsService {
 	return &metricsService{metricsRepository: r}
 }
 
-func (s *metricsService) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
+func (s *metricsService) GetURLsByUserID(ctx context.Context, userID string) ([]urls.ShortURLRecord, error) {
 	// is_active := true
 	options := URLOptions{
 		active: nil,

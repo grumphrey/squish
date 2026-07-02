@@ -23,10 +23,11 @@ import (
 type UrlService interface {
 	CreateShortUrl(ctx context.Context, long_url string) (string, error)
 	CreateShortUrlWithUser(ctx context.Context, long_url string, userID string) (string, error)
-	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
-	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
+	FindURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error)
 	SoftDeleteShortURL(ctx context.Context, shortURL, userID string) error
+
+	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 }
 
 type urlService struct {
@@ -71,32 +72,6 @@ func (s *urlService) CreateShortUrlWithUser(ctx context.Context, long_url string
 	}
 
 	return short_url, nil
-}
-
-// FindLongUrl returns the corresponding long URL that matches the provided user-friendly short URL.
-// Checks the cache first, before querying database.
-func (s *urlService) FindLongUrl(ctx context.Context, short_url string) (string, error) {
-	// Look inside cache first, return if cache hit
-	long_url, err := s.repo.GetLongUrlByShortUrl(ctx, short_url)
-	if err == nil { // Cache hit
-		log.Printf("cache hit: (%v : %v)", short_url, long_url)
-		return long_url, nil
-	}
-	// Cache miss, so retrieve from database instead
-	log.Printf("cache miss: short_url: (%s): %v", short_url, err)
-
-	url_id := utils.Base62Decode(short_url)
-	long_url, err = s.repo.GetLongUrlByID(ctx, url_id)
-	if err != nil {
-		return "", fmt.Errorf("finding long url using id: (%s): %w", short_url, err)
-	}
-
-	// Cache the long_url obtained from database
-	if err := s.repo.SetLongUrlByShortUrl(ctx, short_url, long_url); err != nil {
-		log.Printf("could not cache (%s:%s)", short_url, long_url)
-	}
-
-	return long_url, nil
 }
 
 // CreateQRCode returns a QR code containing the given URL as a base 64 encoded string.
@@ -226,3 +201,27 @@ func (s *urlService) SoftDeleteShortURL(ctx context.Context, shortURL, userID st
 }
 
 var ErrPermissionDenied = errors.New("Permission denied")
+
+func (s *urlService) FindURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error) {
+	// Look inside cache first, return if cache hit
+	record, err := s.repo.GetCachedURLRecord(ctx, shortURL)
+	if err == nil { // Cache hit
+		log.Printf("cache hit: SHORT URL: %s\nLONG URL: %s", record.ShortURL, record.LongURL)
+		return record, nil
+	}
+	// Cache miss, so retrieve from database instead
+	log.Printf("cache miss: short_url: (%s): %v", shortURL, err)
+
+	// urlID := utils.Base62Decode(shortURL) // TODO: skip decoding into url ID, just search db directly
+	record, err = s.repo.GetURLRecord(ctx, shortURL)
+	if err != nil {
+		return nil, fmt.Errorf("finding url record using shortURL: (%s): %w", shortURL, err)
+	}
+
+	// Cache the long_url obtained from database
+	if err := s.repo.SetCachedURLRecord(ctx, shortURL, record); err != nil {
+		log.Printf("could not cache: (%s)", shortURL)
+	}
+
+	return record, nil
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"url-shortener/internal/urls"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -191,7 +192,7 @@ type URLOptions struct {
 }
 
 // TODO: spaghetti code. maybe better to just have multiple functions
-func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error) {
+func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]urls.ShortURLRecord, error) {
 	var query strings.Builder
 	args := make([]any, 0, 4) // store arguments here (e.g. userID, active etc.)
 	argPos := 1               // e.g. $1, $2, $3 etc.
@@ -227,22 +228,12 @@ func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string, 
 	}
 	defer rows.Close()
 
-	shortURLs, err := pgx.CollectRows(rows, pgx.RowToStructByName[ShortURLRecord])
+	shortURLs, err := pgx.CollectRows(rows, pgx.RowToStructByName[urls.ShortURLRecord])
 	if err != nil {
 		return nil, err
 	}
 
 	return shortURLs, nil
-}
-
-// TODO: refactor in future
-type ShortURLRecord struct {
-	UrlID     string    `db:"id"`
-	ShortURL  string    `db:"short_url"`
-	LongURL   string    `db:"long_url"`
-	UserID    string    `db:"user_id"`
-	CreatedAt time.Time `db:"created_at"`
-	Active    bool      `db:"is_active"`
 }
 
 type DailyTotalVisits struct {

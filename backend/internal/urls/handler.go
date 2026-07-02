@@ -44,16 +44,17 @@ func (h *UrlHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 // Returns 404 and redirects user to 404 page if short URL is not valid.
 // Also updates metrics for each short url redirection. TODO: maybe move out logic to unblock main flow?
 func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	short_url := strings.TrimPrefix(r.URL.Path, "/")
+	ctx := r.Context()
+	shortURL := strings.TrimPrefix(r.URL.Path, "/")
 
-	if err := utils.ValidateShortUrl(short_url); err != nil {
+	if err := utils.ValidateShortUrl(shortURL); err != nil {
 		log.Printf("redirecting: %v", err)
 		http.Error(w, "Invalid short URL", http.StatusNotFound) // must return 404 for nginx to intercept
 		return
 	}
 
 	// Find matching URL we stored for the user previously
-	long_url, err := h.URLService.FindLongUrl(r.Context(), short_url)
+	record, err := h.URLService.FindURLRecord(ctx, shortURL)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
 		http.Error(w, "Invalid short URL", http.StatusNotFound)
@@ -62,13 +63,13 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 
 	// At this point, we know there is a matching long url that exists for the short code
 	event := RedirectEvent{
-		ShortURL:  short_url,
+		ShortURL:  record.ShortURL,
 		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
 		UserAgent: r.Header.Get("User-Agent"),
 	}
-	h.URLService.EmitRedirectEvent(r.Context(), event) // okay to fail... not critical
+	h.URLService.EmitRedirectEvent(ctx, event) // okay to fail... not critical
 
-	http.Redirect(w, r, long_url, http.StatusFound)
+	http.Redirect(w, r, record.LongURL, http.StatusFound)
 }
 
 // HandleError redirects the user to a 404 page.

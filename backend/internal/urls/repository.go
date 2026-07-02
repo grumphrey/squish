@@ -2,6 +2,7 @@ package urls
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -18,8 +19,9 @@ import (
 
 // UrlRepository defines storage operations.
 type UrlRepository interface {
-	GetLongUrlByID(ctx context.Context, id int) (string, error)
-	// TODO: rename to short URL
+	GetURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error)
+
+	// TODO: rename to URLRecord
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
@@ -29,8 +31,8 @@ type UrlRepository interface {
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
 
 	// Caching
-	GetLongUrlByShortUrl(ctx context.Context, short_url string) (string, error)
-	SetLongUrlByShortUrl(ctx context.Context, short_url string, long_url string) error
+	GetCachedURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error)
+	SetCachedURLRecord(ctx context.Context, shortURL string, record *ShortURLRecord) error
 }
 
 type urlRepository struct {
@@ -43,25 +45,63 @@ func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) *
 	return &urlRepository{db: db, rdb: rdb, gdb: gdb}
 }
 
-// GetLongUrlByShortUrl returns the long URL that matches the given short URL by checking the cache.
-func (r *urlRepository) GetLongUrlByShortUrl(ctx context.Context, short_url string) (long_url string, err error) {
-	key := "url:" + short_url
+// GetCachedURLRecord returns the URL record within the cache that matches the given short URL.
+func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error) {
+	// Get value from redis
+	key := "url:" + shortURL
 	val, err := r.rdb.Get(ctx, key).Result()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return val, nil
+	// Deserialize back into struct
+	var record ShortURLRecord
+	err = json.Unmarshal([]byte(val), &record)
+	if err != nil {
+		return nil, err
+	}
+
+	return &record, nil
 }
 
-// GetLongUrlByID returns the long URL that matches the URL ID given.
-// Returns an empty string if no results are found.
-func (r *urlRepository) GetLongUrlByID(ctx context.Context, id int) (long_url string, err error) {
-	err = r.db.QueryRow(ctx, "SELECT long_url FROM short_urls WHERE id=$1", id).Scan(&long_url)
+// SetCachedURLRecord caches the URL record (val) by short URL (key).
+func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortURL string, record *ShortURLRecord) error {
+	key := "url:" + shortURL
+	// Serialize struct into []byte
+	val, err := json.Marshal(record)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return long_url, nil
+
+	// default time is 0, which means no expiration
+	var expirationTime time.Duration
+	if err := r.rdb.Set(ctx, key, val, expirationTime).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetURLRecord returns the short URL record that matches the given short URL string.
+// Returns nil if no results are found.
+func (r *urlRepository) GetURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error) {
+	query := `
+		SELECT 
+			id, short_url, long_url, user_id, created_at, is_active
+		FROM short_urls 
+		WHERE short_url = $1`
+	row, err := r.db.Query(ctx, query, shortURL)
+	if err != nil {
+		return nil, err
+	}
+	defer row.Close()
+
+	// note: rowtostructbyname must match db tags in destination struct
+	record, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[ShortURLRecord])
+	if err != nil {
+		return nil, err
+	}
+
+	return &record, nil
 }
 
 // CreateLongUrl returns the URL ID of the newly created long URL entry.
@@ -120,17 +160,6 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metri
 	_, err := r.db.Exec(ctx, query, args)
 	if err != nil {
 		return fmt.Errorf("could not create redirect metrics: %w", err)
-	}
-	return nil
-}
-
-// SetLongUrlByShortUrl caches the long URL (val) by short URL (key).
-func (r *urlRepository) SetLongUrlByShortUrl(ctx context.Context, short_url string, long_url string) error {
-	key := "url:" + short_url
-	val := long_url
-	var expirationTime time.Duration // default is 0, which means no expiration
-	if err := r.rdb.Set(ctx, key, val, expirationTime).Err(); err != nil {
-		return err
 	}
 	return nil
 }
