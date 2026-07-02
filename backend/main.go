@@ -88,9 +88,9 @@ func run() error {
 	protected := auth.AuthMiddleware(jwtService)
 	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
 
-	urlRepository := urls.NewUrlRepository(db, rdb, gdb)
-	urlService := urls.NewUrlService(urlRepository)
-	urlHandler := urls.NewUrlHandler(urlService, staticFiles)
+	urlRepository := urls.NewURLRepository(db, rdb, gdb)
+	urlService := urls.NewURLService(urlRepository)
+	urlHandler := urls.NewURLHandler(urlService, staticFiles)
 
 	metricsRepository := metrics.NewMetricsRepository(db)
 	metricsService := metrics.NewMetricsService(metricsRepository)
@@ -108,17 +108,20 @@ func run() error {
 	// TODO: extract routes into each domain handler as a RegisterRoutes method
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", urlHandler.HandleRedirect)
-	mux.Handle("/api/shorten", extractUser(http.HandlerFunc(urlHandler.HandleCreateShortUrl)))
 	mux.HandleFunc("/health", urlHandler.HandleHealth)
+
 	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
 	mux.HandleFunc("/api/auth/signup", authHandler.HandleSignup)
 	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)
 	mux.HandleFunc("/api/auth/refresh", authHandler.HandleRefresh)
-	mux.Handle("/api/metrics/urls", protected(http.HandlerFunc(metricsHandler.HandleGetURLs)))
+
+	mux.Handle("/api/shorten", extractUser(http.HandlerFunc(urlHandler.HandleCreateShortURL)))
+	mux.Handle("/api/urls", protected(http.HandlerFunc(urlHandler.HandleGetURLs)))
+	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))
+
 	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetDeviceMetrics)))
 	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsByDayPastWeek)))
 	mux.Handle("/api/metrics/visits/total", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitMetrics)))
-	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))
 
 	serverErr := make(chan error, 1)
 	go func() {

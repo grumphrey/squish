@@ -2,10 +2,7 @@ package metrics
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
-	"url-shortener/internal/urls"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,6 +23,14 @@ type TotalVisitMetrics struct {
 	Unique int64 `db:"unique_visitors"`
 }
 
+type DailyTotalVisits struct {
+	Date    time.Time `db:"date"`
+	Mobile  int64     `db:"mobile"`
+	Desktop int64     `db:"desktop"`
+	Other   int64     `db:"other"`
+	Total   int64     `db:"total"`
+}
+
 func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID string) (*TotalVisitMetrics, error) {
 	query := `
 		SELECT 
@@ -34,7 +39,6 @@ func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID str
 		FROM short_url_metrics 
 		WHERE user_id=$1`
 
-	// var
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -182,64 +186,4 @@ func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, use
 	}
 
 	return dailyVisits, nil
-}
-
-// TODO: might be more appropriate to put this function in urls package
-// GetURLsByUserID returns a list of 'short_urls' records that belong to a particular user.
-// URLs ordered by creation date, newest first.
-type URLOptions struct {
-	active *bool
-}
-
-// TODO: spaghetti code. maybe better to just have multiple functions
-func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]urls.ShortURLRecord, error) {
-	var query strings.Builder
-	args := make([]any, 0, 4) // store arguments here (e.g. userID, active etc.)
-	argPos := 1               // e.g. $1, $2, $3 etc.
-
-	query.WriteString(`
-		SELECT 
-			s.id AS id, 
-			s.short_url AS short_url, 
-			s.long_url AS long_url, 
-			u.id AS user_id, 
-			s.created_at AS created_at, 
-			s.is_active AS is_active
-		FROM short_urls s 
-		JOIN users u
-		ON s.user_id=u.id 
-	`)
-	query.WriteString(fmt.Sprintf("WHERE s.user_id = $%d ", argPos))
-	args = append(args, userID)
-	argPos++
-
-	// Active or inactive filter
-	if opts.active != nil {
-		query.WriteString(fmt.Sprintf("AND s.is_active = $%d ", argPos))
-		args = append(args, *opts.active)
-		argPos++
-	}
-
-	query.WriteString("ORDER BY s.created_at DESC")
-
-	rows, err := r.db.Query(ctx, query.String(), args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	shortURLs, err := pgx.CollectRows(rows, pgx.RowToStructByName[urls.ShortURLRecord])
-	if err != nil {
-		return nil, err
-	}
-
-	return shortURLs, nil
-}
-
-type DailyTotalVisits struct {
-	Date    time.Time `db:"date"`
-	Mobile  int64     `db:"mobile"`
-	Desktop int64     `db:"desktop"`
-	Other   int64     `db:"other"`
-	Total   int64     `db:"total"`
 }

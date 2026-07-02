@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/netip"
+	"strings"
 	"time"
 
 	"url-shortener/internal/utils"
@@ -17,22 +18,28 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// UrlRepository defines storage operations.
-type UrlRepository interface {
-	GetURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error)
+var ErrNoRowsAffected = errors.New("No rows affected")
 
-	// TODO: rename to URLRecord
-	CreateLongUrl(ctx context.Context, long_url string) (int, error)
-	CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (int, error)
-	UpdateShortUrl(ctx context.Context, id int, short_url string) error
-	GetShortURLOwner(ctx context.Context, shortURL string) (userID string, err error)
-	UpdateShortURLInactive(ctx context.Context, shortURL string) error
-	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
-	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
-
+// URLRepository defines storage operations.
+type URLRepository interface {
 	// Caching
-	GetCachedURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error)
-	SetCachedURLRecord(ctx context.Context, shortURL string, record *ShortURLRecord) error
+	GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
+	SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord) error
+
+	// Querying persistent storage
+	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
+	CreateURLRecord(ctx context.Context, longURL string) (int, error)
+	// TODO combine with above func
+	CreateURLRecordWithUser(ctx context.Context, longURL string, userID string) (int, error)
+	// TODO: might remove this
+	UpdateShortURL(ctx context.Context, id int, shortCode string) error
+	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
+	UpdateShortURLInactive(ctx context.Context, shortCode string) error
+	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
+
+	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
+	// TODO: return pointer to struct
+	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
 }
 
 type urlRepository struct {
@@ -41,14 +48,14 @@ type urlRepository struct {
 	gdb *geoip2.Reader
 }
 
-func NewUrlRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) *urlRepository {
+func NewURLRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) *urlRepository {
 	return &urlRepository{db: db, rdb: rdb, gdb: gdb}
 }
 
 // GetCachedURLRecord returns the URL record within the cache that matches the given short URL.
-func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error) {
+func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
 	// Get value from redis
-	key := "url:" + shortURL
+	key := "url:" + shortCode
 	val, err := r.rdb.Get(ctx, key).Result()
 	if err != nil {
 		return nil, err
@@ -65,8 +72,8 @@ func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortURL string)
 }
 
 // SetCachedURLRecord caches the URL record (val) by short URL (key).
-func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortURL string, record *ShortURLRecord) error {
-	key := "url:" + shortURL
+func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord) error {
+	key := "url:" + shortCode
 	// Serialize struct into []byte
 	val, err := json.Marshal(record)
 	if err != nil {
@@ -81,15 +88,15 @@ func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortURL string,
 	return nil
 }
 
-// GetURLRecord returns the short URL record that matches the given short URL string.
+// GetURLRecord returns the URL record that matches the given short URL string.
 // Returns nil if no results are found.
-func (r *urlRepository) GetURLRecord(ctx context.Context, shortURL string) (*ShortURLRecord, error) {
+func (r *urlRepository) GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
 	query := `
 		SELECT 
 			id, short_url, long_url, user_id, created_at, is_active
 		FROM short_urls 
 		WHERE short_url = $1`
-	row, err := r.db.Query(ctx, query, shortURL)
+	row, err := r.db.Query(ctx, query, shortCode)
 	if err != nil {
 		return nil, err
 	}
@@ -104,28 +111,28 @@ func (r *urlRepository) GetURLRecord(ctx context.Context, shortURL string) (*Sho
 	return &record, nil
 }
 
-// CreateLongUrl returns the URL ID of the newly created long URL entry.
+// CreateURLRecord returns the URL ID of the newly created long URL entry.
 // Returns 0 if the row could not be inserted into the database.
-func (r *urlRepository) CreateLongUrl(ctx context.Context, long_url string) (id int, err error) {
-	err = r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url) VALUES ($1) RETURNING id", long_url).Scan(&id)
+func (r *urlRepository) CreateURLRecord(ctx context.Context, longURL string) (int, error) {
+	var urlID int
+	err := r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url) VALUES ($1) RETURNING id", longURL).Scan(&urlID)
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+	return urlID, nil
 }
-
-func (r *urlRepository) CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (id int, err error) {
-	log.Printf("Creating long url for user: %s", userID)
-	err = r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url, user_id) VALUES ($1, $2) RETURNING id", long_url, userID).Scan(&id)
+func (r *urlRepository) CreateURLRecordWithUser(ctx context.Context, longURL string, userID string) (int, error) {
+	var urlID int
+	err := r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url, user_id) VALUES ($1, $2) RETURNING id", longURL, userID).Scan(&urlID)
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+	return urlID, nil
 }
 
-// UpdateShortUrl updates the row of the given URL ID with the short URL provided.
-func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url string) error {
-	result, err := r.db.Exec(ctx, "UPDATE short_urls SET short_url = $1 WHERE id = $2", short_url, id)
+// UpdateShortURL updates the row of the given URL ID with the short code provided.
+func (r *urlRepository) UpdateShortURL(ctx context.Context, urlID int, shortCode string) error {
+	result, err := r.db.Exec(ctx, "UPDATE short_urls SET short_url = $1 WHERE id = $2", shortCode, urlID)
 	if err != nil {
 		return err
 	}
@@ -135,12 +142,89 @@ func (r *urlRepository) UpdateShortUrl(ctx context.Context, id int, short_url st
 	return nil
 }
 
+// Return the user ID that owns the given short URL.
+func (r *urlRepository) FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error) {
+	query := "SELECT user_id FROM short_urls WHERE short_url = $1"
+	err = r.db.QueryRow(ctx, query, shortCode).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+
+	return userID, err
+}
+
+// Set the given short URL as inactive.
+func (r *urlRepository) UpdateShortURLInactive(ctx context.Context, shortCode string) error {
+	query := "UPDATE short_urls SET is_active=FALSE WHERE short_url=$1"
+	tag, err := r.db.Exec(ctx, query, shortCode)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNoRowsAffected
+	}
+
+	return nil
+}
+
+type URLOptions struct {
+	active *bool
+}
+
+// TODO: spaghetti code. maybe better to just have multiple functions.
+// GetURLsByUserID returns a list of URL records that belong to a particular user.
+func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error) {
+	var query strings.Builder
+	args := make([]any, 0, 4) // store arguments here (e.g. userID, active etc.)
+	argPos := 1               // e.g. $1, $2, $3 etc.
+
+	query.WriteString(`
+		SELECT 
+			s.id AS id, 
+			s.short_url AS short_url, 
+			s.long_url AS long_url, 
+			u.id AS user_id, 
+			s.created_at AS created_at, 
+			s.is_active AS is_active
+		FROM short_urls s 
+		JOIN users u
+		ON s.user_id=u.id 
+	`)
+	query.WriteString(fmt.Sprintf("WHERE s.user_id = $%d ", argPos))
+	args = append(args, userID)
+	argPos++
+
+	// Active or inactive filter
+	if opts.active != nil {
+		query.WriteString(fmt.Sprintf("AND s.is_active = $%d ", argPos))
+		args = append(args, *opts.active)
+		argPos++
+	}
+
+	query.WriteString("ORDER BY s.created_at DESC")
+
+	rows, err := r.db.Query(ctx, query.String(), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	shortURLs, err := pgx.CollectRows(rows, pgx.RowToStructByName[ShortURLRecord])
+	if err != nil {
+		return nil, err
+	}
+
+	return shortURLs, nil
+}
+
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
 func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
-		short_url_id, ip_address, country_code, region, city, latitude, longitude, user_agent, os, browser, device, device_type
+		short_url_id, ip_address, country_code, region, city, latitude, longitude, 
+		user_agent, os, browser, device, device_type
 	) VALUES (
-		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, @UserAgent, @OS, @Browser, @Device, @DeviceType
+		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, 
+		@UserAgent, @OS, @Browser, @Device, @DeviceType
 	)`
 	args := pgx.NamedArgs{
 		"ShortURLID":  id,
@@ -166,7 +250,7 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metri
 
 // GetIPAdressMetrics returns the parsed geolocation data from the given IP address.
 // NOTE: context unused since geo db is a file. But can be used in future if the database is changed to require network calls.
-// NOTE: the function could return pointer, but would have to do nil check. Not sure if struct is large enough to justify
+// TODO: the function could return pointer, but would have to do nil check. Not sure if struct is large enough to justify
 func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error) {
 	ip, err := netip.ParseAddr(ipAddr)
 	if err != nil {
@@ -209,30 +293,3 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 
 	return geolocation, nil
 }
-
-// Return the user ID that owns the given short URL.
-func (r *urlRepository) GetShortURLOwner(ctx context.Context, shortURL string) (userID string, err error) {
-	query := "SELECT user_id FROM short_urls WHERE short_url=$1"
-	err = r.db.QueryRow(ctx, query, shortURL).Scan(&userID)
-	if err != nil {
-		return "", err
-	}
-
-	return userID, err
-}
-
-// Set the given short URL as inactive.
-func (r *urlRepository) UpdateShortURLInactive(ctx context.Context, shortURL string) error {
-	query := "UPDATE short_urls SET is_active=FALSE WHERE short_url=$1"
-	tag, err := r.db.Exec(ctx, query, shortURL)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNoRowsAffected
-	}
-
-	return nil
-}
-
-var ErrNoRowsAffected = errors.New("no rows affected")
