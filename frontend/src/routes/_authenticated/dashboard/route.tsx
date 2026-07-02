@@ -45,16 +45,8 @@ function RouteComponent() {
     queryKey: ["dashboard", "deviceMetrics"],
     queryFn: () =>
       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
-    // {
-    // return new Promise<DeviceMetrics>((resolve) => {
-    //   setTimeout(() => {
-    //     resolve(
-    //       api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
-    //     );
-    //   }, 2000); // 2-second delay
-    // });
-    // },
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
   });
 
   // Get daily visits metrics for the past 7 days
@@ -70,6 +62,7 @@ function RouteComponent() {
         .get<DailyTotalVisits[]>("/metrics/visits/daily")
         .then((res) => res.data),
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
   });
 
   // Get total visits metrics all-time
@@ -85,6 +78,7 @@ function RouteComponent() {
         .get<TotalVisitMetrics>("/metrics/visits/total")
         .then((res) => res.data),
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
   });
 
   const isRefreshing = isFetchingMetrics || isFetchingVisits || isFetchingTotal;

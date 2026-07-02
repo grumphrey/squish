@@ -115,9 +115,10 @@ function DeviceTypeMetricsDonutChart({
 }: {
   data: DeviceTypeDonutChartDataItem[];
 }) {
+  // TODO: maybe unnecessary to memoize
   const totalVisitors = useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.visitors, 0);
-  }, []);
+  }, [data]);
 
   if (data.length === 0)
     return (

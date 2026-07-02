@@ -34,12 +34,13 @@ export default function URLsList({ open, setOpen }: URLsListProps) {
   const { data, isPending, error } = useQuery({
     queryKey: ["dashboard", "urls"],
     queryFn: () =>
-      api.get<ShortURLRecord[]>("/metrics/urls").then((res) => {
+      api.get<ShortURLRecord[]>("/urls").then((res) => {
         return res.data.map((urlRecord) => {
           return { ...urlRecord, created_at: new Date(urlRecord.created_at) };
         });
       }),
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
   });
 
   if (isPending)
