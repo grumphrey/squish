@@ -14,7 +14,12 @@ func NewMetricsService(r *metricsRepository) *metricsService {
 }
 
 func (s *metricsService) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
-	urls, err := s.metricsRepository.GetURLsByUserID(ctx, userID)
+	// is_active := true
+	options := URLOptions{
+		active: nil,
+	}
+
+	urls, err := s.metricsRepository.GetURLsByUserID(ctx, userID, options)
 	if err != nil {
 		return nil, err
 	}

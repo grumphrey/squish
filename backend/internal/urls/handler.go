@@ -2,6 +2,8 @@ package urls
 
 import (
 	"embed"
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -50,7 +52,7 @@ func (h *UrlHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find matching long URL we stored for the user previously
+	// Find matching URL we stored for the user previously
 	long_url, err := h.URLService.FindLongUrl(r.Context(), short_url)
 	if err != nil {
 		log.Printf("redirecting: %v", err)
@@ -157,4 +159,46 @@ func (h *UrlHandler) HandleCreateShortUrl(w http.ResponseWriter, r *http.Request
 		return
 	}
 	log.Printf("Created short url: %v", short_url)
+}
+
+// HandleDeleteShortURL soft-deletes the given short URL from database records.
+func (h *UrlHandler) HandleDeleteShortURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Add("Allow", "POST")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	type requestData struct {
+		ShortURL string `json:"short_url"`
+	}
+
+	// Get short URL to delete
+	var req requestData
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Get user ID of requester
+	ctx := r.Context()
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Soft delete given short URL if user has required permissions
+	err = h.URLService.SoftDeleteShortURL(ctx, req.ShortURL, claims.UserID)
+	if err != nil {
+		if errors.Is(err, ErrPermissionDenied) {
+			http.Error(w, "internal server error", http.StatusInternalServerError) // TODO: 403 forbidden might leak info?
+		} else {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// If successful, return 200 OK
 }

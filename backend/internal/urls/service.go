@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -25,6 +26,7 @@ type UrlService interface {
 	FindLongUrl(ctx context.Context, short_url string) (string, error)
 	CreateQRCode(host string, short_url string, fs embed.FS) (string, error)
 	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
+	SoftDeleteShortURL(ctx context.Context, shortURL, userID string) error
 }
 
 type urlService struct {
@@ -199,3 +201,28 @@ func getDeviceType(ua useragent.UserAgent) string {
 		return "unknown"
 	}
 }
+
+// Only soft delete if short URL belongs to given user
+func (s *urlService) SoftDeleteShortURL(ctx context.Context, shortURL, userID string) error {
+	// Check if short URL belongs to user
+	ownerID, err := s.repo.GetShortURLOwner(ctx, shortURL)
+	if err != nil {
+		return err
+	}
+	if ownerID != userID {
+		return ErrPermissionDenied
+	}
+
+	// User has permissions to soft delete url
+	err = s.repo.UpdateShortURLInactive(ctx, shortURL)
+	if err != nil {
+		if err == ErrNoRowsAffected {
+			return nil // no problem if short url has already been deleted
+		}
+		return err
+	}
+
+	return nil
+}
+
+var ErrPermissionDenied = errors.New("Permission denied")

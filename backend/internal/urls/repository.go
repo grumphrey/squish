@@ -2,6 +2,7 @@ package urls
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/netip"
@@ -18,12 +19,14 @@ import (
 // UrlRepository defines storage operations.
 type UrlRepository interface {
 	GetLongUrlByID(ctx context.Context, id int) (string, error)
+	// TODO: rename to short URL
 	CreateLongUrl(ctx context.Context, long_url string) (int, error)
 	CreateLongUrlWithUser(ctx context.Context, long_url string, userID string) (int, error)
 	UpdateShortUrl(ctx context.Context, id int, short_url string) error
+	GetShortURLOwner(ctx context.Context, shortURL string) (userID string, err error)
+	UpdateShortURLInactive(ctx context.Context, shortURL string) error
 	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
-	// GetURLMetrics(ctx context.Context, short_url string) (models. , error)
 
 	// Caching
 	GetLongUrlByShortUrl(ctx context.Context, short_url string) (string, error)
@@ -177,3 +180,30 @@ func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) 
 
 	return geolocation, nil
 }
+
+// Return the user ID that owns the given short URL.
+func (r *urlRepository) GetShortURLOwner(ctx context.Context, shortURL string) (userID string, err error) {
+	query := "SELECT user_id FROM short_urls WHERE short_url=$1"
+	err = r.db.QueryRow(ctx, query, shortURL).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+
+	return userID, err
+}
+
+// Set the given short URL as inactive.
+func (r *urlRepository) UpdateShortURLInactive(ctx context.Context, shortURL string) error {
+	query := "UPDATE short_urls SET is_active=FALSE WHERE short_url=$1"
+	tag, err := r.db.Exec(ctx, query, shortURL)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNoRowsAffected
+	}
+
+	return nil
+}
+
+var ErrNoRowsAffected = errors.New("no rows affected")

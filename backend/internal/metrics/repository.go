@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -184,8 +186,18 @@ func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, use
 // TODO: might be more appropriate to put this function in urls package
 // GetURLsByUserID returns a list of 'short_urls' records that belong to a particular user.
 // URLs ordered by creation date, newest first.
-func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
-	query := `SELECT 
+type URLOptions struct {
+	active *bool
+}
+
+// TODO: spaghetti code. maybe better to just have multiple functions
+func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error) {
+	var query strings.Builder
+	args := make([]any, 0, 4) // store arguments here (e.g. userID, active etc.)
+	argPos := 1               // e.g. $1, $2, $3 etc.
+
+	query.WriteString(`
+		SELECT 
 			s.id AS id, 
 			s.short_url AS short_url, 
 			s.long_url AS long_url, 
@@ -195,10 +207,21 @@ func (r *metricsRepository) GetURLsByUserID(ctx context.Context, userID string) 
 		FROM short_urls s 
 		JOIN users u
 		ON s.user_id=u.id 
-		WHERE s.user_id=$1 
-		ORDER BY s.created_at DESC`
+	`)
+	query.WriteString(fmt.Sprintf("WHERE s.user_id = $%d ", argPos))
+	args = append(args, userID)
+	argPos++
 
-	rows, err := r.db.Query(ctx, query, userID)
+	// Active or inactive filter
+	if opts.active != nil {
+		query.WriteString(fmt.Sprintf("AND s.is_active = $%d ", argPos))
+		args = append(args, *opts.active)
+		argPos++
+	}
+
+	query.WriteString("ORDER BY s.created_at DESC")
+
+	rows, err := r.db.Query(ctx, query.String(), args...)
 	if err != nil {
 		return nil, err
 	}
