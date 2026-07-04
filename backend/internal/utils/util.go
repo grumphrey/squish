@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -112,4 +113,24 @@ func WriteError(w http.ResponseWriter, status int, code string, message string) 
 		Code:    code,
 		Message: message,
 	})
+}
+
+const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// Generate a random short code of the given length.
+func GenerateShortCode(length int) (string, error) {
+	// Generate random bytes of given length
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	// Generate short code from alphabet using random bytes
+	// TODO: slight modulo bias, maybe use nanoid library
+	code := make([]byte, length)
+	for i, v := range b {
+		code[i] = alphabet[int(v)%len(alphabet)]
+	}
+
+	return string(code), nil
 }

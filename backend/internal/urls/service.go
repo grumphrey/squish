@@ -19,6 +19,11 @@ import (
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
 
+const (
+	ShortCodeLen = 7
+	MaxAttempts  = 3
+)
+
 var ErrPermissionDenied = errors.New("Permission denied")
 
 // URLService defines the interface for short URL operations.
@@ -44,38 +49,55 @@ func NewURLService(r URLRepository) *urlService { // NOTE: factory pattern so re
 // CreateURLRecord creates the short URL record generated from the given long URL.
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
 func (s *urlService) CreateURLRecord(ctx context.Context, longURL string) (string, error) {
-	urlID, err := s.repo.CreateURLRecord(ctx, longURL)
-	if err != nil {
-		return "", fmt.Errorf("insert long url into DB: %w", err)
+	var lastErr error
+	// Generated short code may have collisions. Re-try on collision.
+	for attempt := 0; attempt < MaxAttempts; attempt++ {
+		shortCode, err := utils.GenerateShortCode(ShortCodeLen)
+		if err != nil {
+			return "", fmt.Errorf("generating short code: %w", err)
+		}
+
+		err = s.repo.CreateURLRecord(ctx, shortCode, longURL)
+		if err != nil && err == ErrCodeExists {
+			lastErr = err
+			continue
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("inserting url record into DB: %w", err)
+		}
+
+		return shortCode, nil
 	}
 
-	// TODO: generate short code using random crypto library instead, to remove updateshorturl step below
-	shortCode := utils.Base62Encode(urlID) // Should never fail, since ID is guaranteed to be an integer obtained from database
-
-	// TODO: is it possible to fail updating the short_id? if so, maybe need to use a transaction? but leaky for service layer to handle transactions
-	// What happens if context gets cancelled after creating long url row but before updating with the calculated short url?
-	// Also, not exactly necessary to have a database column for short_url since its derived from ID anyway.
-	if err := s.repo.UpdateShortURL(ctx, urlID, shortCode); err != nil {
-		return "", fmt.Errorf("update short url in DB: %w", err)
-	}
-
-	return shortCode, nil
+	return "", fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
 }
 
 // TODO: Copy of CreateURLRecord service, but with additional userID argument.
 // Maybe better to use variadic arguments or other methods?
-func (s *urlService) CreateURLRecordWithUser(ctx context.Context, longURL string, userID string) (string, error) {
-	urlID, err := s.repo.CreateURLRecordWithUser(ctx, longURL, userID)
-	if err != nil {
-		return "", fmt.Errorf("insert long url into DB: %w", err)
+func (s *urlService) CreateURLRecordWithUser(ctx context.Context, longURL, userID string) (string, error) {
+	var lastErr error
+	// Generated short code may have collisions. Re-try on collision.
+	for attempt := 0; attempt < MaxAttempts; attempt++ {
+		shortCode, err := utils.GenerateShortCode(ShortCodeLen)
+		if err != nil {
+			return "", fmt.Errorf("generating short code: %w", err)
+		}
+
+		err = s.repo.CreateURLRecordWithUser(ctx, shortCode, longURL, userID)
+		if err != nil && err == ErrCodeExists {
+			lastErr = err
+			continue
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("inserting url record into DB: %w", err)
+		}
+
+		return shortCode, nil
 	}
 
-	shortCode := utils.Base62Encode(urlID)
-	if err := s.repo.UpdateShortURL(ctx, urlID, shortCode); err != nil {
-		return "", fmt.Errorf("update short url in DB: %w", err)
-	}
-
-	return shortCode, nil
+	return "", fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
 }
 
 // CreateQRCode returns a base-64 encoded string representing a QR code for the given URL.
@@ -130,7 +152,6 @@ func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*Shor
 	// Cache miss, so retrieve from database instead
 	log.Printf("cache miss: short code: (%s): %v", shortCode, err)
 
-	// urlID := utils.Base62Decode(shortURL) // TODO: skip decoding into url ID, just search db directly
 	record, err = s.repo.GetURLRecord(ctx, shortCode)
 	if err != nil {
 		return nil, fmt.Errorf("finding url record using short code: (%s): %w", shortCode, err)
@@ -203,8 +224,11 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 		UserAgentStr: event.UserAgent, // TODO: or use parsed ua.String?
 	}
 
-	urlID := utils.Base62Decode(event.ShortURL) // TODO: need to change this if bijection doesnt hold anymore
-	if err := s.repo.CreateRedirectMetrics(ctx, urlID, metrics); err != nil {
+	record, err := s.repo.GetURLRecord(ctx, event.ShortURL)
+	if err != nil {
+		log.Printf("metrics: getting url ID: %w", err)
+	}
+	if err := s.repo.CreateRedirectMetrics(ctx, record.UrlID, metrics); err != nil {
 		log.Printf("could not update redirect metrics: %w", err)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/netip"
 	"strings"
 	"time"
@@ -13,12 +12,16 @@ import (
 	"url-shortener/internal/utils"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oschwald/geoip2-golang/v2"
 	"github.com/redis/go-redis/v9"
 )
 
-var ErrNoRowsAffected = errors.New("No rows affected")
+var (
+	ErrNoRowsAffected = errors.New("No rows affected")
+	ErrCodeExists     = errors.New("Short code already exists")
+)
 
 // URLRepository defines storage operations.
 type URLRepository interface {
@@ -28,16 +31,14 @@ type URLRepository interface {
 
 	// Querying persistent storage
 	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	CreateURLRecord(ctx context.Context, longURL string) (int, error)
+	CreateURLRecord(ctx context.Context, shortCode, longURL string) error
 	// TODO combine with above func
-	CreateURLRecordWithUser(ctx context.Context, longURL string, userID string) (int, error)
-	// TODO: might remove this
-	UpdateShortURL(ctx context.Context, id int, shortCode string) error
+	CreateURLRecordWithUser(ctx context.Context, shortCode, longURL, userID string) error
 	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
 	UpdateShortURLInactive(ctx context.Context, shortCode string) error
 	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
 
-	CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error
+	CreateRedirectMetrics(ctx context.Context, urlID string, metrics RedirectEventMetrics) error
 	// TODO: return pointer to struct
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
 }
@@ -111,33 +112,38 @@ func (r *urlRepository) GetURLRecord(ctx context.Context, shortCode string) (*Sh
 	return &record, nil
 }
 
-// CreateURLRecord returns the URL ID of the newly created long URL entry.
-// Returns 0 if the row could not be inserted into the database.
-func (r *urlRepository) CreateURLRecord(ctx context.Context, longURL string) (int, error) {
-	var urlID int
-	err := r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url) VALUES ($1) RETURNING id", longURL).Scan(&urlID)
-	if err != nil {
-		return 0, err
-	}
-	return urlID, nil
-}
-func (r *urlRepository) CreateURLRecordWithUser(ctx context.Context, longURL string, userID string) (int, error) {
-	var urlID int
-	err := r.db.QueryRow(ctx, "INSERT INTO short_urls (long_url, user_id) VALUES ($1, $2) RETURNING id", longURL, userID).Scan(&urlID)
-	if err != nil {
-		return 0, err
-	}
-	return urlID, nil
-}
+// CreateURLRecord creates a record in the database given the short code and long URL.
+func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL string) error {
+	query := `INSERT INTO short_urls (short_url, long_url) VALUES ($1, $2)`
 
-// UpdateShortURL updates the row of the given URL ID with the short code provided.
-func (r *urlRepository) UpdateShortURL(ctx context.Context, urlID int, shortCode string) error {
-	result, err := r.db.Exec(ctx, "UPDATE short_urls SET short_url = $1 WHERE id = $2", shortCode, urlID)
+	tag, err := r.db.Exec(ctx, query, shortCode, longURL)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique violation
+			return ErrCodeExists
+		}
 		return err
 	}
-	if result.RowsAffected() == 0 {
-		log.Printf("updating short_urls with short_url value: no row matched")
+
+	if tag.RowsAffected() == 0 {
+		return ErrNoRowsAffected
+	}
+	return nil
+}
+func (r *urlRepository) CreateURLRecordWithUser(ctx context.Context, shortCode, longURL, userID string) error {
+	query := `INSERT INTO short_urls (short_url, long_url, user_id) VALUES ($1, $2, $3)`
+
+	tag, err := r.db.Exec(ctx, query, shortCode, longURL, userID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique violation
+			return ErrCodeExists
+		}
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return ErrNoRowsAffected
 	}
 	return nil
 }
@@ -218,7 +224,7 @@ func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts
 }
 
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
-func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metrics RedirectEventMetrics) error {
+func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID string, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
 		short_url_id, ip_address, country_code, region, city, latitude, longitude, 
 		user_agent, os, browser, device, device_type
@@ -227,7 +233,7 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, id int, metri
 		@UserAgent, @OS, @Browser, @Device, @DeviceType
 	)`
 	args := pgx.NamedArgs{
-		"ShortURLID":  id,
+		"ShortURLID":  urlID,
 		"IPAddress":   utils.Nullable(metrics.IPAddress),
 		"CountryCode": utils.Nullable(metrics.Geolocation.CountryCode),
 		"Region":      utils.Nullable(metrics.Geolocation.Region),

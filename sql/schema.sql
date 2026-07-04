@@ -13,8 +13,8 @@ CREATE TABLE users (
 );
 
 CREATE TABLE short_urls (
-  id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY (START WITH 1000000000), -- NOTE: only works in single database instance. maybe replace with uuid
-  short_url TEXT UNIQUE, -- short url is derived from id (keep in case we migrate to using uuid)
+  id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- NOTE: only works in single database instance. maybe replace with uuid
+  short_url TEXT UNIQUE,
   long_url TEXT NOT NULL,
   user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
