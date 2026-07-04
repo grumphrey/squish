@@ -37,7 +37,20 @@ type ShortURLRecord struct {
 	UrlID     string    `db:"id"`
 	ShortURL  string    `db:"short_url"`
 	LongURL   string    `db:"long_url"`
-	UserID    string    `db:"user_id"`
+	UserID    *string   `db:"user_id"`
 	CreatedAt time.Time `db:"created_at"`
 	Active    bool      `db:"is_active"`
 }
+
+// type ErrorCode string
+
+const (
+	CodeShortTakenErr string = "short_code_taken"
+	CodeGenericErr    string = "internal_server_error"
+	CodeBadRequest    string = "bad_request"
+
+	MsgShortCodeTaken string = "The short code '%s' is already taken."
+	MsgGenericError   string = "Something went wrong."
+	MsgInvalidUrl     string = "Invalid URL."
+	MsgInvalidSlug    string = "Invalid slug."
+)

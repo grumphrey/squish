@@ -24,12 +24,14 @@ const (
 	MaxAttempts  = 3
 )
 
-var ErrPermissionDenied = errors.New("Permission denied")
+var (
+	ErrPermissionDenied = errors.New("Permission denied")
+	ErrSlugExists       = errors.New("Slug taken")
+)
 
 // URLService defines the interface for short URL operations.
 type URLService interface {
-	CreateURLRecord(ctx context.Context, longURL string) (string, error)
-	CreateURLRecordWithUser(ctx context.Context, longURL, userID string) (string, error)
+	CreateURLRecord(ctx context.Context, longURL, userID, slug string) (string, error)
 	CreateQRCode(fs embed.FS, host, shortCode string) (string, error)
 	FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
 	SoftDeleteURLRecord(ctx context.Context, shortCode, userID string) error
@@ -47,54 +49,52 @@ func NewURLService(r URLRepository) *urlService { // NOTE: factory pattern so re
 }
 
 // CreateURLRecord creates the short URL record generated from the given long URL.
+//
+//	TODO:
+//
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
-func (s *urlService) CreateURLRecord(ctx context.Context, longURL string) (string, error) {
+func (s *urlService) CreateURLRecord(ctx context.Context, longURL, userID, slug string) (string, error) {
 	var lastErr error
-	// Generated short code may have collisions. Re-try on collision.
+	// Randomly generated short code may have collisions. Re-try on collision.
 	for attempt := 0; attempt < MaxAttempts; attempt++ {
-		shortCode, err := utils.GenerateShortCode(ShortCodeLen)
+		var (
+			shortCode string
+			err       error
+		)
+
+		// Generate short code or use given slug
+		if slug != "" {
+			shortCode = slug
+		} else {
+			shortCode, err = utils.GenerateShortCode(ShortCodeLen)
+		}
 		if err != nil {
 			return "", fmt.Errorf("generating short code: %w", err)
 		}
 
-		err = s.repo.CreateURLRecord(ctx, shortCode, longURL)
-		if err != nil && err == ErrCodeExists {
+		// Create URL record in database
+		if userID == "" {
+			err = s.repo.CreateURLRecord(ctx, shortCode, longURL)
+		} else {
+			err = s.repo.CreateURLRecordWithUser(ctx, shortCode, longURL, userID)
+		}
+
+		// Successfully created URL record
+		if err == nil {
+			return shortCode, nil
+		}
+
+		// Try again if collision from randomly generated shortcode
+		if err == ErrCodeExists && slug == "" {
 			lastErr = err
 			continue
 		}
 
-		if err != nil {
-			return "", fmt.Errorf("inserting url record into DB: %w", err)
+		// Slug already taken
+		if err == ErrCodeExists {
+			return "", ErrSlugExists
 		}
-
-		return shortCode, nil
-	}
-
-	return "", fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
-}
-
-// TODO: Copy of CreateURLRecord service, but with additional userID argument.
-// Maybe better to use variadic arguments or other methods?
-func (s *urlService) CreateURLRecordWithUser(ctx context.Context, longURL, userID string) (string, error) {
-	var lastErr error
-	// Generated short code may have collisions. Re-try on collision.
-	for attempt := 0; attempt < MaxAttempts; attempt++ {
-		shortCode, err := utils.GenerateShortCode(ShortCodeLen)
-		if err != nil {
-			return "", fmt.Errorf("generating short code: %w", err)
-		}
-
-		err = s.repo.CreateURLRecordWithUser(ctx, shortCode, longURL, userID)
-		if err != nil && err == ErrCodeExists {
-			lastErr = err
-			continue
-		}
-
-		if err != nil {
-			return "", fmt.Errorf("inserting url record into DB: %w", err)
-		}
-
-		return shortCode, nil
+		return "", fmt.Errorf("inserting url record into DB: %w", err)
 	}
 
 	return "", fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)

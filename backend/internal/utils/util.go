@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -133,4 +134,56 @@ func GenerateShortCode(length int) (string, error) {
 	}
 
 	return string(code), nil
+}
+
+var (
+	// Reserved words that can't be used as slugs (routes, common paths, etc.)
+	reservedSlugs = map[string]struct{}{
+		"login":     {},
+		"logout":    {},
+		"signup":    {},
+		"api":       {},
+		"admin":     {},
+		"dashboard": {},
+		"settings":  {},
+		"help":      {},
+		"about":     {},
+		"contact":   {},
+		"static":    {},
+		"assets":    {},
+		"favicon":   {},
+		"health":    {},
+	}
+	slugPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+)
+
+const (
+	minSlugLength = 3
+	maxSlugLength = 30
+)
+
+func ValidateSlug(slug string) error {
+	slug = strings.TrimSpace(slug)
+
+	if slug == "" {
+		return errors.New("slug cannot be empty")
+	}
+
+	if len(slug) < minSlugLength {
+		return errors.New("slug is too short")
+	}
+
+	if len(slug) > maxSlugLength {
+		return errors.New("slug is too long")
+	}
+
+	if !slugPattern.MatchString(slug) {
+		return errors.New("slug can only contain letters, numbers, hyphens, and underscores")
+	}
+
+	// Case-insensitive check against reserved words
+	if _, reserved := reservedSlugs[strings.ToLower(slug)]; reserved {
+		return errors.New("slug is reserved and cannot be used")
+	}
+	return nil
 }

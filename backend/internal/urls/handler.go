@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -69,58 +70,67 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Get long URL from request body
+	// Get long URL, slug from request body
 	type requestData struct {
 		LongURL string `json:"url"`
+		Slug    string `json:"slug"` // optional
 	}
 	request, err := utils.Decode[requestData](r)
 	longURL := request.LongURL
+	slug := strings.TrimSpace(request.Slug) // "" if not provided
 	if err != nil {
 		log.Printf("creating short url: invalid json", err)
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Validate user input is a valid URL
+	// Validate user input
 	if err := utils.ValidateLongUrl(longURL); err != nil {
-		log.Printf("creating short url: invalid long url provided: %w", err)
-		http.Error(w, "invalid long url", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, CodeBadRequest, MsgInvalidUrl)
 		return
-		// TODO: URL is invalid, show error message to user?
-		// Maybe send error to frontend to display correct error message
-		// frontend also does validation.
+	}
+	if slug != "" {
+		if err := utils.ValidateSlug(slug); err != nil {
+			utils.WriteError(w, http.StatusBadRequest, CodeBadRequest, MsgInvalidSlug)
+			return
+		}
+	}
+
+	// Get user ID if available
+	var userID string
+	ctx := r.Context()
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if ok {
+		userID = claims.UserID
 	}
 
 	// Create short code and store URL record in database
-	var shortCode string
-	ctx := r.Context()
-	claims, ok := auth.GetClaimsFromContext(ctx)
-
-	if ok { // user is logged in, create short code and record with user id
-		shortCode, err = h.urlService.CreateURLRecordWithUser(ctx, longURL, claims.UserID)
-		if err != nil {
-			http.Error(w, "could not create short code", http.StatusInternalServerError)
+	shortCode, err := h.urlService.CreateURLRecord(ctx, longURL, userID, slug)
+	if err != nil {
+		if err == ErrSlugExists {
+			utils.WriteError(w, http.StatusConflict, CodeShortTakenErr,
+				fmt.Sprintf(MsgShortCodeTaken, slug))
 			return
 		}
-	} else { // guest user, create short code and record without user id
-		shortCode, err = h.urlService.CreateURLRecord(ctx, longURL)
-		if err != nil {
-			http.Error(w, "could not create short code", http.StatusInternalServerError)
-			return
-		}
+		utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
+		return
 	}
 
 	// Generate QR code for created short code
 	encodedQRCode, err := h.urlService.CreateQRCode(h.fs, r.Host, shortCode)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
+		return
+	}
 
 	// Respond with generated short code and QR code
 	type createShortURLResponse struct {
-		QRCode   string `json:"qr_code"`
 		ShortURL string `json:"short_url"`
+		QRCode   string `json:"qr_code"`
 	}
 	response := createShortURLResponse{
-		QRCode:   "data:image/png;base64," + encodedQRCode, // NOTE: tell browser to interpret as an image encoded in base64
 		ShortURL: shortCode,
+		QRCode:   "data:image/png;base64," + encodedQRCode, // NOTE: tell browser to interpret as an image encoded in base64
 	}
 	if err := utils.Encode(w, r, http.StatusOK, response); err != nil {
 		log.Printf("Encoding error: (%v)\n", err)
