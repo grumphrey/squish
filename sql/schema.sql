@@ -3,28 +3,31 @@
 
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   email VARCHAR(100) UNIQUE NOT NULL,
   hashed_password VARCHAR(100) NOT NULL,
-  roles TEXT[] DEFAULT ARRAY['user'],
-  status VARCHAR(20) DEFAULT 'active',
-  last_login_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  roles TEXT[] NOT NULL DEFAULT ARRAY['user'],
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
+
+  last_login_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE short_urls (
   id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- NOTE: only works in single database instance. maybe replace with uuid
-  short_url TEXT UNIQUE,
+  short_url TEXT UNIQUE NOT NULL,
   long_url TEXT NOT NULL,
-  user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_active BOOLEAN NOT NULL DEFAULT TRUE
+
+  user_id UUID REFERENCES users(id), -- possibly guest user with no user_id
 );
 
 CREATE TABLE url_redirect_events (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  short_url_id INT REFERENCES short_urls(id),
-  accessed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  short_url_id INT NOT NULL REFERENCES short_urls(id),
+  accessed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   ip_address INET,
   country_code CHAR(2),
   region VARCHAR(100),
@@ -35,7 +38,7 @@ CREATE TABLE url_redirect_events (
   os VARCHAR(50),
   browser VARCHAR(50),
   device VARCHAR(50),
-  device_type VARCHAR(50) -- TODO: enums (bot, desktop, tablet, mobile, other)
+  device_type VARCHAR(50) CHECK (device_type IN ('bot', 'desktop', 'mobile', 'tablet', 'unknown'))
 );
 
 CREATE VIEW short_url_metrics AS 
