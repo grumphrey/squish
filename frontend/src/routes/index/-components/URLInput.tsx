@@ -14,9 +14,10 @@ import {
 } from "../route";
 
 import Spinner from "@/components/Spinner";
-import { IconSettings } from "@tabler/icons-react";
+import { IconCheck, IconSettings } from "@tabler/icons-react";
 import { Toggle } from "@/components/ui/toggle";
 import axios from "axios";
+import { Checkbox } from "radix-ui";
 
 interface URLInputProps {
   longURL: string;
@@ -31,6 +32,8 @@ interface URLInputProps {
     unknown
   >;
   isPending: boolean;
+  qrCodeChecked: Checkbox.CheckedState;
+  setQrCodeChecked: Dispatch<SetStateAction<Checkbox.CheckedState>>;
 }
 
 export default function URLInput({
@@ -41,6 +44,8 @@ export default function URLInput({
   tab,
   onSubmit,
   isPending,
+  qrCodeChecked,
+  setQrCodeChecked,
 }: URLInputProps) {
   // need to handle error when cannot fetch tlds. fallback values?
   const { data: tlds } = useQuery({
@@ -186,6 +191,25 @@ export default function URLInput({
               />
             </div>
           </div>
+
+          {tab == "short-url" && (
+            <div className={styles.checkboxContainer}>
+              <Checkbox.Root
+                id="qrcode"
+                className={styles.checkboxRoot}
+                checked={qrCodeChecked}
+                onCheckedChange={(checked) => setQrCodeChecked(checked)}
+              >
+                <Checkbox.Indicator className={styles.checkboxIndicator}>
+                  <IconCheck />
+                </Checkbox.Indicator>
+              </Checkbox.Root>
+
+              <label className={styles.checkboxLabel} htmlFor="qrcode">
+                Also create a QR Code for this link
+              </label>
+            </div>
+          )}
         </div>
       )}
     </>

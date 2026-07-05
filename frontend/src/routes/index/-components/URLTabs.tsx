@@ -7,7 +7,7 @@ import {
 } from "../route";
 import type { UseMutateFunction } from "@tanstack/react-query";
 
-import { IconCheck, IconLink, IconQrcode } from "@tabler/icons-react";
+import { IconLink, IconQrcode } from "@tabler/icons-react";
 import { Tabs, Checkbox } from "radix-ui";
 
 import URLInput from "./URLInput";
@@ -53,15 +53,9 @@ export default function URLTabs({
         </Tabs.Trigger>
       </Tabs.List>
 
-      <Tabs.Content value="short-url">
-        {URLTabContent}
-        <div className={styles.checkboxContainer} />
-      </Tabs.Content>
+      <Tabs.Content value="short-url">{URLTabContent}</Tabs.Content>
 
-      <Tabs.Content value="qr-code">
-        {QRCodeTabContent}
-        <div className={`${styles.checkboxContainer} vis-hidden`} />
-      </Tabs.Content>
+      <Tabs.Content value="qr-code">{QRCodeTabContent}</Tabs.Content>
     </Tabs.Root>
   );
 }
@@ -95,35 +89,16 @@ export function TabContent({
   setQrCodeChecked,
 }: TabContentProps) {
   return (
-    <>
-      <URLInput
-        longURL={longURL}
-        setLongURL={setLongURL}
-        slug={slug}
-        setSlug={setSlug}
-        onSubmit={mutate}
-        isPending={isPending}
-        tab={tab}
-      />
-
-      <div
-        className={`${styles.checkboxContainer} ${tab == "short-url" ? "" : "vis-hidden"}`}
-      >
-        <Checkbox.Root
-          id="qrcode"
-          className={styles.checkboxRoot}
-          checked={qrCodeChecked}
-          onCheckedChange={(checked) => setQrCodeChecked(checked)}
-        >
-          <Checkbox.Indicator className={styles.checkboxIndicator}>
-            <IconCheck />
-          </Checkbox.Indicator>
-        </Checkbox.Root>
-
-        <label className={styles.checkboxLabel} htmlFor="qrcode">
-          Also create a QR Code for this link
-        </label>
-      </div>
-    </>
+    <URLInput
+      longURL={longURL}
+      setLongURL={setLongURL}
+      slug={slug}
+      setSlug={setSlug}
+      onSubmit={mutate}
+      isPending={isPending}
+      tab={tab}
+      qrCodeChecked={qrCodeChecked}
+      setQrCodeChecked={setQrCodeChecked}
+    />
   );
 }
