@@ -1,7 +1,11 @@
 import { CircleX } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function ErrorAlert() {
+interface ErrorAlertProps {
+  message?: string;
+}
+
+export default function ErrorAlert({ message }: ErrorAlertProps) {
   return (
     <Alert className="font-sans w-full flex flex-row items-start gap-3 border-destructive/80 bg-destructive/5 text-destructive">
       <CircleX className="size-4 shrink-0 translate-y-0.5 text-destructive/60" />
@@ -9,7 +13,8 @@ export default function ErrorAlert() {
         <div className="flex flex-col gap-0.5">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription className="text-destructive/80">
-            There was a problem processing your request. Please try again later.
+            {message ??
+              "There was a problem processing your request. Please try again later."}
           </AlertDescription>
         </div>
       </div>

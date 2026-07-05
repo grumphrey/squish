@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   IconChartBar,
   IconHome,
+  IconLink,
   IconLogin,
   IconMoon,
   IconSun,
@@ -13,24 +14,16 @@ import { useNavigate, Link } from "@tanstack/react-router";
 
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import LoginDialog from "@/features/auth/LoginDialog";
-import SignupDialog from "@/features/auth/SignupDialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
-
-const navLinks = [
-  { label: "Home", href: "/", icon: <IconHome /> },
-  { label: "Analytics", href: "/dashboard", icon: <IconChartBar /> },
-];
+import { Separator } from "../ui/separator";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
-  const [signInOpen, setSignInOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { user, isLoading, logout } = useAuth();
 
   // Close mobile navigation menu when screen size is desktop
   useEffect(() => {
@@ -43,6 +36,12 @@ export default function Navbar() {
     mql.addEventListener("change", handleChange);
     return () => mql.removeEventListener("change", handleChange);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate({ to: "/" });
+  };
 
   return (
     <header className={styles.navbar}>
@@ -63,19 +62,54 @@ export default function Navbar() {
           </SheetTrigger>
 
           <SheetContent className="font-sans" side="right">
-            <nav className="flex flex-col gap-6 mt-8 p-5 font-semibold">
-              {navLinks.map((link) => {
-                return (
-                  <Link
-                    to={link.href}
-                    onClick={() => setOpen(false)}
-                    className="flex gap-1.5 items-center"
+            <nav className="h-full flex flex-col justify-between mt-8 p-5 font-semibold">
+              <div className="flex flex-col gap-5">
+                <h3 className={styles.navLogo}>
+                  squi<span>.</span>sh
+                </h3>
+                <Separator />
+              </div>
+
+              {/* Links */}
+              <div className="flex flex-col grow gap-6 *:flex *:gap-1.5 *items-center pt-6">
+                <Link to="/" onClick={() => setOpen(false)}>
+                  <IconHome height="16px" />
+                  Home
+                </Link>
+
+                {user && (
+                  <>
+                    <Link to="/dashboard" onClick={() => setOpen(false)}>
+                      <IconChartBar height="16px" />
+                      Dashboard
+                    </Link>
+                    <Link to="/" onClick={() => setOpen(false)}>
+                      <IconLink height="16px" />
+                      My Links
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              {/* Login/Logout */}
+              <div className="flex flex-col gap-6 *:flex *:gap-1.5 *items-center">
+                {!user && (
+                  <Button
+                    onClick={() => {
+                      navigate({ to: "/login" });
+                      setOpen(false);
+                    }}
                   >
-                    <div className="*:h-4">{link.icon}</div>
-                    {link.label}
-                  </Link>
-                );
-              })}
+                    <IconLogin height="16px" />
+                    Login / Sign Up
+                  </Button>
+                )}
+                {user && (
+                  <Button variant="default" onClick={handleLogout}>
+                    Log out
+                  </Button>
+                )}
+              </div>
             </nav>
           </SheetContent>
         </Sheet>
@@ -83,11 +117,15 @@ export default function Navbar() {
         {/* Desktop menu TODO */}
         <div className="gap-5 items-center hidden md:flex">
           {!user && !isLoading && (
-            <SignupDialog
-              open={signInOpen}
-              setOpen={setSignInOpen}
-              toggleLogin={setLoginOpen}
-            />
+            <Button
+              className="font-sans font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
+              onClick={() => {
+                navigate({ to: "/login" });
+              }}
+            >
+              <IconLogin height="16px" />
+              Log In
+            </Button>
           )}
 
           {user && !isLoading && (
@@ -99,15 +137,7 @@ export default function Navbar() {
             </button>
           )}
 
-          {user ? (
-            <LogoutButton />
-          ) : (
-            <LoginDialog
-              open={loginOpen}
-              setOpen={setLoginOpen}
-              toggleSignup={setSignInOpen}
-            />
-          )}
+          {user && <LogoutButton />}
         </div>
 
         <ThemeButton />
