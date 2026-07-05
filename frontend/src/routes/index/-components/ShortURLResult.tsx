@@ -59,7 +59,15 @@ export default function ShortURLResult({
         <div className={styles.shortURLResult}>
           <IconPaperclip />
 
-          <span>{displayURL}</span>
+          <div className="text-(--color-text)">
+            <span>{window.location.protocol}</span>
+            <span>//</span>
+            <span className="text-(--color-primary)">
+              {window.location.hostname}
+            </span>
+            <span>/</span>
+            <span className="text-(--color-primary)">{shortURL}</span>
+          </div>
 
           <button className={styles.copyBtn} onClick={copyLink}>
             {copyBtnText == "Copy" ? <IconCopy /> : <IconCheck />}

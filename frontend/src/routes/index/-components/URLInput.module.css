@@ -1,9 +1,8 @@
-.inputRow {
+.inputContainer {
   background: var(--color-surface);
 
   display: flex;
   align-items: center;
-  gap: 10px;
 
   width: 100%;
   max-width: 580px;
@@ -16,16 +15,16 @@
     border-color 0.15s,
     box-shadow 0.15s;
 }
-.inputRow:focus-within {
+.inputContainer:focus-within {
   border-color: var(--color-primary-light);
   box-shadow: 0 0 0 2px rgba(59, 109, 17, 0.15);
 }
-.inputRow.invalid {
+.inputContainer.invalid {
   border: 3px solid var(--color-red);
   transition: border-color 0.1s;
 }
 
-.inputRow input {
+.formInput {
   background: transparent;
   color: var(--color-text);
 
@@ -36,11 +35,14 @@
   font-size: 16px;
   font-family: var(--font-primary);
 }
-.inputRow input::placeholder {
+.slugInput {
+  font-size: 14px;
+}
+.inputContainer input::placeholder {
   color: var(--color-text-muted);
 }
 
-.inputRow button {
+.inputBtn {
   background: var(--color-primary);
   color: var(--color-text);
 
@@ -58,7 +60,7 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.inputRow button:hover {
+.inputBtn:hover {
   background: var(--color-primary-dark);
 }
 
@@ -70,4 +72,15 @@
 
   display: block;
   font-size: 0.85em;
+}
+
+@media (max-width: 768px) {
+  .formInput {
+    font-size: 14px;
+  }
+
+  .inputBtn {
+    font-size: 12px;
+    padding: 10px 14px;
+  }
 }

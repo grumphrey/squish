@@ -19,14 +19,12 @@ export const Route = createFileRoute("/")({
 export type ActiveTabOption = "short-url" | "qr-code";
 
 function RouteComponent() {
-  const { mutate, data, isPending, reset } = useMutation<
-    GetShortURLResponse,
-    Error,
-    string
-  >({
+  const { mutate, data, isPending, reset } = useMutation({
     mutationFn: getShortURL,
   });
+  // TODO: move state to hooks or structure components better - too messy now
   const [longURL, setLongURL] = useState<string>("");
+  const [slug, setSlug] = useState("");
   const [activeTab, setActiveTab] = useState<ActiveTabOption>("short-url");
   const [qrCodeChecked, setQrCodeChecked] =
     useState<Checkbox.CheckedState>(false);
@@ -64,6 +62,8 @@ function RouteComponent() {
             isPending={isPending}
             longURL={longURL}
             setLongURL={setLongURL}
+            slug={slug}
+            setSlug={setSlug}
             qrCodeChecked={qrCodeChecked}
             setQrCodeChecked={setQrCodeChecked}
             tab={activeTab}
@@ -75,6 +75,8 @@ function RouteComponent() {
             isPending={isPending}
             longURL={longURL}
             setLongURL={setLongURL}
+            slug={slug}
+            setSlug={setSlug}
             qrCodeChecked={qrCodeChecked}
             setQrCodeChecked={setQrCodeChecked}
             tab={activeTab}
@@ -118,10 +120,16 @@ export interface GetShortURLResponse {
   short_url: string;
 }
 
-// Takes long URL from user input and makes a request to backend server to generate the corresponding short URL.
+export interface GetShortURLRequest {
+  url: string;
+  slug?: string;
+}
+
+// Takes long URL and optional slug from user input and makes a request to backend server to generate the corresponding short URL.
 // Throws an error if server returns non-successful status code.
-async function getShortURL(longURL: string): Promise<GetShortURLResponse> {
-  const payload = { url: longURL };
+async function getShortURL(
+  payload: GetShortURLRequest,
+): Promise<GetShortURLResponse> {
   const response = await api.post<GetShortURLResponse>("/shorten", payload);
 
   return response.data;

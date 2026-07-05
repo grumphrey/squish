@@ -7,21 +7,37 @@ import {
   type SetStateAction,
 } from "react";
 import { useQuery, type UseMutateFunction } from "@tanstack/react-query";
-import { type GetShortURLResponse, type ActiveTabOption } from "../route";
+import {
+  type GetShortURLResponse,
+  type ActiveTabOption,
+  type GetShortURLRequest,
+} from "../route";
 
 import Spinner from "@/components/Spinner";
+import { IconSettings } from "@tabler/icons-react";
+import { Toggle } from "@/components/ui/toggle";
+import axios from "axios";
 
 interface URLInputProps {
   longURL: string;
   setLongURL: Dispatch<SetStateAction<string>>;
+  slug: string;
+  setSlug: Dispatch<SetStateAction<string>>;
   tab: ActiveTabOption;
-  onSubmit: UseMutateFunction<GetShortURLResponse, Error, string, unknown>;
+  onSubmit: UseMutateFunction<
+    GetShortURLResponse,
+    Error,
+    GetShortURLRequest,
+    unknown
+  >;
   isPending: boolean;
 }
 
 export default function URLInput({
   longURL,
   setLongURL,
+  slug,
+  setSlug,
   tab,
   onSubmit,
   isPending,
@@ -33,8 +49,14 @@ export default function URLInput({
     staleTime: Infinity, // never trigger automatic background refetches in app lifetime
   });
 
+  const [optionsVisible, setOptionsVisible] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null); // for setting focus on input
+
+  const handleShowOptions = () => {
+    setOptionsVisible(!optionsVisible);
+    setSlug("");
+  };
 
   // use "/" key to focus on input
   useEffect(() => {
@@ -78,21 +100,33 @@ export default function URLInput({
     setError("");
 
     // Send long URL to server to create short URL
-    onSubmit(url, {
-      onSuccess: () => {
-        setLongURL("");
+    onSubmit(
+      { url, slug },
+      {
+        onSuccess: () => {
+          setLongURL("");
+          setSlug("");
+          setOptionsVisible(false);
+        },
+        onError: (err) => {
+          if (axios.isAxiosError(err)) {
+            setError(err.response?.data.message);
+          } else {
+            setError(err.message);
+          }
+        },
       },
-      onError: (err: any) => {
-        setError(err.message);
-      },
-    });
+    );
   };
 
   return (
     <>
-      <div className={`${styles.inputRow} ${error ? "invalid" : ""}`}>
+      <div
+        className={`${styles.inputContainer} font-sans gap-2 ${error ? "invalid" : ""}`}
+      >
         <input
           id="urlInput"
+          className={styles.formInput}
           type="text"
           placeholder="Squish your long URL..."
           value={longURL}
@@ -103,7 +137,20 @@ export default function URLInput({
           }}
         />
 
-        <button id="fetch-btn" type="button" onClick={createShortLink}>
+        <Toggle
+          variant="outline"
+          aria-label="Toggle options"
+          className="data-[state=on]:bg-(--color-border) data-[state=on]:text-(--color-text)"
+          onClick={handleShowOptions}
+        >
+          <IconSettings />
+        </Toggle>
+
+        <button
+          className={styles.inputBtn}
+          type="button"
+          onClick={createShortLink}
+        >
           {isPending ? (
             <Spinner />
           ) : (
@@ -115,6 +162,32 @@ export default function URLInput({
       <div className={`${styles.inputError} ${error ? "" : "vis-hidden"}`}>
         {error}
       </div>
+
+      {optionsVisible && (
+        <div className="bg-(--color-bg) p-4 m-auto max-w-[580px] mt-5 rounded-lg border-2 border-(--color-border)">
+          <div className="flex flex-col justify-start items-start mt-2 gap-0">
+            <label
+              className="font-sans text-(--color-text) text-sm font-semibold pl-2 pb-2"
+              htmlFor="slugInput"
+            >
+              Path (optional)
+            </label>
+            <div
+              className={`${styles.inputContainer} mt-5 ${error ? "invalid" : ""}`}
+            >
+              <span className="">/</span>
+              <input
+                id="slugInput"
+                className={`${styles.formInput} ${styles.slugInput}`}
+                type="text"
+                placeholder="my-link"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

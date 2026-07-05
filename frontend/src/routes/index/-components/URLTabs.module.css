@@ -112,3 +112,9 @@
   font-size: 14px;
   line-height: 1;
 }
+
+@media (max-width: 768px) {
+  .checkboxLabel {
+    font-size: 12px;
+  }
+}

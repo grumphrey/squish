@@ -1,6 +1,10 @@
 import styles from "./URLTabs.module.css";
 import { type Dispatch, type SetStateAction } from "react";
-import { type ActiveTabOption, type GetShortURLResponse } from "../route";
+import {
+  type ActiveTabOption,
+  type GetShortURLRequest,
+  type GetShortURLResponse,
+} from "../route";
 import type { UseMutateFunction } from "@tanstack/react-query";
 
 import { IconCheck, IconLink, IconQrcode } from "@tabler/icons-react";
@@ -63,11 +67,18 @@ export default function URLTabs({
 }
 
 interface TabContentProps {
-  mutate: UseMutateFunction<GetShortURLResponse, Error, string, unknown>;
+  mutate: UseMutateFunction<
+    GetShortURLResponse,
+    Error,
+    GetShortURLRequest,
+    unknown
+  >;
   isPending: boolean;
   tab: ActiveTabOption;
   longURL: string;
   setLongURL: Dispatch<SetStateAction<string>>;
+  slug: string;
+  setSlug: Dispatch<SetStateAction<string>>;
   qrCodeChecked: Checkbox.CheckedState;
   setQrCodeChecked: Dispatch<SetStateAction<Checkbox.CheckedState>>;
 }
@@ -78,6 +89,8 @@ export function TabContent({
   tab,
   longURL,
   setLongURL,
+  slug,
+  setSlug,
   qrCodeChecked,
   setQrCodeChecked,
 }: TabContentProps) {
@@ -86,6 +99,8 @@ export function TabContent({
       <URLInput
         longURL={longURL}
         setLongURL={setLongURL}
+        slug={slug}
+        setSlug={setSlug}
         onSubmit={mutate}
         isPending={isPending}
         tab={tab}
