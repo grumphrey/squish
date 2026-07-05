@@ -118,7 +118,7 @@ function VisitsAreaChart({ data }: { data: ChartData }) {
         />
         <Area
           dataKey="desktop"
-          type="monotone"
+          type="linear"
           fill="var(--color-desktop)"
           fillOpacity={0.4}
           stroke="var(--color-desktop)"
@@ -126,7 +126,7 @@ function VisitsAreaChart({ data }: { data: ChartData }) {
         />
         <Area
           dataKey="mobile"
-          type="monotone"
+          type="linear"
           fill="var(--color-mobile)"
           fillOpacity={0.4}
           stroke="var(--color-mobile)"
@@ -134,7 +134,7 @@ function VisitsAreaChart({ data }: { data: ChartData }) {
         />
         <Area
           dataKey="other"
-          type="monotone"
+          type="linear"
           fill="var(--color-other)"
           fillOpacity={0.1}
           stroke="var(--color-other)"
