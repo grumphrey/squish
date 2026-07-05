@@ -56,13 +56,9 @@ func Base62Decode(from string) (to int) {
 }
 
 // Check short url (to be redirected to long url) provided by user is valid.
-//
-// Should only contain alphanumeric (0-9) (a-z) (A-Z)
+// Accepts alphanumeric + hyphens + underscores, excluding reserved words.
 func ValidateShortUrl(url string) error {
-	if !isAlphanumeric(url) {
-		return errors.New("invalid short url: not alphanumerical")
-	}
-	return nil
+	return ValidateSlug(url)
 }
 
 // Check long url (to be converted to short url) provided by user is valid.
@@ -163,8 +159,6 @@ const (
 )
 
 func ValidateSlug(slug string) error {
-	slug = strings.TrimSpace(slug)
-
 	if slug == "" {
 		return errors.New("slug cannot be empty")
 	}
