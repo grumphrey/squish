@@ -11,7 +11,12 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import ErrorAlert from "@/components/ErrorAlert";
@@ -29,7 +34,7 @@ export const Route = createFileRoute("/login")({
 
 function RouteComponent() {
   return (
-    <div className="font-sans w-full flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
+    <div className="font-sans w-full flex flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <LoginForm />
       </div>
@@ -37,10 +42,7 @@ function RouteComponent() {
   );
 }
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -65,11 +67,13 @@ export function LoginForm({
           <form className="p-6 md:p-8" onSubmit={handleLogin}>
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold font-mono">Welcome back</h1>
+
                 <p className="text-balance text-muted-foreground">
                   Enter your credentials to access your account.
                 </p>
               </div>
+
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -82,6 +86,7 @@ export function LoginForm({
                   className="bg-background"
                 />
               </Field>
+
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -92,6 +97,7 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
+
                 <div className="w-full max-w-sm space-y-2">
                   <div className="relative">
                     <Input
@@ -118,6 +124,7 @@ export function LoginForm({
                   </div>
                 </div>
               </Field>
+
               <Field>
                 <Button type="submit">Login</Button>
               </Field>
@@ -127,6 +134,7 @@ export function LoginForm({
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
               </FieldSeparator>
+
               <Field className="grid grid-cols-3 gap-4">
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -137,6 +145,7 @@ export function LoginForm({
                   </svg>
                   <span className="sr-only">Login with Apple</span>
                 </Button>
+
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -146,6 +155,7 @@ export function LoginForm({
                   </svg>
                   <span className="sr-only">Login with Google</span>
                 </Button>
+
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -156,11 +166,13 @@ export function LoginForm({
                   <span className="sr-only">Login with Meta</span>
                 </Button>
               </Field>
+
               <FieldDescription className="text-center">
-                Don&apos;t have an account? <a href="#">Sign up</a>
+                Don&apos;t have an account? <Link to="/signup"> Sign up </Link>
               </FieldDescription>
             </FieldGroup>
           </form>
+
           <div className="relative hidden bg-muted md:block">
             <img
               src={longdog}
@@ -170,6 +182,7 @@ export function LoginForm({
           </div>
         </CardContent>
       </Card>
+
       <FieldDescription className="px-6 text-center">
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
         and <a href="#">Privacy Policy</a>.
