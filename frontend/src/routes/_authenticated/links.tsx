@@ -74,6 +74,7 @@ function CreateURLDialog() {
     setSlug("");
   };
 
+  // Send long URL to server to create short URL
   const createShortLink = (inputUrl: string) => {
     let url;
     // Validate input URL
@@ -85,7 +86,6 @@ function CreateURLDialog() {
     }
     setError("");
 
-    // Send long URL to server to create short URL
     mutate(
       { url, slug },
       {

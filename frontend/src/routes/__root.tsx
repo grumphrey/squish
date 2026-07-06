@@ -2,6 +2,7 @@ import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { type AuthContext } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Toaster } from "@/components/ui/sonner";
 
 // Pass authentication state from auth context to tanstack router
 interface RouterContext {
@@ -18,6 +19,7 @@ function RootComponent() {
       <Navbar />
       <main className="layout">
         <Outlet />
+        <Toaster />
       </main>
       <Footer />
     </div>
