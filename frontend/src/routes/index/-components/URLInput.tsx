@@ -6,18 +6,19 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { useQuery, type UseMutateFunction } from "@tanstack/react-query";
-import {
-  type GetShortURLResponse,
-  type ActiveTabOption,
-  type GetShortURLRequest,
-} from "../route";
+import { type UseMutateFunction } from "@tanstack/react-query";
+import { type ActiveTabOption } from "../route";
 
 import Spinner from "@/components/Spinner";
 import { IconCheck, IconSettings } from "@tabler/icons-react";
 import { Toggle } from "@/components/ui/toggle";
 import axios from "axios";
 import { Checkbox } from "radix-ui";
+import { useValidTLDs, validateURL } from "@/hooks/useValidTLDs";
+import type {
+  GetShortURLResponse,
+  GetShortURLRequest,
+} from "@/hooks/useCreateShortURL";
 
 interface URLInputProps {
   longURL: string;
@@ -47,13 +48,7 @@ export default function URLInput({
   qrCodeChecked,
   setQrCodeChecked,
 }: URLInputProps) {
-  // need to handle error when cannot fetch tlds. fallback values?
-  const { data: tlds } = useQuery({
-    queryKey: ["tld"],
-    queryFn: getTLDs,
-    staleTime: Infinity, // never trigger automatic background refetches in app lifetime
-  });
-
+  const { data: tlds } = useValidTLDs();
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null); // for setting focus on input
@@ -73,30 +68,11 @@ export default function URLInput({
     });
   }, []);
 
-  // Check that it is a valid URL (valid protocol + TLD)
-  // Return URL with https prepended if there was no protocol.
-  const validateURL = (): string => {
-    const input = longURL.trim();
-    const hasProtocol = /^https?:\/\//i.test(input);
-    const normalised = hasProtocol ? input : `https://${input}`;
-
-    const url = new URL(normalised);
-    if (url.protocol !== "http:" && url.protocol !== "https:")
-      throw new Error("no protocol"); // maybe not necessary check since already prepend https
-
-    const parts = url.hostname.split(".");
-    if (parts.length < 2) throw new Error("no top-level domain"); // no tld
-
-    const tld = parts[parts.length - 1].toLowerCase();
-    if (tlds && !tlds.includes(tld)) throw new Error("invalid tld");
-    return normalised;
-  };
-
   const createShortLink = () => {
     let url;
     // Validate input URL
     try {
-      url = validateURL();
+      url = validateURL(tlds || [], longURL);
     } catch (err) {
       setError(`We'll need a valid URL, like "super-long-link.com/shorten-it"`);
       inputRef.current?.focus();
@@ -142,14 +118,16 @@ export default function URLInput({
           }}
         />
 
-        <Toggle
-          variant="outline"
-          aria-label="Toggle options"
-          className="data-[state=on]:bg-(--color-border) data-[state=on]:text-(--color-text)"
-          onClick={handleShowOptions}
-        >
-          <IconSettings />
-        </Toggle>
+        {tab == "short-url" && (
+          <Toggle
+            variant="outline"
+            aria-label="Toggle options"
+            className="data-[state=on]:bg-(--color-border) data-[state=on]:text-(--color-text)"
+            onClick={handleShowOptions}
+          >
+            <IconSettings />
+          </Toggle>
+        )}
 
         <button
           className={styles.inputBtn}
@@ -168,7 +146,7 @@ export default function URLInput({
         {error}
       </div>
 
-      {optionsVisible && (
+      {optionsVisible && tab == "short-url" && (
         <div className="bg-(--color-bg) p-4 m-auto max-w-[580px] mt-5 rounded-lg border-2 border-(--color-border)">
           <div className="flex flex-col justify-start items-start mt-2 gap-0">
             <label
@@ -214,20 +192,4 @@ export default function URLInput({
       )}
     </>
   );
-}
-
-// Queries the official TLD authority and returns a list of currently valid top-level domains.
-async function getTLDs(): Promise<string[]> {
-  const url = "https://data.iana.org/TLD/tlds-alpha-by-domain.txt";
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error("failed to fetch TLDs");
-  }
-
-  const text = await response.text();
-  return text
-    .split("\n")
-    .filter((line) => line && !line.startsWith("#"))
-    .map((line) => line.trim().toLowerCase());
 }

@@ -1,7 +1,6 @@
 import styles from "./index.module.css";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import useTypewriter from "@/hooks/useTypewriter";
 
@@ -10,7 +9,7 @@ import { Checkbox } from "radix-ui";
 
 import URLTabs, { TabContent } from "./-components/URLTabs";
 import ShortURLResult from "./-components/ShortURLResult";
-import { api } from "@/lib/api";
+import { useCreateShortURL } from "@/hooks/useCreateShortURL";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -19,9 +18,8 @@ export const Route = createFileRoute("/")({
 export type ActiveTabOption = "short-url" | "qr-code";
 
 function RouteComponent() {
-  const { mutate, data, isPending, reset } = useMutation({
-    mutationFn: getShortURL,
-  });
+  const { mutate, data, isPending, reset } = useCreateShortURL();
+
   // TODO: move state to hooks or structure components better - too messy now
   const [longURL, setLongURL] = useState<string>("");
   const [slug, setSlug] = useState("");
@@ -113,24 +111,4 @@ function TypewriterSubtitle({ taglines }: { taglines: string[] }) {
       <span className={styles.typewriterCursor} />
     </>
   );
-}
-
-export interface GetShortURLResponse {
-  qr_code: string;
-  short_url: string;
-}
-
-export interface GetShortURLRequest {
-  url: string;
-  slug?: string;
-}
-
-// Takes long URL and optional slug from user input and makes a request to backend server to generate the corresponding short URL.
-// Throws an error if server returns non-successful status code.
-async function getShortURL(
-  payload: GetShortURLRequest,
-): Promise<GetShortURLResponse> {
-  const response = await api.post<GetShortURLResponse>("/shorten", payload);
-
-  return response.data;
 }

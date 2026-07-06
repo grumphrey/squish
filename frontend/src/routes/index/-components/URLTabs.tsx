@@ -1,16 +1,16 @@
 import styles from "./URLTabs.module.css";
 import { type Dispatch, type SetStateAction } from "react";
-import {
-  type ActiveTabOption,
-  type GetShortURLRequest,
-  type GetShortURLResponse,
-} from "../route";
+import { type ActiveTabOption } from "../route";
 import type { UseMutateFunction } from "@tanstack/react-query";
 
 import { IconLink, IconQrcode } from "@tabler/icons-react";
 import { Tabs, Checkbox } from "radix-ui";
 
 import URLInput from "./URLInput";
+import type {
+  GetShortURLRequest,
+  GetShortURLResponse,
+} from "@/hooks/useCreateShortURL";
 
 interface URLTabsProps {
   tab: ActiveTabOption;
