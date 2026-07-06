@@ -23,6 +23,7 @@ import { useCreateShortURL } from "@/hooks/useCreateShortURL";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { generateAlphanumeric } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,
@@ -47,6 +48,7 @@ function RouteComponent() {
 function CreateURLDialog() {
   const { mutate, isPending } = useCreateShortURL();
   const { data: tlds } = useValidTLDs();
+  const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
   const [longURL, setLongURL] = useState("");
@@ -107,6 +109,7 @@ function CreateURLDialog() {
               position: "top-center",
             },
           );
+          queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
         },
         onError: (err) => {
           if (axios.isAxiosError(err)) {
