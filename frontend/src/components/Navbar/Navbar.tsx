@@ -83,7 +83,7 @@ export default function Navbar() {
                       <IconChartBar height="16px" />
                       Dashboard
                     </Link>
-                    <Link to="/" onClick={() => setOpen(false)}>
+                    <Link to="/links" onClick={() => setOpen(false)}>
                       <IconLink height="16px" />
                       My Links
                     </Link>
@@ -114,7 +114,7 @@ export default function Navbar() {
           </SheetContent>
         </Sheet>
 
-        {/* Desktop menu TODO */}
+        {/* Desktop menu TODO using navigation menu */}
         <div className="gap-5 items-center hidden md:flex">
           {!user && !isLoading && (
             <Button

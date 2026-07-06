@@ -25,10 +25,10 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import ErrorAlert from "@/components/ErrorAlert";
 
 interface URLsListProps {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  open?: boolean;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 }
-export default function URLsList({ open, setOpen }: URLsListProps) {
+export default function URLsList({ open = true, setOpen }: URLsListProps) {
   const navigate = useNavigate();
 
   const { data, isPending, error } = useQuery({
