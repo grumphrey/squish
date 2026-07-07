@@ -18,9 +18,9 @@ CREATE TABLE short_urls (
   short_url TEXT UNIQUE NOT NULL,
   long_url TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
-  user_id UUID REFERENCES users(id), -- possibly guest user with no user_id
+  user_id UUID REFERENCES users(id) -- possibly guest user with no user_id
 );
 
 CREATE TABLE url_redirect_events (
