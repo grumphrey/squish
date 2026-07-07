@@ -3,6 +3,7 @@ import { type AuthContext } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Pass authentication state from auth context to tanstack router
 interface RouterContext {
@@ -18,8 +19,10 @@ function RootComponent() {
     <div className="app">
       <Navbar />
       <main className="layout">
-        <Outlet />
-        <Toaster />
+        <TooltipProvider>
+          <Outlet />
+          <Toaster />
+        </TooltipProvider>
       </main>
       <Footer />
     </div>

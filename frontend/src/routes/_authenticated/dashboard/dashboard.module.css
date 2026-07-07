@@ -141,12 +141,6 @@
   overflow: hidden;
 }
 
-.urlLong span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .urlCreatedDate {
   color: var(--color-text-muted);
   white-space: nowrap;

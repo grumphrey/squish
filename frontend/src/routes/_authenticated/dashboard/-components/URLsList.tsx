@@ -32,6 +32,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import ErrorAlert from "@/components/ErrorAlert";
@@ -199,7 +204,7 @@ function ShortURLRecord({
   };
 
   return (
-    <div className={styles.urlContainer}>
+    <div className={`${styles.urlContainer} hover:bg-accent transition-all`}>
       <div className="hidden md:flex">
         {is_active ? (
           <div className={styles.urlActive} />
@@ -225,7 +230,15 @@ function ShortURLRecord({
 
         <div className={styles.urlLong}>
           <IconArrowNarrowRight stroke={2} />
-          <span> {long_url}</span>
+
+          <Tooltip>
+            <TooltipContent className="max-w-sm md:max-w-xl break-all">
+              {long_url}
+            </TooltipContent>
+            <TooltipTrigger className="hover:text-foreground transition-all whitespace-nowrap overflow-hidden text-ellipsis">
+              {long_url}
+            </TooltipTrigger>
+          </Tooltip>
         </div>
       </div>
 
