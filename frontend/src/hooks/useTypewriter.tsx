@@ -15,7 +15,7 @@ export default function useTypewriter({
   speed: {
     typingSpeed = 110,
     deletingSpeed = 60,
-    pauseAfterWord = 140,
+    pauseAfterWord = 1000,
     pauseAfterDelete = 400,
   } = {},
 }: UseTypewriterOptions) {

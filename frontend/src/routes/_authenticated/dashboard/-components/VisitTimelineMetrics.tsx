@@ -12,7 +12,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import type { ChartData } from "recharts/types/state/chartDataSlice";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorAlert from "@/components/ErrorAlert";
 import type { DailyTotalVisits } from "@/models/models";
@@ -38,7 +38,7 @@ export default function VisitTimelineMetrics({
 
   if (isPending)
     return (
-      <Card className="basis-[660px]">
+      <Card>
         <CardHeader className="gap-2.5">
           <Skeleton className="w-1/2 h-6" />
           <Skeleton className="w-1/4 h-5" />
@@ -53,7 +53,7 @@ export default function VisitTimelineMetrics({
   if (error) return <ErrorAlert />;
 
   return (
-    <Card className="basis-[660px] font-sans">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Total Visits</CardTitle>
         <CardDescription>In the past 7 days</CardDescription>
@@ -93,6 +93,7 @@ function VisitsAreaChart({ data }: { data: ChartData }) {
             });
           }}
         />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} tickCount={3} />
         <ChartTooltip
           cursor={false}
           content={
@@ -154,5 +155,5 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const processChartData = (data: DailyTotalVisits[]) => {
-  return data.toSorted((a, b) => a.date.localeCompare(b.date));
+  return [...data].sort((a, b) => (a?.date || "").localeCompare(b?.date || ""));
 };

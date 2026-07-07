@@ -119,14 +119,16 @@ function RouteComponent() {
         <Separator />
       </div>
 
-      <div className={styles.metricsContainer}>
-        <VisitTimelineMetrics
-          data={visitsData}
-          isPending={isVisitsLoading}
-          error={visitsError}
-        />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+        <div className="col-span-1 sm:col-span-2">
+          <VisitTimelineMetrics
+            data={visitsData}
+            isPending={isVisitsLoading}
+            error={visitsError}
+          />
+        </div>
 
-        <div className="flex flex-col basis-xs grow-0 shrink font-sans gap-5">
+        <div className="gap-5 grid grid-cols-subgrid col-span-1 sm:col-span-2 md:col-span-1">
           <MetricCard
             data={totalData?.total_visitors}
             isPending={isTotalLoading}
@@ -142,25 +144,25 @@ function RouteComponent() {
             description="All-Time"
           />
         </div>
-      </div>
 
-      <div className={styles.metricsContainer}>
-        <BrowserMetrics
-          data={metricsData?.browser}
-          isPending={isMetricsLoading}
-          error={metricsError}
-        />
-        <DeviceTypeMetrics
-          data={metricsData?.device_type}
-          isPending={isMetricsLoading}
-          error={metricsError}
-        />
-        <CountryMetrics
-          data={metricsData?.country_code}
-          isPending={isMetricsLoading}
-          error={metricsError}
-        />
-        {/* TODO: <OSMetrics/> */}
+        <div className="gap-5 grid grid-cols-subgrid sm:col-span-2 md:col-span-3">
+          <BrowserMetrics
+            data={metricsData?.browser}
+            isPending={isMetricsLoading}
+            error={metricsError}
+          />
+          <DeviceTypeMetrics
+            data={metricsData?.device_type}
+            isPending={isMetricsLoading}
+            error={metricsError}
+          />
+          <CountryMetrics
+            data={metricsData?.country_code}
+            isPending={isMetricsLoading}
+            error={metricsError}
+          />
+          {/* TODO: <OSMetrics/> */}
+        </div>
       </div>
 
       <URLsList />
@@ -185,7 +187,7 @@ function MetricCard({
 }: MetricCardProps) {
   if (isPending) {
     return (
-      <Card className="h-full">
+      <Card>
         <CardHeader className="gap-2.5">
           <Skeleton className="w-1/2 h-4" />
           <Skeleton className="w-1/4 h-4" />
@@ -202,7 +204,7 @@ function MetricCard({
   }
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

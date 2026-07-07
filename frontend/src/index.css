@@ -98,7 +98,8 @@
   --color-elevated: #555555;
 
   --color-text: #f5e6d8; /* warm white, not pure white */
-  --color-text-muted: #a08070;
+  /* --color-text-muted: #a08070; */
+  --color-text-muted: var(--muted-foreground);
 
   --color-green-tint: #0d2b1a;
   --color-green-accent: #166534;

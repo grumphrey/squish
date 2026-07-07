@@ -54,18 +54,6 @@
   white-space: nowrap;
 }
 
-.metricsContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-.metricsContainer > * {
-  flex-grow: 1;
-  height: 100%;
-  width: 100%;
-}
-
 .urlRootContainer {
   width: 100%;
 
@@ -182,9 +170,5 @@
   }
   .urlCreatedDate span {
     display: inline-block;
-  }
-  /* TODO: mobile view */
-  .metricsContainer {
-    flex-direction: column;
   }
 }

@@ -1,7 +1,7 @@
 import styles from "./index.module.css";
 
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import useTypewriter from "@/hooks/useTypewriter";
 
 import { IconCircleCheck } from "@tabler/icons-react";
@@ -47,7 +47,15 @@ function RouteComponent() {
         <p className={styles.heroSubtitle}>
           Create short links for your convenience.
         </p>
-        <p className={styles.heroSubtitle}>Simple, no fuss.</p>
+        <p className={styles.heroSubtitle}>
+          <Link
+            to="/signup"
+            className="hover:text-primary underline transition-all "
+          >
+            Sign up
+          </Link>{" "}
+          to keep track of URL metrics.
+        </p>
       </div>
 
       <URLTabs

@@ -25,6 +25,11 @@ import { toast } from "sonner";
 import { generateAlphanumeric } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { DEFAULT_ERR, INVALID_URL_ERR } from "@/constants";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,
@@ -161,7 +166,6 @@ function CreateURLDialog() {
               </Label>
               <Input
                 id="longURL"
-                name="name"
                 placeholder="https://example.com"
                 value={longURL}
                 onChange={(e) => setLongURL(e.target.value)}
@@ -174,14 +178,18 @@ function CreateURLDialog() {
 
             <Field>
               <Label htmlFor="slug">Path</Label>
-              <Input
-                id="slug"
-                name="Path"
-                placeholder="/my-link"
-                value={slug}
-                onChange={handleSlugChange}
-                maxLength={30}
-              />
+              <InputGroup>
+                <InputGroupInput
+                  id="slug"
+                  value={slug}
+                  onChange={handleSlugChange}
+                  maxLength={30}
+                  placeholder="my-link"
+                />
+                <InputGroupAddon>
+                  <span>/</span>
+                </InputGroupAddon>
+              </InputGroup>
               <FieldDescription>
                 Only alphanumeric characters and hyphens allowed.
               </FieldDescription>
