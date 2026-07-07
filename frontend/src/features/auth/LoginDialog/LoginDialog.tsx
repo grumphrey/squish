@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "@tanstack/react-router";
 
 import { Dialog, Checkbox } from "radix-ui";
-import { LoginButton } from "@/components/Navbar";
 import PasswordField from "@/features/auth/PasswordField";
 import GoogleButton from "@/features/auth/GoogleButton";
 import DialogError from "@/features/auth/DialogError";
@@ -58,7 +57,7 @@ export default function LoginDialog({
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
-        <LoginButton />
+        <button>TODO</button>
       </Dialog.Trigger>
 
       <Dialog.Portal>
