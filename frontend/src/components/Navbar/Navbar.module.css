@@ -13,6 +13,7 @@
   background: var(--color-bg);
   backdrop-filter: blur(8px);
   /* z-index: 100; */
+  font-family: var(--font-secondary);
 }
 
 .navLeft {
@@ -42,23 +43,6 @@
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.analyticsBtn {
-  background-color: var(--color-primary);
-}
-
-.signupButton {
-  background-color: var(--color-elevated);
-}
-
-.loginButton {
-  background-color: var(--color-primary);
-}
-
-.logoutButton {
-  background-color: var(--color-surface);
-  border: 2px solid var(--color-primary-light);
 }
 
 .toggleTrack {

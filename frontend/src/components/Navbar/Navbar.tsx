@@ -1,23 +1,33 @@
 import styles from "./Navbar.module.css";
 import logo from "@/assets/longdog.png";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   IconChartBar,
   IconHome,
   IconLink,
   IconLogin,
   IconMoon,
+  IconQrcode,
   IconSun,
 } from "@tabler/icons-react";
+import { Menu } from "lucide-react";
 import { useNavigate, Link } from "@tanstack/react-router";
-
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
+
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -61,7 +71,7 @@ export default function Navbar() {
             </Button>
           </SheetTrigger>
 
-          <SheetContent className="font-sans" side="right">
+          <SheetContent side="right">
             <nav className="h-full flex flex-col justify-between mt-8 p-5 font-semibold">
               <div className="flex flex-col gap-5">
                 <h3 className={styles.navLogo}>
@@ -81,7 +91,7 @@ export default function Navbar() {
                   <>
                     <Link to="/dashboard" onClick={() => setOpen(false)}>
                       <IconChartBar height="16px" />
-                      Dashboard
+                      Analytics
                     </Link>
                     <Link to="/links" onClick={() => setOpen(false)}>
                       <IconLink height="16px" />
@@ -118,7 +128,7 @@ export default function Navbar() {
         <div className="gap-5 items-center hidden md:flex">
           {!user && !isLoading && (
             <Button
-              className="font-sans font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
+              className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
               onClick={() => {
                 navigate({ to: "/login" });
               }}
@@ -127,18 +137,55 @@ export default function Navbar() {
               Log In
             </Button>
           )}
-
-          {user && !isLoading && (
-            <button
-              className={`${styles.analyticsBtn} cta-button`}
-              onClick={() => navigate({ to: "/dashboard" })}
-            >
-              Analytics
-            </button>
-          )}
-
-          {user && <LogoutButton />}
         </div>
+
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList className="gap-4">
+            {user && !isLoading && (
+              <>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Manage URLs</NavigationMenuTrigger>
+
+                  <NavigationMenuContent>
+                    <ul className="w-96">
+                      <ListItem
+                        href="/links"
+                        title="Short Links"
+                        icon={<IconLink size={30} />}
+                      >
+                        View and manage your short links.
+                      </ListItem>
+                      <ListItem
+                        href="/links"
+                        title="QR Codes"
+                        icon={<IconQrcode size={30} />}
+                      >
+                        View and manage your QR codes.
+                      </ListItem>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    asChild
+                    className={navigationMenuTriggerStyle()}
+                  >
+                    <Link to="/dashboard">Analytics</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Button variant="destructive" onClick={handleLogout}>
+                      Sign Out
+                    </Button>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </>
+            )}
+          </NavigationMenuList>
+        </NavigationMenu>
 
         <ThemeButton />
       </div>
@@ -166,49 +213,26 @@ function ThemeButton() {
     </div>
   );
 }
-
-function LogoutButton() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate({ to: "/" });
-  };
-
-  return (
-    <button
-      className={`cta-button ${styles.logoutButton}`}
-      onClick={handleLogout}
-    >
-      Sign out
-    </button>
-  );
-}
-
-export function LoginButton({
-  ref,
+function ListItem({
+  icon,
+  title,
+  children,
+  href,
   ...props
-}: React.ComponentPropsWithRef<"button">) {
+}: React.ComponentPropsWithoutRef<"li"> & { href: string; icon?: ReactNode }) {
   return (
-    <button ref={ref} {...props} className={`cta-button ${styles.loginButton}`}>
-      Log In
-      <IconLogin stroke={2} height="20px" />
-    </button>
-  );
-}
-
-export function SignupButton({
-  ref,
-  ...props
-}: React.ComponentPropsWithRef<"button">) {
-  return (
-    <button
-      ref={ref}
-      {...props}
-      className={`cta-button ${styles.signupButton}`}
-    >
-      Sign Up
-    </button>
+    <li {...props}>
+      <NavigationMenuLink asChild>
+        <Link to={href}>
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex gap-1 items-center leading-none font-medium">
+              <span>{icon}</span>
+              <span>{title}</span>
+            </div>
+            <div className="line-clamp-2 text-muted-foreground">{children}</div>
+          </div>
+        </Link>
+      </NavigationMenuLink>
+    </li>
   );
 }
