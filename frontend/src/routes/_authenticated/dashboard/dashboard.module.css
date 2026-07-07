@@ -82,26 +82,6 @@
   gap: 5px;
 }
 
-.copyButton {
-  all: unset;
-  background-color: var(--color-surface);
-  color: var(--color-text);
-
-  display: flex;
-  align-items: center;
-
-  padding: 5px 20px;
-  border: 2px solid var(--color-border);
-  border-radius: 10px;
-
-  transition: background-color 0.2s ease;
-}
-
-.copyButton:hover {
-  cursor: pointer;
-  background-color: var(--color-primary);
-}
-
 .urlContainer {
   background: var(--color-surface);
   max-width: 100%;
@@ -122,6 +102,7 @@
 }
 
 .urlActive {
+  margin-left: 10px;
   width: 10px;
   height: 10px;
   background-color: var(--color-green-primary);
@@ -130,6 +111,7 @@
 }
 
 .urlInactive {
+  margin-left: 10px;
   width: 10px;
   height: 10px;
   background-color: var(--color-red);
@@ -148,6 +130,7 @@
 
 .urlShort {
   color: var(--color-text);
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -180,6 +163,7 @@
   color: var(--color-text-muted);
   white-space: nowrap;
   font-size: 12px;
+  display: flex;
 }
 
 @media (max-width: 576px) {
@@ -188,7 +172,6 @@
   }
 
   .urlCreatedDate {
-    display: flex;
     flex-direction: column;
     gap: 5px;
 
@@ -199,12 +182,6 @@
   }
   .urlCreatedDate span {
     display: inline-block;
-  }
-  .copyButton {
-    padding: 5px;
-  }
-  .copyButton svg {
-    height: 14px;
   }
   /* TODO: mobile view */
   .metricsContainer {

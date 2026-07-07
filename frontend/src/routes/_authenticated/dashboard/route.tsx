@@ -21,8 +21,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import ErrorAlert from "@/components/ErrorAlert";
-import { ChevronsDown, ChevronsUp } from "lucide-react";
-import { useState } from "react";
 import type {
   DailyTotalVisits,
   DeviceMetrics,
@@ -36,7 +34,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [urlsOpen, setUrlsOpen] = useState(true);
 
   // Get device metrics (browser, device type, OS, country)
   const {
@@ -166,21 +163,7 @@ function RouteComponent() {
         {/* TODO: <OSMetrics/> */}
       </div>
 
-      <div className={styles.dashboardHeader}>
-        <h3 className={styles.dashboardSubtitle}>My links</h3>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          onClick={() => setUrlsOpen((prev) => !prev)}
-        >
-          {urlsOpen ? <ChevronsUp /> : <ChevronsDown />}
-          <span className="sr-only">Toggle details</span>
-        </Button>
-        <Separator />
-      </div>
-
-      <URLsList open={urlsOpen} setOpen={setUrlsOpen} />
+      <URLsList />
     </section>
   );
 }

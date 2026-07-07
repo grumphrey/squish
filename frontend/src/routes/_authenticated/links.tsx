@@ -24,6 +24,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { generateAlphanumeric } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { DEFAULT_ERR, INVALID_URL_ERR } from "@/constants";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,
@@ -31,10 +32,10 @@ export const Route = createFileRoute("/_authenticated/links")({
 
 function RouteComponent() {
   return (
-    <section className="max-w-5xl w-full my-0 mx-auto px-10 py-10 flex flex-col gap-5 md:px-20">
+    <section className="max-w-5xl w-full my-0 mx-auto px-5 py-10 flex flex-col gap-5 sm:px-20">
       <div className="flex justify-between font-sans">
-        <h1 className="text-3xl font-sans font-bold tracking-tighter mb-5 md:text-4xl">
-          Links
+        <h1 className="flex items-center gap-3 text-3xl font-sans font-bold tracking-tighter mb-5 md:text-4xl">
+          Links <IconLink size="40px" />
         </h1>
 
         <CreateURLDialog />
@@ -64,11 +65,13 @@ function CreateURLDialog() {
     setSlug(sanitizedValue);
   };
 
+  // Submit create URL form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createShortLink(longURL);
   };
 
+  // Reset state when dialog toggled
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     setError("");
@@ -83,7 +86,7 @@ function CreateURLDialog() {
     try {
       url = validateURL(tlds || [], inputUrl);
     } catch (err) {
-      setError(`We'll need a valid URL, like "super-long-link.com/shorten-it"`);
+      setError(INVALID_URL_ERR);
       return;
     }
     setError("");
@@ -94,6 +97,8 @@ function CreateURLDialog() {
         onSuccess: (data) => {
           setLongURL("");
           setSlug("");
+          queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
+
           toast.success(
             <div>
               Your short link:{" "}
@@ -109,13 +114,12 @@ function CreateURLDialog() {
               position: "top-center",
             },
           );
-          queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
         },
         onError: (err) => {
           if (axios.isAxiosError(err)) {
-            setError(err.response?.data.message);
+            setError(err.response?.data.message ?? DEFAULT_ERR);
           } else {
-            setError(err.message);
+            setError(err.message ?? DEFAULT_ERR);
           }
         },
       },
@@ -128,7 +132,7 @@ function CreateURLDialog() {
         <DialogTrigger asChild>
           <Button className="flex justify-between gap-1">
             <IconPlus />
-            Create Link
+            <span className="hidden sm:inline">Create Link</span>
           </Button>
         </DialogTrigger>
 
