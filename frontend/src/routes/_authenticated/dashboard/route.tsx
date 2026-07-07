@@ -15,9 +15,7 @@ import { api } from "@/lib/api";
 import BrowserMetrics from "./-components/BrowserMetrics";
 import CountryMetrics from "./-components/CountryMetrics";
 import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
-import VisitTimelineMetrics, {
-  type DailyTotalVisits,
-} from "./-components/VisitTimelineMetrics";
+import VisitTimelineMetrics from "./-components/VisitTimelineMetrics";
 import URLsList from "./-components/URLsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,6 +23,11 @@ import { Spinner } from "@/components/ui/spinner";
 import ErrorAlert from "@/components/ErrorAlert";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
 import { useState } from "react";
+import type {
+  DailyTotalVisits,
+  DeviceMetrics,
+  TotalVisitMetrics,
+} from "@/models/models";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -180,18 +183,6 @@ function RouteComponent() {
       <URLsList open={urlsOpen} setOpen={setUrlsOpen} />
     </section>
   );
-}
-
-interface DeviceMetrics {
-  browser: Record<string, number>[] | null;
-  os: Record<string, number>[] | null;
-  country_code: Record<string, number>[] | null;
-  device_type: Record<string, number>[] | null;
-}
-
-interface TotalVisitMetrics {
-  total_visitors: number;
-  unique_visitors: number;
 }
 
 interface MetricCardProps {

@@ -15,14 +15,7 @@ import type { ChartData } from "recharts/types/state/chartDataSlice";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorAlert from "@/components/ErrorAlert";
-
-export interface DailyTotalVisits {
-  date: string;
-  mobile: number;
-  desktop: number;
-  other: number;
-  total: number;
-}
+import type { DailyTotalVisits } from "@/models/models";
 
 interface VisitTimelineMetricsProps {
   data: DailyTotalVisits[] | undefined;

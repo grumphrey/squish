@@ -2,11 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { api } from "@/lib/api";
 import { tokenStore } from "@/features/auth/auth";
-
-interface User {
-  userID: string;
-  email: string;
-}
+import type { User } from "@/models/models";
 
 export interface AuthContext {
   user: User | null;
