@@ -45,7 +45,11 @@ import type { ShortURLRecord } from "@/models/models";
 import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-export default function URLsList() {
+interface URLsListProps {
+  query?: string;
+}
+
+export default function URLsList({ query }: URLsListProps) {
   const [inactiveOpen, setInactiveOpen] = useState(true);
   const { data, isPending, error } = useQuery({
     queryKey: ["dashboard", "urls"],
@@ -72,8 +76,14 @@ export default function URLsList() {
 
   if (data.length === 0) return <URLListEmpty />;
 
-  const activeLinks = data.filter((link) => link.is_active);
-  const inactiveLinks = data.filter((link) => !link.is_active);
+  const links = query
+    ? data.filter((link) => {
+        const q = query.toLowerCase();
+        return link.short_url.toLowerCase().includes(q);
+      })
+    : data;
+  const activeLinks = links.filter((link) => link.is_active);
+  const inactiveLinks = links.filter((link) => !link.is_active);
 
   return (
     <>
