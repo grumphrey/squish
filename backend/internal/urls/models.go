@@ -3,7 +3,7 @@ package urls
 import "time"
 
 type RedirectEvent struct {
-	ShortURL  string
+	UrlID     string
 	IPAddress string
 	UserAgent string
 }

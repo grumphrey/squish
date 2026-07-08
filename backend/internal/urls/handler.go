@@ -1,6 +1,7 @@
 package urls
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -204,13 +205,17 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// At this point, we know there is a matching long URL that exists for the short code
+	// Write metric to database without blocking
+	// NOTE: other options: To use a worker pool (bounded num. of goroutines instead of spawning possibly high num.)
+	// Can also batch insert instead of writing to DB on every request
+	// Could also use a message queue (more complexity, but allows for durability, multiple consumers)
+	// Currently, will drop tracking the metric if server crashes etc.
 	event := RedirectEvent{
-		ShortURL:  record.ShortURL,
+		UrlID:     record.UrlID,
 		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
 		UserAgent: r.Header.Get("User-Agent"),
 	}
-	h.urlService.EmitRedirectEvent(ctx, event) // okay to fail... not critical
+	go h.urlService.EmitRedirectEvent(context.WithoutCancel(ctx), event) // okay to fail... not critical
 
 	http.Redirect(w, r, record.LongURL, http.StatusFound)
 }

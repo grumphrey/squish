@@ -224,11 +224,7 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 		UserAgentStr: event.UserAgent, // TODO: or use parsed ua.String?
 	}
 
-	record, err := s.repo.GetURLRecord(ctx, event.ShortURL)
-	if err != nil {
-		log.Printf("metrics: getting url ID: %w", err)
-	}
-	if err := s.repo.CreateRedirectMetrics(ctx, record.UrlID, metrics); err != nil {
+	if err := s.repo.CreateRedirectMetrics(ctx, event.UrlID, metrics); err != nil {
 		log.Printf("could not update redirect metrics: %w", err)
 	}
 }
