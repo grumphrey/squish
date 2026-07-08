@@ -182,14 +182,22 @@ function ShortURLRecord({
     try {
       setIsDeleting(true);
       await api.post("/url/delete", { short_url });
-
-      toast.success(`Successfully deleted ${short_url}.`);
       queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
+
+      toast.success(
+        <div>
+          Successfully deleted{" "}
+          <span className="text-(--color-primary)">{displayShortURL}</span>
+        </div>,
+        {
+          position: "top-center",
+        },
+      );
     } catch (err) {
       toast.error(
         <div>
           There was a problem trying to delete{" "}
-          <span className="text-(--color-primary)">{short_url}</span>.
+          <span className="text-(--color-primary)">{displayShortURL}</span>.
         </div>,
         {
           description: (

@@ -192,6 +192,8 @@ function CreateURLDialog() {
               </InputGroup>
               <FieldDescription>
                 Only alphanumeric characters and hyphens allowed.
+                <br />
+                Case-sensitive.
               </FieldDescription>
             </Field>
           </FieldGroup>

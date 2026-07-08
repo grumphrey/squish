@@ -4,11 +4,11 @@ import logo from "@/assets/longdog.png";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   IconChartBar,
-  IconDashboard,
   IconHome,
   IconLayoutDashboard,
   IconLink,
   IconLogin,
+  IconLogout,
   IconMoon,
   IconQrcode,
   IconSun,
@@ -170,6 +170,7 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Button variant="destructive" onClick={handleLogout}>
+                    <IconLogout />
                     Sign Out
                   </Button>
                 </NavigationMenuLink>

@@ -29,7 +29,7 @@ declare module "@tanstack/react-router" {
 function App() {
   const auth = useAuth();
   // Don't render router until silent refresh completes
-  if (auth.isLoading) return <Spinner />;
+  if (auth.isLoading) return <Spinner />; // TODO: full page spinner
   return <RouterProvider router={router} context={{ auth }} />;
 }
 

@@ -24,6 +24,8 @@ import type {
   GetShortURLResponse,
   GetShortURLRequest,
 } from "@/hooks/useCreateShortURL";
+import { DEFAULT_ERR } from "@/constants";
+import { toast } from "sonner";
 
 interface URLInputProps {
   longURL: string;
@@ -89,16 +91,32 @@ export default function URLInput({
     onSubmit(
       { url, slug },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setLongURL("");
           setSlug("");
           setOptionsVisible(false);
+
+          toast.success(
+            <div>
+              Your short link:{" "}
+              <span className="text-(--color-primary)">
+                {`${window.location.origin}/${data.short_url}`}
+              </span>{" "}
+              has been created.
+            </div>,
+            {
+              description: (
+                <div className="text-xs text-(--color-text)">{url}</div>
+              ),
+              position: "top-center",
+            },
+          );
         },
         onError: (err) => {
           if (axios.isAxiosError(err)) {
-            setError(err.response?.data.message);
+            setError(err.response?.data.message ?? DEFAULT_ERR);
           } else {
-            setError(err.message);
+            setError(err.message ?? DEFAULT_ERR);
           }
         },
       },
