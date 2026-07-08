@@ -2,8 +2,6 @@ import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { type AuthContext } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Pass authentication state from auth context to tanstack router
 interface RouterContext {
@@ -19,10 +17,7 @@ function RootComponent() {
     <div className="app">
       <Navbar />
       <main className="layout">
-        <TooltipProvider>
-          <Outlet />
-          <Toaster />
-        </TooltipProvider>
+        <Outlet />
       </main>
       <Footer />
     </div>
@@ -32,6 +27,7 @@ function RootComponent() {
 function NotFoundPage() {
   return (
     <section className="hero">
+      {/* TODO: styles */}
       <p className="hero-preheader">Error 404 - Page not found</p>
       <h1 className="hero-headline">Nobody lives here.</h1>
       <div className="hero-message">

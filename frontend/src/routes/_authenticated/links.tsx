@@ -7,7 +7,15 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import { Kbd } from "@/components/ui/kbd";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,
@@ -22,20 +30,60 @@ function RouteComponent() {
         <h1 className="flex items-center gap-3 text-3xl font-sans font-bold tracking-tighter mb-5 md:text-4xl">
           Links <IconLink size="40px" />
         </h1>
-
-        <InputGroup className="max-w-xs">
-          <InputGroupInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search..."
-          />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-        </InputGroup>
+        <URLSearchInput query={searchTerm} setQuery={setSearchTerm} />
       </div>
 
       <URLsList query={searchTerm} />
     </section>
+  );
+}
+
+interface URLSearchInputProps extends ComponentProps<"input"> {
+  query: string;
+  setQuery: Dispatch<SetStateAction<string>>;
+}
+
+function URLSearchInput({ query, setQuery }: URLSearchInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      inputRef.current?.blur();
+    }
+  };
+
+  // kbd to focus search input
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // clean up on unmount
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <InputGroup className="max-w-xs">
+      <InputGroupInput
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search..."
+        ref={inputRef}
+        onKeyDown={handleInputKeyDown}
+      />
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+      <InputGroupAddon align="inline-end">
+        <Kbd>⌘</Kbd>
+        <Kbd>K</Kbd>
+      </InputGroupAddon>
+    </InputGroup>
   );
 }

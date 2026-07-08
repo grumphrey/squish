@@ -26,6 +26,7 @@ import type {
 } from "@/hooks/useCreateShortURL";
 import { DEFAULT_ERR } from "@/constants";
 import { toast } from "sonner";
+import { Kbd } from "@/components/ui/kbd";
 
 interface URLInputProps {
   longURL: string;
@@ -65,15 +66,22 @@ export default function URLInput({
     setSlug("");
   };
 
-  // use "/" key to focus on input
+  // use "cmd/ctrl + k" key to focus on input
   useEffect(() => {
     window.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.key === "/") {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         inputRef.current?.focus();
       }
     });
   }, []);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      inputRef.current?.blur();
+    } else if (e.key === "Enter") createShortLink();
+  };
 
   const createShortLink = () => {
     let url;
@@ -136,10 +144,12 @@ export default function URLInput({
           value={longURL}
           ref={inputRef}
           onChange={(e) => setLongURL(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") createShortLink();
-          }}
+          onKeyDown={handleInputKeyDown}
         />
+        <div className="hidden md:block">
+          <Kbd>⌘</Kbd>
+          <Kbd>K</Kbd>
+        </div>
 
         {tab == "short-url" && (
           <Tooltip>
@@ -166,8 +176,20 @@ export default function URLInput({
         >
           {isPending ? (
             <Spinner />
+          ) : tab === "short-url" ? (
+            <span>
+              Shorten
+              <Kbd className="hidden md:inline-flex translate-x-2 bg-(--color-primary-light) dark:bg-(--color-primary-dark) text-(--color-text)">
+                ⏎
+              </Kbd>
+            </span>
           ) : (
-            <span>{tab == "short-url" ? "Shorten" : "Generate QR"}</span>
+            <span>
+              Generate QR
+              <Kbd className="hidden md:inline-flex translate-x-2 bg-(--color-primary-light) dark:bg-(--color-primary-dark) text-(--color-text)">
+                ⏎
+              </Kbd>
+            </span>
           )}
         </button>
       </div>

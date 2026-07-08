@@ -6,9 +6,11 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 import "./index.css";
-import { ThemeProvider } from "./context/ThemeContext.tsx";
-import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
-import { Spinner } from "./components/ui/spinner.tsx";
+import { ThemeProvider } from "@/context/ThemeContext.tsx";
+import { AuthProvider, useAuth } from "@/context/AuthContext.tsx";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { Spinner } from "@/components/ui/spinner.tsx";
 
 const router = createRouter({
   routeTree,
@@ -39,7 +41,10 @@ createRoot(document.getElementById("root")!).render(
       <ReactQueryDevtools initialIsOpen={false} position="bottom" />
       <ThemeProvider>
         <AuthProvider>
-          <App />
+          <TooltipProvider>
+            <App />
+            <Toaster />
+          </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
