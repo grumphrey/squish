@@ -11,6 +11,11 @@ import { type ActiveTabOption } from "../route";
 
 import Spinner from "@/components/Spinner";
 import { IconCheck, IconSettings } from "@tabler/icons-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Toggle } from "@/components/ui/toggle";
 import axios from "axios";
 import { Checkbox } from "radix-ui";
@@ -119,14 +124,21 @@ export default function URLInput({
         />
 
         {tab == "short-url" && (
-          <Toggle
-            variant="outline"
-            aria-label="Toggle options"
-            className="data-[state=on]:bg-(--color-border) data-[state=on]:text-(--color-text)"
-            onClick={handleShowOptions}
-          >
-            <IconSettings />
-          </Toggle>
+          <Tooltip>
+            <TooltipContent className="max-w-sm font-sans">
+              Toggle options
+            </TooltipContent>
+            <TooltipTrigger className="hover:text-foreground transition-all">
+              <Toggle
+                variant="outline"
+                aria-label="Toggle options"
+                className="data-[state=on]:bg-(--color-border) data-[state=on]:text-(--color-text)"
+                onClick={handleShowOptions}
+              >
+                <IconSettings />
+              </Toggle>
+            </TooltipTrigger>
+          </Tooltip>
         )}
 
         <button

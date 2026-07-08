@@ -16,7 +16,6 @@ import BrowserMetrics from "./-components/BrowserMetrics";
 import CountryMetrics from "./-components/CountryMetrics";
 import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
 import VisitTimelineMetrics from "./-components/VisitTimelineMetrics";
-import URLsList from "./-components/URLsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -165,7 +164,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <URLsList />
+      {/* <URLsList /> */}
     </section>
   );
 }

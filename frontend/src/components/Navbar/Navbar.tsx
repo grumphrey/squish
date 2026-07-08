@@ -4,7 +4,9 @@ import logo from "@/assets/longdog.png";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   IconChartBar,
+  IconDashboard,
   IconHome,
+  IconLayoutDashboard,
   IconLink,
   IconLogin,
   IconMoon,
@@ -125,65 +127,67 @@ export default function Navbar() {
         </Sheet>
 
         {/* Desktop menu TODO using navigation menu */}
-        <div className="gap-5 items-center hidden md:flex">
-          {!user && !isLoading && (
-            <Button
-              className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
-              onClick={() => {
-                navigate({ to: "/login" });
-              }}
-            >
-              <IconLogin height="16px" />
-              Log In
-            </Button>
-          )}
-        </div>
 
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList className="gap-4">
-            {user && !isLoading && (
-              <>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Manage URLs</NavigationMenuTrigger>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger className="flex items-center gap-1">
+                <IconLayoutDashboard size={20} /> Manage URLs
+              </NavigationMenuTrigger>
 
-                  <NavigationMenuContent>
-                    <ul className="w-96">
-                      <ListItem
-                        href="/links"
-                        title="Short Links"
-                        icon={<IconLink size={30} />}
-                      >
-                        View and manage your short links.
-                      </ListItem>
-                      <ListItem
-                        href="/links"
-                        title="QR Codes"
-                        icon={<IconQrcode size={30} />}
-                      >
-                        View and manage your QR codes.
-                      </ListItem>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
+              <NavigationMenuContent>
+                <ul className="w-96">
+                  <ListItem
+                    href="/links"
+                    title="Short Links"
+                    icon={<IconLink size={30} />}
                   >
-                    <Link to="/dashboard">Analytics</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                    View and manage your short links.
+                  </ListItem>
+                  <ListItem
+                    href="/links"
+                    title="QR Codes"
+                    icon={<IconQrcode size={30} />}
+                  >
+                    View and manage your QR codes.
+                  </ListItem>
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <Button variant="destructive" onClick={handleLogout}>
-                      Sign Out
-                    </Button>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              </>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                className={navigationMenuTriggerStyle()}
+              >
+                <Link to="/dashboard">
+                  <IconChartBar size={20} /> Analytics
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+
+            {user && !isLoading && (
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Button variant="destructive" onClick={handleLogout}>
+                    Sign Out
+                  </Button>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             )}
+            <div className="gap-5 items-center hidden md:flex">
+              {!user && !isLoading && (
+                <Button
+                  className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
+                  onClick={() => {
+                    navigate({ to: "/login" });
+                  }}
+                >
+                  <IconLogin height="16px" />
+                  Log In
+                </Button>
+              )}
+            </div>
           </NavigationMenuList>
         </NavigationMenu>
 
