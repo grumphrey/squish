@@ -30,12 +30,13 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import CreateURLDialog from "../CreateURLDialog";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-
   const navigate = useNavigate();
   const { user, isLoading, logout } = useAuth();
+  const loggedIn = !isLoading && user;
 
   // Close mobile navigation menu when screen size is desktop
   useEffect(() => {
@@ -127,7 +128,6 @@ export default function Navbar() {
         </Sheet>
 
         {/* Desktop menu TODO using navigation menu */}
-
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList className="gap-4">
             <NavigationMenuItem>
@@ -166,7 +166,7 @@ export default function Navbar() {
               </NavigationMenuLink>
             </NavigationMenuItem>
 
-            {user && !isLoading && (
+            {loggedIn && (
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Button variant="destructive" onClick={handleLogout}>
@@ -176,21 +176,24 @@ export default function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
             )}
-            <div className="gap-5 items-center hidden md:flex">
-              {!user && !isLoading && (
-                <Button
-                  className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
-                  onClick={() => {
-                    navigate({ to: "/login" });
-                  }}
-                >
-                  <IconLogin height="16px" />
-                  Log In
-                </Button>
-              )}
-            </div>
           </NavigationMenuList>
         </NavigationMenu>
+
+        <div className="gap-5 items-center hidden md:flex">
+          {!user && !isLoading && (
+            <Button
+              className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
+              onClick={() => {
+                navigate({ to: "/login" });
+              }}
+            >
+              <IconLogin height="16px" />
+              Log In
+            </Button>
+          )}
+        </div>
+
+        {loggedIn && <CreateURLDialog />}
 
         <ThemeButton />
       </div>
