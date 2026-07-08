@@ -16,6 +16,7 @@ import (
 	"url-shortener/internal/metrics"
 	"url-shortener/internal/urls"
 
+	"github.com/go-redis/redis_rate/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/oschwald/geoip2-golang/v2"
@@ -87,6 +88,7 @@ func run() error {
 	authHandler := auth.NewAuthHandler(jwtService, userService)
 	protected := auth.AuthMiddleware(jwtService)
 	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
+	limiter := redis_rate.NewLimiter(rdb)
 
 	urlRepository := urls.NewURLRepository(db, rdb, gdb)
 	urlService := urls.NewURLService(urlRepository)
@@ -111,11 +113,13 @@ func run() error {
 	mux.HandleFunc("/health", urlHandler.HandleHealth)
 
 	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
-	mux.HandleFunc("/api/auth/signup", authHandler.HandleSignup)
+	rateLimitSignup := auth.RateLimitMiddleware(limiter, redis_rate.PerHour(3), "signup")
+	mux.Handle("/api/auth/signup", rateLimitSignup(http.HandlerFunc(authHandler.HandleSignup)))
 	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)
 	mux.HandleFunc("/api/auth/refresh", authHandler.HandleRefresh)
 
-	mux.Handle("/api/shorten", extractUser(http.HandlerFunc(urlHandler.HandleCreateShortURL)))
+	rateLimitShorten := auth.RateLimitMiddleware(limiter, redis_rate.PerMinute(3), "shorten")
+	mux.Handle("/api/shorten", rateLimitShorten(extractUser(http.HandlerFunc(urlHandler.HandleCreateShortURL))))
 	mux.Handle("/api/urls", protected(http.HandlerFunc(urlHandler.HandleGetURLs)))
 	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))
 

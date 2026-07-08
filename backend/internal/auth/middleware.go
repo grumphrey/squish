@@ -3,8 +3,15 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"strings"
+
+	"url-shortener/internal/utils"
+
+	"github.com/go-redis/redis_rate/v10"
 )
 
 // ContextKey is a custom type for context keys to avoid collisions.
@@ -137,6 +144,28 @@ func RequireRoles(roles ...string) func(http.Handler) http.Handler {
 				return
 			}
 
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RateLimitMiddleware(limiter *redis_rate.Limiter, limit redis_rate.Limit, keyPrefix string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip, _, _ := net.SplitHostPort(r.Header.Get("X-Forwarded-For"))
+			key := fmt.Sprintf("ratelimit:%s:%s", keyPrefix, ip)
+
+			res, err := limiter.Allow(r.Context(), key, limit)
+			if err != nil {
+				log.Printf("rate limiter error, failing open: %v", err) // if rate limiter fails, allow anyway to reduce unavailability
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if res.Allowed == 0 {
+				utils.WriteError(w, http.StatusTooManyRequests, "too_many_requests", "Too many requests. Try again later.")
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
