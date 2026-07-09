@@ -4,7 +4,7 @@ import { type ActiveTabOption } from "../route";
 import type { UseMutateFunction } from "@tanstack/react-query";
 
 import { IconLink, IconQrcode } from "@tabler/icons-react";
-import { Tabs, Checkbox } from "radix-ui";
+import { Tabs } from "radix-ui";
 
 import URLInput from "./URLInput";
 import type {
@@ -73,8 +73,8 @@ interface TabContentProps {
   setLongURL: Dispatch<SetStateAction<string>>;
   slug: string;
   setSlug: Dispatch<SetStateAction<string>>;
-  qrCodeChecked: Checkbox.CheckedState;
-  setQrCodeChecked: Dispatch<SetStateAction<Checkbox.CheckedState>>;
+  qrCodeChecked: boolean;
+  setQrCodeChecked: Dispatch<SetStateAction<boolean>>;
 }
 
 export function TabContent({

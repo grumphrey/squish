@@ -41,8 +41,8 @@ interface URLInputProps {
     unknown
   >;
   isPending: boolean;
-  qrCodeChecked: Checkbox.CheckedState;
-  setQrCodeChecked: Dispatch<SetStateAction<Checkbox.CheckedState>>;
+  qrCodeChecked: boolean;
+  setQrCodeChecked: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function URLInput({
@@ -96,39 +96,37 @@ export default function URLInput({
     setError("");
 
     // Send long URL to server to create short URL
-    onSubmit(
-      { url, slug },
-      {
-        onSuccess: (data) => {
-          setLongURL("");
-          setSlug("");
-          setOptionsVisible(false);
+    const payload = { url, slug, qr_code: qrCodeChecked };
+    onSubmit(payload, {
+      onSuccess: (data) => {
+        setLongURL("");
+        setSlug("");
+        setOptionsVisible(false);
 
-          toast.success(
-            <div>
-              Your short link:{" "}
-              <span className="text-(--color-primary)">
-                {`${window.location.origin}/${data.short_url}`}
-              </span>{" "}
-              has been created.
-            </div>,
-            {
-              description: (
-                <div className="text-xs text-(--color-text)">{url}</div>
-              ),
-              position: "top-center",
-            },
-          );
-        },
-        onError: (err) => {
-          if (axios.isAxiosError(err)) {
-            setError(err.response?.data.message ?? DEFAULT_ERR);
-          } else {
-            setError(err.message ?? DEFAULT_ERR);
-          }
-        },
+        toast.success(
+          <div>
+            Your short link:{" "}
+            <span className="text-(--color-primary)">
+              {`${window.location.origin}/${data.short_url}`}
+            </span>{" "}
+            has been created.
+          </div>,
+          {
+            description: (
+              <div className="text-xs text-(--color-text)">{url}</div>
+            ),
+            position: "top-center",
+          },
+        );
       },
-    );
+      onError: (err) => {
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data.message ?? DEFAULT_ERR);
+        } else {
+          setError(err.message ?? DEFAULT_ERR);
+        }
+      },
+    });
   };
 
   return (
@@ -228,7 +226,11 @@ export default function URLInput({
                 id="qrcode"
                 className={styles.checkboxRoot}
                 checked={qrCodeChecked}
-                onCheckedChange={(checked) => setQrCodeChecked(checked)}
+                onCheckedChange={(checked) => {
+                  if (checked !== "indeterminate") {
+                    setQrCodeChecked(checked);
+                  }
+                }}
               >
                 <Checkbox.Indicator className={styles.checkboxIndicator}>
                   <IconCheck />

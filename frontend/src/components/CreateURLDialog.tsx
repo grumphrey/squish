@@ -22,12 +22,19 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import ErrorAlert from "@/components/ErrorAlert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function CreateURLDialog() {
   const { mutate, isPending } = useCreateShortURL();
@@ -37,6 +44,7 @@ export default function CreateURLDialog() {
   const [open, setOpen] = useState(false);
   const [longURL, setLongURL] = useState("");
   const [slug, setSlug] = useState("");
+  const [qrChecked, setQrChecked] = useState(false);
   const [error, setError] = useState("");
 
   const randomSlug = useMemo(() => generateAlphanumeric(), []);
@@ -74,39 +82,41 @@ export default function CreateURLDialog() {
     }
     setError("");
 
-    mutate(
-      { url, slug },
-      {
-        onSuccess: (data) => {
-          setLongURL("");
-          setSlug("");
-          queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
+    const payload = {
+      url,
+      slug,
+      qr_code: qrChecked,
+    };
+    mutate(payload, {
+      onSuccess: (data) => {
+        setLongURL("");
+        setSlug("");
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
 
-          toast.success(
-            <div>
-              Your short link:{" "}
-              <span className="text-(--color-primary)">
-                {`${window.location.origin}/${data.short_url}`}
-              </span>{" "}
-              has been created.
-            </div>,
-            {
-              description: (
-                <div className="text-xs text-(--color-text)">{url}</div>
-              ),
-              position: "top-center",
-            },
-          );
-        },
-        onError: (err) => {
-          if (axios.isAxiosError(err)) {
-            setError(err.response?.data.message ?? DEFAULT_ERR);
-          } else {
-            setError(err.message ?? DEFAULT_ERR);
-          }
-        },
+        toast.success(
+          <div>
+            Your short link:{" "}
+            <span className="text-(--color-primary)">
+              {`${window.location.origin}/${data.short_url}`}
+            </span>{" "}
+            has been created.
+          </div>,
+          {
+            description: (
+              <div className="text-xs text-(--color-text)">{url}</div>
+            ),
+            position: "top-center",
+          },
+        );
       },
-    );
+      onError: (err) => {
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data.message ?? DEFAULT_ERR);
+        } else {
+          setError(err.message ?? DEFAULT_ERR);
+        }
+      },
+    });
   };
 
   return (
@@ -173,6 +183,25 @@ export default function CreateURLDialog() {
                 <br />
                 Case-sensitive.
               </FieldDescription>
+            </Field>
+
+            <Field orientation="horizontal">
+              <Checkbox
+                id="checkbox-qr"
+                name="checkbox-qr"
+                checked={qrChecked}
+                onCheckedChange={(checked) => {
+                  if (checked !== "indeterminate") {
+                    setQrChecked(checked);
+                  }
+                }}
+              />
+              <FieldContent>
+                <FieldLabel htmlFor="checkbox-qr">
+                  Generate a QR Code for this link
+                </FieldLabel>
+                <FieldDescription>Downloadable as an image.</FieldDescription>
+              </FieldContent>
             </Field>
           </FieldGroup>
 

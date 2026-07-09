@@ -5,7 +5,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import useTypewriter from "@/hooks/useTypewriter";
 
 import { IconCircleCheck } from "@tabler/icons-react";
-import { Checkbox } from "radix-ui";
 
 import URLTabs, { TabContent } from "./-components/URLTabs";
 import ShortURLResult from "./-components/ShortURLResult";
@@ -24,8 +23,7 @@ function RouteComponent() {
   const [longURL, setLongURL] = useState<string>("");
   const [slug, setSlug] = useState("");
   const [activeTab, setActiveTab] = useState<ActiveTabOption>("short-url");
-  const [qrCodeChecked, setQrCodeChecked] =
-    useState<Checkbox.CheckedState>(false);
+  const [qrCodeChecked, setQrCodeChecked] = useState<boolean>(false);
 
   const shortURL = data?.short_url;
   const QRCode = data?.qr_code;

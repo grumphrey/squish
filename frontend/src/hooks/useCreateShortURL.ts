@@ -23,4 +23,5 @@ export interface GetShortURLResponse {
 export interface GetShortURLRequest {
   url: string;
   slug?: string;
+  qr_code?: boolean;
 }
