@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,22 +15,7 @@ func NewMetricsRepository(db *pgxpool.Pool) *metricsRepository {
 	return &metricsRepository{db: db}
 }
 
-type MetricToValueCountMap = map[string][]map[string]int64
-
-type TotalVisitMetrics struct {
-	Total  int64 `db:"total_visitors"`
-	Unique int64 `db:"unique_visitors"`
-}
-
-type DailyTotalVisits struct {
-	Date    time.Time `db:"date"`
-	Mobile  int64     `db:"mobile"`
-	Desktop int64     `db:"desktop"`
-	Other   int64     `db:"other"`
-	Total   int64     `db:"total"`
-}
-
-func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID string) (*TotalVisitMetrics, error) {
+func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID string) (*AllTimeVisitMetrics, error) {
 	query := `
 		SELECT 
 			COUNT(*) 										AS total_visitors, 
@@ -45,7 +29,7 @@ func (r *metricsRepository) GetTotalVisitMetrics(ctx context.Context, userID str
 	}
 	defer rows.Close()
 
-	metrics, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[TotalVisitMetrics])
+	metrics, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[AllTimeVisitMetrics])
 	if err != nil {
 		return nil, err
 	}
@@ -133,26 +117,15 @@ func (r *metricsRepository) GetTotalDeviceMetrics(ctx context.Context, userID st
 	return grouped, nil
 }
 
-// Get total visit count per day of all short URLs created by this user, over the past week.
-func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, userID string) ([]DailyTotalVisits, error) {
-	// query := `SELECT COUNT(*) FROM short_url_metrics WHERE user_id=$1`
-	// query := `SELECT
-	// 		date_trunc('day', accessed_at) AS date,
-	// 		COUNT(*) AS visits
-	// 	FROM short_url_metrics
-	// 	WHERE user_id=$1
-	// 	GROUP BY date_trunc('day', accessed_at)
-	// 	HAVING date_trunc('day', accessed_at) >= NOW() - INTERVAL '7 day'
-	// 	ORDER BY date DESC
-	// `
-
+// Get total visit count per day of all short URLs created by this user, over the past 7 days (rolling window).
+func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, userID string) ([]DailyDeviceVisitMetrics, error) {
 	// CTE:
 	// 	Group into (URL access date + device type), only keeping metrics from past 7 days.
 	// 	Get the total number of visits for each (day + device type)
 	// Query:
 	// 	Group into URL access date, sum up visits for each device type + total visits
 	query := `
-		WITH counts as 
+		WITH counts_this_week as 
 			(SELECT 
 				date_trunc('day', accessed_at) AS date, 
 				device_type,
@@ -169,7 +142,7 @@ func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, use
 			SUM(CASE WHEN device_type = 'desktop' THEN visits ELSE 0 END) AS desktop, 
 			SUM(CASE WHEN device_type NOT IN ('mobile', 'desktop') THEN visits ELSE 0 END) AS other, 
 			SUM(visits) AS total 
-		FROM counts 
+		FROM counts_this_week 
 		GROUP BY date 
 		ORDER BY date DESC
 	`
@@ -180,10 +153,29 @@ func (r *metricsRepository) GetTotalVisitsByDayPastWeek(ctx context.Context, use
 	}
 	defer rows.Close()
 
-	dailyVisits, err := pgx.CollectRows(rows, pgx.RowToStructByName[DailyTotalVisits])
+	dailyVisits, err := pgx.CollectRows(rows, pgx.RowToStructByName[DailyDeviceVisitMetrics])
 	if err != nil {
 		return nil, err
 	}
 
 	return dailyVisits, nil
+}
+
+// Total visit count of all short URLs created by this user, over the 7 days that ends before the current 7 day rolling window.
+func (r *metricsRepository) GetTotalVisitsWeekBeforePastWeek(ctx context.Context, userID string) (int64, error) {
+	query := `
+		SELECT COUNT(*) AS total 
+ 		FROM short_url_metrics
+		WHERE user_id = $1
+  	AND accessed_at >= NOW() - INTERVAL '14 day'
+  	AND accessed_at <  NOW() - INTERVAL '7 day'
+	`
+
+	var totalVisits int64
+	err := r.db.QueryRow(ctx, query, userID).Scan(&totalVisits)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalVisits, nil
 }

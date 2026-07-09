@@ -30,18 +30,32 @@ func (s *metricsService) GetTotalDeviceMetrics(ctx context.Context, userID strin
 	return metricMap, nil
 }
 
-func (s *metricsService) GetTotalVisitsByDayPastWeek(ctx context.Context, userID string) ([]DailyTotalVisits, error) {
+func (s *metricsService) GetTotalVisitsByDayPastWeek(ctx context.Context, userID string) (*PastWeekVisitMetrics, error) {
 	dailyVisits, err := s.metricsRepository.GetTotalVisitsByDayPastWeek(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	totalWeekBefore, err := s.metricsRepository.GetTotalVisitsWeekBeforePastWeek(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Handle missing dates by filling in date with visits = 0
-	result := fillMissingDates(dailyVisits)
-	return result, nil
+	dailyPastWeek := fillMissingDates(dailyVisits)
+	var totalPastWeek int64
+	for _, visits := range dailyVisits {
+		totalPastWeek += visits.Total
+	}
+
+	totalVisits := PastWeekVisitMetrics{
+		DailyPastWeek:   dailyPastWeek,
+		TotalPastWeek:   totalPastWeek,
+		TotalWeekBefore: totalWeekBefore,
+	}
+	return &totalVisits, nil
 }
 
-func fillMissingDates(visitsByDay []DailyTotalVisits) []DailyTotalVisits {
+func fillMissingDates(visitsByDay []DailyDeviceVisitMetrics) []DailyDeviceVisitMetrics {
 	endDay := time.Now().UTC().Truncate(24 * time.Hour)
 	startDay := endDay.AddDate(0, 0, -7) // fill missing dates until 1 week before
 
@@ -56,14 +70,14 @@ func fillMissingDates(visitsByDay []DailyTotalVisits) []DailyTotalVisits {
 	for d := startDay; !d.After(endDay); d = d.AddDate(0, 0, 1) {
 		dayStr := d.Format("2006-01-02")
 		if !existingDays[dayStr] {
-			visitsByDay = append(visitsByDay, DailyTotalVisits{Date: d}) // zero-init int64 field is 0
+			visitsByDay = append(visitsByDay, DailyDeviceVisitMetrics{Date: d}) // zero-init int64 field is 0
 		}
 	}
 
 	return visitsByDay
 }
 
-func (s *metricsService) GetTotalVisitMetrics(ctx context.Context, userID string) (*TotalVisitMetrics, error) {
+func (s *metricsService) GetTotalVisitMetrics(ctx context.Context, userID string) (*AllTimeVisitMetrics, error) {
 	metrics, err := s.metricsRepository.GetTotalVisitMetrics(ctx, userID)
 	if err != nil {
 		return nil, err

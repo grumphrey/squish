@@ -1,11 +1,17 @@
 import styles from "./dashboard.module.css";
-import { IconArrowNarrowLeft, IconRefresh } from "@tabler/icons-react";
+import {
+  IconArrowNarrowLeft,
+  IconRefresh,
+  IconTrendingDown,
+  IconTrendingUp,
+} from "@tabler/icons-react";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,10 +27,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import ErrorAlert from "@/components/ErrorAlert";
 import type {
-  DailyTotalVisits,
   DeviceMetrics,
   TotalVisitMetrics,
+  VisitsPastWeek,
 } from "@/models/models";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -57,9 +64,7 @@ function RouteComponent() {
   } = useQuery({
     queryKey: ["dashboard", "dailyTotalVisits"],
     queryFn: () =>
-      api
-        .get<DailyTotalVisits[]>("/metrics/visits/daily")
-        .then((res) => res.data),
+      api.get<VisitsPastWeek>("/metrics/visits/daily").then((res) => res.data),
     staleTime: 1000 * 60 * 5,
     refetchOnMount: "always",
   });
@@ -121,7 +126,7 @@ function RouteComponent() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
         <div className="col-span-1 sm:col-span-2">
           <VisitTimelineMetrics
-            data={visitsData}
+            data={visitsData?.daily_past_week}
             isPending={isVisitsLoading}
             error={visitsError}
           />
@@ -129,11 +134,13 @@ function RouteComponent() {
 
         <div className="gap-5 grid grid-cols-subgrid col-span-1 sm:col-span-2 md:col-span-1">
           <MetricCard
-            data={totalData?.total_visitors}
+            data={visitsData?.total_past_week}
+            compareData={visitsData?.total_week_before}
+            isCompare
             isPending={isTotalLoading}
             error={totalError}
             title="Total Visitors"
-            description="All-Time"
+            description="Past 7 days"
           />
           <MetricCard
             data={totalData?.unique_visitors}
@@ -171,6 +178,8 @@ function RouteComponent() {
 
 interface MetricCardProps {
   data: number | undefined;
+  compareData?: number;
+  isCompare?: boolean;
   isPending: boolean;
   error: Error | null;
   title: string;
@@ -179,6 +188,8 @@ interface MetricCardProps {
 
 function MetricCard({
   data,
+  compareData,
+  isCompare,
   isPending,
   error,
   title,
@@ -202,15 +213,42 @@ function MetricCard({
     return <ErrorAlert />;
   }
 
+  // TODO: honestly feels messy. should refactor
+  let changeNum;
+  if (isCompare && data && compareData != null) {
+    changeNum = data - compareData;
+  }
+
   return (
     <Card className="bg-linear-to-t from-primary/5">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="flex justify-between">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex text-6xl items-center justify-center h-full pb-12">
-        {data}
+
+      <CardContent className="flex text-6xl items-center justify-center h-full">
+        <div>{data}</div>
       </CardContent>
+
+      <CardFooter className="flex-col items-start gap-1.5 font-sans text-sm">
+        <div className="line-clamp-1 flex gap-2 font-medium">
+          {changeNum != null && changeNum < 0 && (
+            <Badge className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">
+              Down by {changeNum} from previous week
+              <IconTrendingDown className="size-4" />
+            </Badge>
+          )}
+          {changeNum != null &&
+            changeNum == 0 &&
+            "No change from the past week"}
+          {changeNum != null && changeNum > 0 && (
+            <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
+              Up by {changeNum} from previous week
+              <IconTrendingUp className="size-4" />
+            </Badge>
+          )}
+        </div>
+      </CardFooter>
     </Card>
   );
 }

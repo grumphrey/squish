@@ -13,6 +13,12 @@ export interface DailyTotalVisits {
   total: number;
 }
 
+export interface VisitsPastWeek {
+  daily_past_week: DailyTotalVisits[];
+  total_past_week: number;
+  total_week_before: number;
+}
+
 export interface DeviceMetrics {
   browser: Record<string, number>[] | null;
   os: Record<string, number>[] | null;

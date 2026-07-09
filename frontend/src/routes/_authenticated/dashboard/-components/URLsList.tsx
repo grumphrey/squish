@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -42,7 +41,6 @@ import { DeleteLinkButton } from "@/components/DeleteLinkButton";
 import type { ShortURLRecord } from "@/models/models";
 import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import CreateURLDialog from "@/components/CreateURLDialog";
 
 interface URLsListProps {
   query?: string;
@@ -148,9 +146,6 @@ function URLListEmpty() {
           your first short URL.
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent className="flex-row justify-center gap-2">
-        <CreateURLDialog />
-      </EmptyContent>
     </Empty>
   );
 }

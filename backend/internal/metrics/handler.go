@@ -51,7 +51,7 @@ func (h *metricsHandler) HandleGetTotalVisitsByDayPastWeek(w http.ResponseWriter
 	}
 
 	// Get a list of dates and the total number of visits on each day, grouped by device type, from the past week.
-	dailyVisits, err := h.metricsService.GetTotalVisitsByDayPastWeek(ctx, claims.UserID)
+	metrics, err := h.metricsService.GetTotalVisitsByDayPastWeek(ctx, claims.UserID)
 	if err != nil {
 		// TODO: error handling
 		http.Error(w, "server error", http.StatusInternalServerError)
@@ -59,27 +59,8 @@ func (h *metricsHandler) HandleGetTotalVisitsByDayPastWeek(w http.ResponseWriter
 	}
 
 	// Format response
-	type TotalVisitsByDayResponse struct {
-		Date    string `json:"date"`
-		Mobile  int64  `json:"mobile"`
-		Desktop int64  `json:"desktop"`
-		Other   int64  `json:"other"`
-		Total   int64  `json:"total"`
-	}
-	result := make([]TotalVisitsByDayResponse, len(dailyVisits))
-
-	for i, d := range dailyVisits {
-		result[i] = TotalVisitsByDayResponse{
-			Date:    d.Date.Format("2006-01-02"),
-			Mobile:  d.Mobile,
-			Desktop: d.Desktop,
-			Other:   d.Other,
-			Total:   d.Total,
-		}
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	json.NewEncoder(w).Encode(metrics)
 }
 
 // Get total visitors + unique visitors for all short URLs created by this user.
