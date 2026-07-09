@@ -73,8 +73,9 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 
 	// Get long URL, slug from request body
 	type requestData struct {
-		LongURL string `json:"url"`
-		Slug    string `json:"slug"` // optional
+		LongURL      string `json:"url"`
+		Slug         string `json:"slug"`    // optional
+		CreateQRCode bool   `json:"qr_code"` // optional
 	}
 	request, err := utils.Decode[requestData](r)
 	longURL := request.LongURL
@@ -106,7 +107,7 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 	}
 
 	// Create short code and store URL record in database
-	shortCode, err := h.urlService.CreateURLRecord(ctx, longURL, userID, slug)
+	record, err := h.urlService.CreateURLRecord(ctx, r.Host, longURL, userID, slug, request.CreateQRCode)
 	if err != nil {
 		if err == ErrSlugExists {
 			utils.WriteError(w, http.StatusConflict, CodeShortTakenErr,
@@ -117,28 +118,25 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Generate QR code for created short code
-	encodedQRCode, err := h.urlService.CreateQRCode(h.fs, r.Host, shortCode)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
-		return
-	}
-
-	// Respond with generated short code and QR code
+	// Respond with generated short code and QR code (optional)
 	type createShortURLResponse struct {
 		ShortURL string `json:"short_url"`
-		QRCode   string `json:"qr_code"`
+		QRCode   string `json:"qr_code,omitempty"`
+	}
+	var resQRCode string
+	if record.QRCode != nil {
+		resQRCode = "data:image/png;base64," + *record.QRCode
 	}
 	response := createShortURLResponse{
-		ShortURL: shortCode,
-		QRCode:   "data:image/png;base64," + encodedQRCode, // NOTE: tell browser to interpret as an image encoded in base64
+		ShortURL: record.ShortURL,
+		QRCode:   resQRCode,
 	}
 	if err := utils.Encode(w, r, http.StatusOK, response); err != nil {
 		log.Printf("Encoding error: (%v)\n", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Created short code: %v", shortCode)
+	log.Printf("Created short code: %v", record.ShortURL)
 }
 
 // HandleDeleteShortURL soft-deletes the given short URL from database records.

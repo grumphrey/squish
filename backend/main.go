@@ -91,7 +91,7 @@ func run() error {
 	limiter := redis_rate.NewLimiter(rdb)
 
 	urlRepository := urls.NewURLRepository(db, rdb, gdb)
-	urlService := urls.NewURLService(urlRepository)
+	urlService := urls.NewURLService(urlRepository, staticFiles)
 	urlHandler := urls.NewURLHandler(urlService, staticFiles)
 
 	metricsRepository := metrics.NewMetricsRepository(db)
@@ -118,7 +118,7 @@ func run() error {
 	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)
 	mux.HandleFunc("/api/auth/refresh", authHandler.HandleRefresh)
 
-	rateLimitShorten := auth.RateLimitMiddleware(limiter, redis_rate.PerMinute(3), "shorten")
+	rateLimitShorten := auth.RateLimitMiddleware(limiter, redis_rate.PerMinute(10), "shorten")
 	mux.Handle("/api/shorten", rateLimitShorten(extractUser(http.HandlerFunc(urlHandler.HandleCreateShortURL))))
 	mux.Handle("/api/urls", protected(http.HandlerFunc(urlHandler.HandleGetURLs)))
 	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))

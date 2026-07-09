@@ -31,8 +31,8 @@ var (
 
 // URLService defines the interface for short URL operations.
 type URLService interface {
-	CreateURLRecord(ctx context.Context, longURL, userID, slug string) (string, error)
-	CreateQRCode(fs embed.FS, host, shortCode string) (string, error)
+	CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, createQRCode bool) (*ShortURLRecord, error)
+	CreateQRCode(host, shortCode string) (string, error)
 	FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
 	SoftDeleteURLRecord(ctx context.Context, shortCode, userID string) error
 	GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error)
@@ -42,24 +42,23 @@ type URLService interface {
 
 type urlService struct {
 	repo URLRepository
+	fs   embed.FS
 }
 
-func NewURLService(r URLRepository) *urlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
-	return &urlService{repo: r}
+func NewURLService(r URLRepository, fs embed.FS) *urlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
+	return &urlService{repo: r, fs: fs}
 }
 
 // CreateURLRecord creates the short URL record generated from the given long URL.
-//
-//	TODO:
-//
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
-func (s *urlService) CreateURLRecord(ctx context.Context, longURL, userID, slug string) (string, error) {
+func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, createQRCode bool) (*ShortURLRecord, error) {
 	var lastErr error
 	// Randomly generated short code may have collisions. Re-try on collision.
 	for attempt := 0; attempt < MaxAttempts; attempt++ {
 		var (
-			shortCode string
-			err       error
+			shortCode     string
+			encodedQRCode string
+			err           error
 		)
 
 		// Generate short code or use given slug
@@ -69,19 +68,23 @@ func (s *urlService) CreateURLRecord(ctx context.Context, longURL, userID, slug 
 			shortCode, err = utils.GenerateShortCode(ShortCodeLen)
 		}
 		if err != nil {
-			return "", fmt.Errorf("generating short code: %w", err)
+			return nil, fmt.Errorf("generating short code: %w", err)
+		}
+
+		// Generate QR code (if requested)
+		if createQRCode {
+			encodedQRCode, err = s.CreateQRCode(host, shortCode)
+			if err != nil {
+				return nil, fmt.Errorf("generating qr code: %w", err)
+			}
 		}
 
 		// Create URL record in database
-		if userID == "" {
-			err = s.repo.CreateURLRecord(ctx, shortCode, longURL)
-		} else {
-			err = s.repo.CreateURLRecordWithUser(ctx, shortCode, longURL, userID)
-		}
+		record, err := s.repo.CreateURLRecord(ctx, shortCode, longURL, encodedQRCode, userID)
 
 		// Successfully created URL record
 		if err == nil {
-			return shortCode, nil
+			return record, nil
 		}
 
 		// Try again if collision from randomly generated shortcode
@@ -92,16 +95,16 @@ func (s *urlService) CreateURLRecord(ctx context.Context, longURL, userID, slug 
 
 		// Slug already taken
 		if err == ErrCodeExists {
-			return "", ErrSlugExists
+			return nil, ErrSlugExists
 		}
-		return "", fmt.Errorf("inserting url record into DB: %w", err)
+		return nil, fmt.Errorf("inserting url record into DB: %w", err)
 	}
 
-	return "", fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
+	return nil, fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
 }
 
 // CreateQRCode returns a base-64 encoded string representing a QR code for the given URL.
-func (s *urlService) CreateQRCode(fs embed.FS, host string, shortCode string) (string, error) {
+func (s *urlService) CreateQRCode(host, shortCode string) (string, error) {
 	// Initialize URL object corresponding to given short code
 	u := &url.URL{
 		Scheme: "https",
@@ -117,7 +120,7 @@ func (s *urlService) CreateQRCode(fs embed.FS, host string, shortCode string) (s
 	}
 
 	// Initialize QR code options
-	img, err := loadEmbeddedImage(fs, "static/assets/dog-logo-qr.png")
+	img, err := loadEmbeddedImage(s.fs, "static/assets/dog-logo-qr.png")
 	if err != nil {
 		return "", fmt.Errorf("creating qr code using logo: %w", err)
 	}

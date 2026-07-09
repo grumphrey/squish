@@ -31,9 +31,7 @@ type URLRepository interface {
 
 	// Querying persistent storage
 	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	CreateURLRecord(ctx context.Context, shortCode, longURL string) error
-	// TODO combine with above func
-	CreateURLRecordWithUser(ctx context.Context, shortCode, longURL, userID string) error
+	CreateURLRecord(ctx context.Context, shortCode, longURL, qrCode, userID string) (*ShortURLRecord, error)
 	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
 	UpdateShortURLInactive(ctx context.Context, shortCode string) error
 	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
@@ -93,8 +91,7 @@ func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string
 // Returns nil if no results are found.
 func (r *urlRepository) GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
 	query := `
-		SELECT 
-			id, short_url, long_url, user_id, created_at, is_active
+		SELECT *
 		FROM short_urls 
 		WHERE short_url = $1`
 	row, err := r.db.Query(ctx, query, shortCode)
@@ -113,39 +110,33 @@ func (r *urlRepository) GetURLRecord(ctx context.Context, shortCode string) (*Sh
 }
 
 // CreateURLRecord creates a record in the database given the short code and long URL.
-func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL string) error {
-	query := `INSERT INTO short_urls (short_url, long_url) VALUES ($1, $2)`
+func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL, qrCode, userID string) (*ShortURLRecord, error) {
+	query := `INSERT INTO short_urls (short_url, long_url, encoded_qr_code, user_id) 
+		VALUES (@ShortURL, @LongURL, @QRCode, @UserID) 
+		RETURNING *`
+	args := pgx.NamedArgs{
+		"ShortURL": shortCode,
+		"LongURL":  longURL,
+		"QRCode":   utils.Nullable(qrCode),
+		"UserID":   utils.Nullable(userID),
+	}
 
-	tag, err := r.db.Exec(ctx, query, shortCode, longURL)
+	// Attempt to insert rows
+	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique violation
-			return ErrCodeExists
+			return nil, ErrCodeExists
 		}
-		return err
+		return nil, err
 	}
 
-	if tag.RowsAffected() == 0 {
-		return ErrNoRowsAffected
-	}
-	return nil
-}
-func (r *urlRepository) CreateURLRecordWithUser(ctx context.Context, shortCode, longURL, userID string) error {
-	query := `INSERT INTO short_urls (short_url, long_url, user_id) VALUES ($1, $2, $3)`
-
-	tag, err := r.db.Exec(ctx, query, shortCode, longURL, userID)
+	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[ShortURLRecord])
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique violation
-			return ErrCodeExists
-		}
-		return err
+		return nil, err
 	}
 
-	if tag.RowsAffected() == 0 {
-		return ErrNoRowsAffected
-	}
-	return nil
+	return &record, nil
 }
 
 // Return the user ID that owns the given short URL.
@@ -191,7 +182,8 @@ func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts
 			s.long_url AS long_url, 
 			u.id AS user_id, 
 			s.created_at AS created_at, 
-			s.is_active AS is_active
+			s.is_active AS is_active, 
+			s.encoded_qr_code AS encoded_qr_code 
 		FROM short_urls s 
 		JOIN users u
 		ON s.user_id=u.id 

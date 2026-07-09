@@ -86,8 +86,8 @@ func isAlphanumeric(s string) bool {
 	return true
 }
 
-// Return nil if a given value is its zero-initialized value
-// Used to insert NULL in database when: e.g. string is "" or float value is 0
+// Return nil if a given value is its zero-initialized value.
+// Used to insert NULL in database when: e.g. string is "" or float value is 0.
 func Nullable[T comparable](v T) *T {
 	var zero T // zero-initialized value.. so e.g. for string it is "", for floats it is 0
 	if v == zero {

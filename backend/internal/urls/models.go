@@ -40,6 +40,7 @@ type ShortURLRecord struct {
 	UserID    *string   `db:"user_id"`
 	CreatedAt time.Time `db:"created_at"`
 	Active    bool      `db:"is_active"`
+	QRCode    *string   `db:"encoded_qr_code"`
 }
 
 // type ErrorCode string
