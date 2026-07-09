@@ -203,7 +203,7 @@ function MetricCard({
   }
 
   return (
-    <Card>
+    <Card className="bg-linear-to-t from-primary/5">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

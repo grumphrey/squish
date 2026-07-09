@@ -6,12 +6,10 @@ import {
   IconDots,
   IconLink,
   IconPencil,
-  IconPlus,
 } from "@tabler/icons-react";
 import { api } from "@/lib/api";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -44,6 +42,7 @@ import { DeleteLinkButton } from "@/components/DeleteLinkButton";
 import type { ShortURLRecord } from "@/models/models";
 import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import CreateURLDialog from "@/components/CreateURLDialog";
 
 interface URLsListProps {
   query?: string;
@@ -137,8 +136,6 @@ export default function URLsList({ query }: URLsListProps) {
 }
 
 function URLListEmpty() {
-  const navigate = useNavigate();
-
   return (
     <Empty className="font-sans">
       <EmptyHeader>
@@ -152,9 +149,7 @@ function URLListEmpty() {
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center gap-2">
-        <Button onClick={() => navigate({ to: "/" })}>
-          <IconPlus /> Create Short URL
-        </Button>
+        <CreateURLDialog />
       </EmptyContent>
     </Empty>
   );

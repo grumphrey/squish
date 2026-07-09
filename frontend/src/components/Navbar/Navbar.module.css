@@ -58,6 +58,7 @@
   left: 125%;
   transition: left 0.6s ease;
 }
+
 .navLogo span {
   color: var(--color-primary);
 }
