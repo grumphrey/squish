@@ -188,6 +188,13 @@ func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID s
 		return err
 	}
 
+	// Invalidate cached url record
+	err = s.repo.DeleteCachedURLRecord(ctx, shortURL)
+	if err != nil {
+		// Don't error out if failed to delete cache, will just be stale reads until key expires
+		log.Printf("error while deleting cached URL record: %v", err)
+	}
+
 	return nil
 }
 

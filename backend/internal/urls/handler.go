@@ -109,6 +109,7 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 	// Create short code and store URL record in database
 	record, err := h.urlService.CreateURLRecord(ctx, r.Host, longURL, userID, slug, request.CreateQRCode)
 	if err != nil {
+		log.Printf("error creating url record: %v", err)
 		if err == ErrSlugExists {
 			utils.WriteError(w, http.StatusConflict, CodeShortTakenErr,
 				fmt.Sprintf(MsgShortCodeTaken, slug))
@@ -203,6 +204,12 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Return not found for inactive links/URL records
+	if !record.Active {
+		utils.WriteError(w, http.StatusNotFound, "INVALID_SHORTCODE", "Invalid short code")
+		return
+	}
+
 	// Write metric to database without blocking
 	// NOTE: other options: To use a worker pool (bounded num. of goroutines instead of spawning possibly high num.)
 	// Can also batch insert instead of writing to DB on every request
@@ -215,6 +222,7 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	go h.urlService.EmitRedirectEvent(context.WithoutCancel(ctx), event) // okay to fail... not critical
 
+	// Redirect user to long URL
 	http.Redirect(w, r, record.LongURL, http.StatusFound)
 }
 

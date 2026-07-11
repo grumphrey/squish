@@ -21,13 +21,16 @@ import (
 var (
 	ErrNoRowsAffected = errors.New("No rows affected")
 	ErrCodeExists     = errors.New("Short code already exists")
+
+	defaultExpirationTime = 24 * time.Hour
 )
 
 // URLRepository defines storage operations.
 type URLRepository interface {
 	// Caching
 	GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord) error
+	SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord, expirationTime ...time.Duration) error
+	DeleteCachedURLRecord(ctx context.Context, shortCode string) error
 
 	// Querying persistent storage
 	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
@@ -71,7 +74,7 @@ func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortCode string
 }
 
 // SetCachedURLRecord caches the URL record (val) by short URL (key).
-func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord) error {
+func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord, expirationTime ...time.Duration) error {
 	key := "url:" + shortCode
 	// Serialize struct into []byte
 	val, err := json.Marshal(record)
@@ -79,10 +82,23 @@ func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string
 		return err
 	}
 
-	// default time is 0, which means no expiration
-	var expirationTime time.Duration
-	if err := r.rdb.Set(ctx, key, val, expirationTime).Err(); err != nil {
+	// configured default TTL is 24hrs
+	ttl := defaultExpirationTime
+	if len(expirationTime) > 0 {
+		ttl = expirationTime[0]
+	}
+	if err := r.rdb.Set(ctx, key, val, ttl).Err(); err != nil {
 		return err
+	}
+	return nil
+}
+
+// Delete/invalidate the cached URL record given the short URL (key).
+// Attempting to delete non-existent keys will not return an error.
+func (r *urlRepository) DeleteCachedURLRecord(ctx context.Context, shortCode string) error {
+	key := "url:" + shortCode
+	if err := r.rdb.Del(ctx, key).Err(); err != nil {
+		return err // redis.Del silently ignores non-existent keys
 	}
 	return nil
 }
