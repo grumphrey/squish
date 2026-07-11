@@ -21,11 +21,14 @@ export const Route = createFileRoute("/signup")({
 
 function RouteComponent() {
   return (
-    <div className="font-sans w-full flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <SignupForm />
+    <>
+      <title>squi.sh — Sign Up</title>
+      <div className="font-sans w-full flex flex-col items-center justify-center gap-6 p-6 md:p-10">
+        <div className="w-full max-w-sm">
+          <SignupForm />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

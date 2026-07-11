@@ -38,6 +38,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function RouteComponent() {
+  return (
+    <>
+      <title>squi.sh — Analytics</title>
+      <Dashboard />
+    </>
+  );
+}
+
+function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
