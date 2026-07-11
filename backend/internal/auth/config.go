@@ -1,9 +1,13 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"os"
 	"time"
+
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
 )
 
 type Config struct {
@@ -15,6 +19,12 @@ type Config struct {
 	Audience           []string
 }
 
+type GoogleAuthConfig struct {
+	oidcProvider *oidc.Provider
+	oauth2Config oauth2.Config
+	verifier     *oidc.IDTokenVerifier
+}
+
 var (
 	ErrInvalidToken     = errors.New("invalid token")
 	ErrExpiredToken     = errors.New("token has expired")
@@ -23,6 +33,7 @@ var (
 	ErrInvalidTokenType = errors.New("invalid token type")
 )
 
+// Init JWT config.
 func NewConfig() (*Config, error) {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
@@ -34,9 +45,33 @@ func NewConfig() (*Config, error) {
 	return &Config{
 		AccessTokenSecret:  []byte(accessSecret),
 		RefreshTokenSecret: []byte(refreshSecret),
-		AccessTokenTTL:     15 * time.Minute,   // Short-lived access tokens
-		RefreshTokenTTL:    7 * 24 * time.Hour, // Longer refresh token lifetime
-		Issuer:             "https://squish.humphrey.app",
+		AccessTokenTTL:     15 * time.Minute,              // Short-lived access tokens
+		RefreshTokenTTL:    7 * 24 * time.Hour,            // Longer refresh token lifetime
+		Issuer:             "https://squish.humphrey.app", // TODO: use an env var instead of hardcoding?
 		Audience:           []string{"https://squish.humphrey.app"},
+	}, nil
+}
+
+// Init Google OpenID Connect config.
+func InitGoogleOIDC(ctx context.Context) (*GoogleAuthConfig, error) {
+	// Fetch known endpoints: auth, token, userinfo etc.
+	provider, err := oidc.NewProvider(ctx, "https://accounts.google.com")
+	if err != nil {
+		return nil, err
+	}
+
+	oauth2Config := oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),     // from google console
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"), // from google console
+		// endpoint for google to redirect user to after auth (NOTE: needs to be absolute url, since we are sending this as query param to google)
+		RedirectURL: os.Getenv("GOOGLE_OAUTH_REDIRECT_URL"),
+		Endpoint:    provider.Endpoint(), // get discovered endpoints from provider instead of hardcoded
+		Scopes:      []string{oidc.ScopeOpenID, "email", "profile"},
+	}
+
+	return &GoogleAuthConfig{
+		oidcProvider: provider,
+		oauth2Config: oauth2Config,
+		verifier:     provider.Verifier(&oidc.Config{ClientID: oauth2Config.ClientID}), // fetches JWKS to verify token from google
 	}, nil
 }

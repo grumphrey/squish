@@ -12,6 +12,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, email string, password string) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, userID string) (*User, error)
+	FindUserByGoogleID(ctx context.Context, googleID string) (*User, error)
+	CreateUserWithGoogleID(ctx context.Context, googleID, email string) (*User, error)
 }
 
 type userRepository struct {
@@ -67,6 +69,34 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID string) (*User,
 		&user.ID, &user.Email, &user.Roles, &user.Password,
 	)
 	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// TODO: maybe use nullable? so password can be a string instead of pointer
+func (r *userRepository) FindUserByGoogleID(ctx context.Context, googleID string) (*User, error) {
+	var user User
+	query := "SELECT id, email, roles FROM users WHERE google_id=$1"
+	err := r.db.QueryRow(ctx, query, googleID).Scan(
+		&user.ID, &user.Email, &user.Roles,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) CreateUserWithGoogleID(ctx context.Context, googleID, email string) (*User, error) {
+	var user User
+	query := "INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id, email, roles"
+	err := r.db.QueryRow(ctx, query, googleID, email).Scan(
+		&user.ID, &user.Email, &user.Roles,
+	)
+	if err != nil {
+		if isPgError(err, PgErrUniqueViolation) {
+			return nil, ErrExistingUser
+		}
 		return nil, err
 	}
 	return &user, nil

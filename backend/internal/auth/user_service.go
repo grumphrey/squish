@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -11,6 +13,7 @@ type UserService interface {
 	SignupUser(ctx context.Context, email, password string) (*User, error)
 	ValidateCredentials(ctx context.Context, email, password string) (*User, error)
 	GetUserByID(ctx context.Context, userID string) (*User, error)
+	FindOrCreateUserByGoogleID(ctx context.Context, id, email string) (*User, error)
 }
 
 type userService struct {
@@ -34,13 +37,19 @@ func (s *userService) SignupUser(ctx context.Context, email, password string) (*
 	return user, nil
 }
 
+var NoPasswordErr = errors.New("no password for this user")
+
 // ValidateCredentials checks if the user's provided password matches the stored hashed password.
 func (s *userService) ValidateCredentials(ctx context.Context, email, password string) (*User, error) {
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	// User might not have been created with password. (e.g. using OIDC for authentication)
+	if user.Password == nil {
+		return nil, NoPasswordErr
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(password)); err != nil {
 		return nil, err
 	}
 	return user, nil
@@ -49,6 +58,26 @@ func (s *userService) ValidateCredentials(ctx context.Context, email, password s
 // GetUserByID queries the database for the user given the userID.
 func (s *userService) GetUserByID(ctx context.Context, userID string) (*User, error) {
 	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// TODO: implicit/explicit linking accounts.
+// Currently unsafe to sign up with email+password, since no email verification, anyone can "take over" an email.
+// Or just disable email+password login.
+func (s *userService) FindOrCreateUserByGoogleID(ctx context.Context, id, email string) (*User, error) {
+	user, err := s.store.FindUserByGoogleID(ctx, id)
+	if err == nil { // User found
+		return user, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err // real db error, don't fall through
+	}
+
+	// User doesnt exist, create user
+	user, err = s.store.CreateUserWithGoogleID(ctx, id, email)
 	if err != nil {
 		return nil, err
 	}

@@ -32,10 +32,21 @@ type RefreshTokenData struct {
 	CreatedAt time.Time
 }
 
+// NOTE: remember to use pointer for possibly null columns.
+// Maybe good to map db columns to struct fields.
 // User represents a user in the system.
 type User struct {
 	ID       string
 	Email    string
 	Roles    []string
-	Password string // Hashed password
+	Password *string // Hashed password
+}
+
+// Represents claims of the JWT returned by Google authorization server.
+type GoogleClaims struct {
+	Sub           string `json:"sub"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Name          string `json:"name"`
+	jwt.RegisteredClaims
 }

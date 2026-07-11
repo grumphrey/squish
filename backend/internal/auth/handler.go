@@ -8,15 +8,21 @@ import (
 	"url-shortener/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/oauth2"
 )
 
 type AuthHandler struct {
 	jwtService  *JWTService
 	userService UserService
+	googleAuth  *GoogleAuthConfig
 }
 
-func NewAuthHandler(jwtService *JWTService, userService UserService) *AuthHandler {
-	return &AuthHandler{jwtService: jwtService, userService: userService}
+func NewAuthHandler(jwtService *JWTService, userService UserService, googleAuth *GoogleAuthConfig) *AuthHandler {
+	return &AuthHandler{
+		jwtService:  jwtService,
+		userService: userService,
+		googleAuth:  googleAuth,
+	}
 }
 
 // HandleLogin handles user authentication and returns a token pair.
@@ -39,7 +45,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Validate credentials
 	user, err := h.userService.ValidateCredentials(r.Context(), req.Email, req.Password)
-	if err != nil {
+	if err != nil { // NOTE: currently handles case where user signed up with OAuth (NoPasswordErr)
 		utils.WriteError(w, http.StatusUnauthorized, "ERR_INVALID_CREDENTIALS", "Invalid email/password")
 		return
 	}
@@ -220,4 +226,106 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 		"access_token": tokenPair.AccessToken,
 		"expires_at":   tokenPair.ExpiresAt,
 	})
+}
+
+// Handle logging in with Google.
+// Redirect user to Google's login page to authenticate user.
+// Constructs the URL to redirect to with the required parameters. (client ID, redirect URI, state etc.)
+func (h *AuthHandler) HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	// CSRF protection (should match token returned by Google, proves the login request was initiated by the user)
+	state := utils.RandomString(32)
+	verifierPKCE := oauth2.GenerateVerifier() // proves party redeeming code for token is same party that started the flow
+
+	// store both in short-lived, httpOnly cookies to check on callback
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauth_state", Value: state,
+		HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode,
+		Path: "/", MaxAge: 600,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauth_verifier", Value: verifierPKCE,
+		HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode,
+		Path: "/", MaxAge: 600,
+	})
+
+	// Construct Google authorization URL (with client id, redirect uri, scope from config, as well as state etc.)
+	authURL := h.googleAuth.oauth2Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifierPKCE))
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// Handles callback after Google tries to authenticates user and redirects user here.
+func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Check if oauth state returned from Google matches client oauth state (CSRF check)
+	stateCookie, err := r.Cookie("oauth_state")
+	if err != nil || r.URL.Query().Get("state") != stateCookie.Value {
+		http.Error(w, "invalid state", http.StatusBadRequest)
+		return
+	}
+	verifierCookie, err := r.Cookie("oauth_verifier")
+	if err != nil {
+		http.Error(w, "missing verifier", http.StatusBadRequest)
+		return
+	}
+
+	// Exchange auth code for token with provider (Google)
+	code := r.URL.Query().Get("code")
+	token, err := h.googleAuth.oauth2Config.Exchange(ctx, code, oauth2.VerifierOption(verifierCookie.Value))
+	if err != nil {
+		http.Error(w, "code exchange failed", http.StatusUnauthorized)
+		return
+	}
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		http.Error(w, "no id_token in response", http.StatusUnauthorized)
+		return
+	}
+
+	// Verify JWT signed by provider
+	idToken, err := h.googleAuth.verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		http.Error(w, "id_token verification failed", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse JWT claims (email, sub etc.)
+	var claims GoogleClaims
+	if err := idToken.Claims(&claims); err != nil {
+		http.Error(w, "failed to parse claims", http.StatusInternalServerError)
+		return
+	}
+
+	if !claims.EmailVerified {
+		http.Error(w, "email not verified by google", http.StatusForbidden)
+		return
+	}
+
+	// Get user record if already exists, else create new user record
+	user, err := h.userService.FindOrCreateUserByGoogleID(ctx, claims.Sub, claims.Email)
+	if err != nil {
+		http.Error(w, "failed to provision user", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate token pair
+	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
+		return
+	}
+
+	// Set refresh token as HTTP-only cookie for added security
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokenPair.RefreshToken,
+		HttpOnly: true,
+		Secure:   true, // Always use HTTPS in production
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/api/auth",
+		MaxAge:   int(7 * 24 * time.Hour / time.Second),
+	})
+
+	// Redirect user to dashboard on frontend
+	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }

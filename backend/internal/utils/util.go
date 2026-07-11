@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -180,4 +181,11 @@ func ValidateSlug(slug string) error {
 		return errors.New("slug is reserved and cannot be used")
 	}
 	return nil
+}
+
+// Generate random base64url encoded string of n bytes
+func RandomString(n int) string {
+	b := make([]byte, n)
+	rand.Read(b)
+	return base64.RawURLEncoding.EncodeToString(b)
 }
