@@ -27,7 +27,7 @@ function RouteComponent() {
   return (
     <section className="max-w-5xl w-full my-0 mx-auto px-5 py-10 flex flex-col gap-5 sm:px-20">
       <div className="flex justify-between font-sans">
-        <h1 className="flex items-center gap-3 text-3xl font-sans font-bold tracking-tighter mb-5 md:text-4xl">
+        <h1 className="flex items-center gap-3 text-3xl font-sans font-bold tracking-tighter mb-5 md:text-4xl mr-10">
           Links <IconLink size="40px" />
         </h1>
         <URLSearchInput query={searchTerm} setQuery={setSearchTerm} />
@@ -76,11 +76,12 @@ function URLSearchInput({ query, setQuery }: URLSearchInputProps) {
         placeholder="Search..."
         ref={inputRef}
         onKeyDown={handleInputKeyDown}
+        className="text-sm"
       />
       <InputGroupAddon>
         <Search />
       </InputGroupAddon>
-      <InputGroupAddon align="inline-end">
+      <InputGroupAddon className="hidden md:block" align="inline-end">
         <Kbd>⌘</Kbd>
         <Kbd>K</Kbd>
       </InputGroupAddon>

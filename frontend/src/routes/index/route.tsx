@@ -48,7 +48,7 @@ function RouteComponent() {
         <p className={styles.heroSubtitle}>
           <Link
             to="/signup"
-            className="hover:text-primary underline transition-all "
+            className="hover:text-primary underline underline-offset-4 transition-all "
           >
             Sign up
           </Link>{" "}
