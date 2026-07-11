@@ -7,6 +7,7 @@ import type { User } from "@/models/models";
 export interface AuthContext {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   isLoading: boolean;
@@ -79,6 +80,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Redirect user to Google's login page. After authentication, Google will redirect user to the registered callback endpoint.
+  // Finally, backend server does authentication logic, then redirects user back to frontend with refresh token cookie.
+  const loginWithGoogle = async () => {
+    window.location.href = "/api/auth/google/login"; // relative path proxied by nginx
+  };
+
   // signup sends user credentials to the server to create an account.
   // If successful, the server returns an access token + refresh token.
   // If unsuccessful, the server returns an error code and message.
@@ -124,7 +131,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, signup, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, login, loginWithGoogle, logout, signup, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
