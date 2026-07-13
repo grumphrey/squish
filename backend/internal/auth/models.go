@@ -13,6 +13,8 @@ type CustomClaims struct {
 	UserID       string   `json:"user_id"`
 	Email        string   `json:"email"`
 	Roles        []string `json:"roles"`
+	Name         string   `json:"name"`
+	AvatarURL    string   `json:"picture"`
 	TokenVersion int      `json:"token_version"` // Used for revocation
 	TokenType    string   `json:"token_type"`    // "access" or "refresh"
 }
@@ -36,10 +38,12 @@ type RefreshTokenData struct {
 // Maybe good to map db columns to struct fields.
 // User represents a user in the system.
 type User struct {
-	ID       string
-	Email    string
-	Roles    []string
-	Password *string // Hashed password
+	ID        string
+	Email     string
+	Roles     []string
+	Password  *string // Hashed password
+	Name      string
+	AvatarURL string
 }
 
 // Represents claims of the JWT returned by Google authorization server.

@@ -13,8 +13,8 @@ type UserService interface {
 	SignupUser(ctx context.Context, email, password string) (*User, error)
 	ValidateCredentials(ctx context.Context, email, password string) (*User, error)
 	GetUserByID(ctx context.Context, userID string) (*User, error)
-	FindOrCreateUserByGoogleID(ctx context.Context, id, email string) (*User, error)
-	FindOrCreateUserByGithubID(ctx context.Context, id, email string) (*User, error)
+	FindOrCreateUserByGoogleID(ctx context.Context, id, email, name, avatarURL string) (*User, error)
+	FindOrCreateUserByGithubID(ctx context.Context, id, email, name, avatarURL string) (*User, error)
 }
 
 type userService struct {
@@ -68,7 +68,7 @@ func (s *userService) GetUserByID(ctx context.Context, userID string) (*User, er
 // TODO: implicit/explicit linking accounts.
 // Currently unsafe to sign up with email+password, since no email verification, anyone can "take over" an email.
 // Or just disable email+password login.
-func (s *userService) FindOrCreateUserByGoogleID(ctx context.Context, id, email string) (*User, error) {
+func (s *userService) FindOrCreateUserByGoogleID(ctx context.Context, id, email, name, avatarURL string) (*User, error) {
 	user, err := s.store.FindUserByGoogleID(ctx, id)
 	if err == nil { // User found
 		return user, nil
@@ -78,14 +78,14 @@ func (s *userService) FindOrCreateUserByGoogleID(ctx context.Context, id, email 
 	}
 
 	// User doesnt exist, create user
-	user, err = s.store.CreateUserWithGoogleID(ctx, id, email)
+	user, err = s.store.CreateUserWithGoogleID(ctx, id, email, name, avatarURL)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (s *userService) FindOrCreateUserByGithubID(ctx context.Context, id, email string) (*User, error) {
+func (s *userService) FindOrCreateUserByGithubID(ctx context.Context, id, email, name, avatarURL string) (*User, error) {
 	user, err := s.store.FindUserByGithubID(ctx, id)
 	if err == nil { // User found
 		return user, nil
@@ -95,7 +95,7 @@ func (s *userService) FindOrCreateUserByGithubID(ctx context.Context, id, email 
 	}
 
 	// User doesnt exist, create user
-	user, err = s.store.CreateUserWithGithubID(ctx, id, email)
+	user, err = s.store.CreateUserWithGithubID(ctx, id, email, name, avatarURL)
 	if err != nil {
 		return nil, err
 	}

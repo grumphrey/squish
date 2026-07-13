@@ -53,7 +53,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate token pair
-	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Name, user.AvatarURL, user.Roles)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
@@ -109,7 +109,7 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 	token, _, _ := jwt.NewParser().ParseUnverified(refreshToken, &CustomClaims{})
 	claims := token.Claims.(*CustomClaims)
 
-	// Get user to retrieve current roles
+	// Get user to retrieve current information (email, name, avatar, roles etc.)
 	user, err := h.userService.GetUserByID(r.Context(), claims.UserID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "INVALID_USER", "User not found")
@@ -117,7 +117,7 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Perform token refresh with rotation
-	tokenPair, err := h.jwtService.RefreshTokens(r.Context(), refreshToken, user.Email, user.Roles)
+	tokenPair, err := h.jwtService.RefreshTokens(r.Context(), refreshToken, user.Email, user.Name, user.AvatarURL, user.Roles)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
@@ -205,7 +205,7 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Automatically login user after signing up
 	// Generate token pair
-	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Name, user.AvatarURL, user.Roles)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
@@ -306,14 +306,14 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get user record if already exists, else create new user record
-	user, err := h.userService.FindOrCreateUserByGoogleID(ctx, claims.Sub, claims.Email)
+	user, err := h.userService.FindOrCreateUserByGoogleID(ctx, claims.Sub, claims.Email, claims.Name, claims.AvatarURL)
 	if err != nil {
 		http.Error(w, "failed to provision user", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate token pair
-	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	tokenPair, err := h.jwtService.GenerateTokenPair(ctx, user.ID, user.Email, user.Name, user.AvatarURL, user.Roles)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return
@@ -395,14 +395,14 @@ func (h *AuthHandler) HandleGithubCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get user record if already exists, else create new user record
-	user, err := h.userService.FindOrCreateUserByGithubID(ctx, strconv.FormatInt(ghUser.ID, 10), ghUser.Email)
+	user, err := h.userService.FindOrCreateUserByGithubID(ctx, strconv.FormatInt(ghUser.ID, 10), ghUser.Email, ghUser.Name, ghUser.AvatarURL)
 	if err != nil {
 		http.Error(w, "failed to provision user", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate token pair
-	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	tokenPair, err := h.jwtService.GenerateTokenPair(ctx, user.ID, user.Email, user.Name, user.AvatarURL, user.Roles)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
 		return

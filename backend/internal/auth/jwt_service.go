@@ -24,7 +24,7 @@ func NewJWTService(config *Config, store TokenStore) *JWTService {
 
 // GenerateAccessToken creates a new access token for the given user.
 // The token includes user identity, roles, and a version for revocation support.
-func (s *JWTService) GenerateAccessToken(ctx context.Context, userID, email string, roles []string) (string, error) {
+func (s *JWTService) GenerateAccessToken(ctx context.Context, userID, email, name, avatarURL string, roles []string) (string, error) {
 	version, err := s.tokenStore.GetUserTokenVersion(ctx, userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get token version %w", err)
@@ -46,6 +46,8 @@ func (s *JWTService) GenerateAccessToken(ctx context.Context, userID, email stri
 		UserID:       userID,
 		Email:        email,
 		Roles:        roles,
+		Name:         name,
+		AvatarURL:    avatarURL,
 		TokenVersion: version,
 		TokenType:    "access",
 	}
@@ -93,8 +95,8 @@ func (s *JWTService) GenerateRefreshToken(ctx context.Context, userID string) (s
 	return signedToken, nil
 }
 
-func (s *JWTService) GenerateTokenPair(ctx context.Context, userID string, email string, roles []string) (*TokenPair, error) {
-	accessToken, err := s.GenerateAccessToken(ctx, userID, email, roles)
+func (s *JWTService) GenerateTokenPair(ctx context.Context, userID, email, name, avatarURL string, roles []string) (*TokenPair, error) {
+	accessToken, err := s.GenerateAccessToken(ctx, userID, email, name, avatarURL, roles)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +171,7 @@ func (s *JWTService) ValidateAccessToken(ctx context.Context, tokenString string
 // RefreshTokens implements refresh token rotation.
 // It validates the refresh token, revokes it, and issues a new pair.
 // This prevents refresh token reuse and limits the damage from stolen tokens.
-func (s *JWTService) RefreshTokens(ctx context.Context, refreshTokenString string, email string, roles []string) (*TokenPair, error) {
+func (s *JWTService) RefreshTokens(ctx context.Context, refreshTokenString, email, name, avatarURL string, roles []string) (*TokenPair, error) {
 	// Parse and validate the refresh token
 	token, err := jwt.ParseWithClaims(
 		refreshTokenString,
@@ -219,7 +221,7 @@ func (s *JWTService) RefreshTokens(ctx context.Context, refreshTokenString strin
 		return nil, fmt.Errorf("failed to revoke old refresh token: %w", err)
 	}
 
-	return s.GenerateTokenPair(ctx, claims.UserID, email, roles)
+	return s.GenerateTokenPair(ctx, claims.UserID, email, name, avatarURL, roles)
 }
 
 // RevokeAccessToken adds an access token to the blacklist.
