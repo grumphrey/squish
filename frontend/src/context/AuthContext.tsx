@@ -4,10 +4,12 @@ import { api } from "@/lib/api";
 import { tokenStore } from "@/features/auth/auth";
 import type { User } from "@/models/models";
 
+type OAuthProvider = "github" | "google";
+
 export interface AuthContext {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithProvider: (provider: OAuthProvider) => Promise<void>;
   logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   isLoading: boolean;
@@ -80,10 +82,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Redirect user to Google's login page. After authentication, Google will redirect user to the registered callback endpoint.
+  // Redirect user to identity provider's login page. After authentication, provider will redirect user to the registered callback endpoint.
   // Finally, backend server does authentication logic, then redirects user back to frontend with refresh token cookie.
-  const loginWithGoogle = async () => {
-    window.location.href = "/api/auth/google/login"; // relative path proxied by nginx
+  const loginWithProvider = async (provider: OAuthProvider) => {
+    window.location.href = `/api/auth/${provider}/login`; // relative path proxied by nginx
   };
 
   // signup sends user credentials to the server to create an account.
@@ -132,7 +134,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, loginWithGoogle, logout, signup, isLoading }}
+      value={{
+        user,
+        login,
+        loginWithProvider,
+        logout,
+        signup,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>

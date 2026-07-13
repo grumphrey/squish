@@ -36,6 +36,9 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} # TODO: maybe better way to read env variables instead of listing them all
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_OAUTH_REDIRECT_URL=${GOOGLE_OAUTH_REDIRECT_URL}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_OAUTH_REDIRECT_URL=${GITHUB_OAUTH_REDIRECT_URL}
     volumes:
       - ./data/geoip:/var/lib/geoip:ro # data dependencies (i.e. geoip database)
     depends_on:

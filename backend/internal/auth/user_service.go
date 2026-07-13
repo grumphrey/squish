@@ -14,6 +14,7 @@ type UserService interface {
 	ValidateCredentials(ctx context.Context, email, password string) (*User, error)
 	GetUserByID(ctx context.Context, userID string) (*User, error)
 	FindOrCreateUserByGoogleID(ctx context.Context, id, email string) (*User, error)
+	FindOrCreateUserByGithubID(ctx context.Context, id, email string) (*User, error)
 }
 
 type userService struct {
@@ -78,6 +79,23 @@ func (s *userService) FindOrCreateUserByGoogleID(ctx context.Context, id, email 
 
 	// User doesnt exist, create user
 	user, err = s.store.CreateUserWithGoogleID(ctx, id, email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *userService) FindOrCreateUserByGithubID(ctx context.Context, id, email string) (*User, error) {
+	user, err := s.store.FindUserByGithubID(ctx, id)
+	if err == nil { // User found
+		return user, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err // real db error, don't fall through
+	}
+
+	// User doesnt exist, create user
+	user, err = s.store.CreateUserWithGithubID(ctx, id, email)
 	if err != nil {
 		return nil, err
 	}

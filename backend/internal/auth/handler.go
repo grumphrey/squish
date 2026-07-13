@@ -2,7 +2,9 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"url-shortener/internal/utils"
@@ -14,14 +16,14 @@ import (
 type AuthHandler struct {
 	jwtService  *JWTService
 	userService UserService
-	googleAuth  *GoogleAuthConfig
+	oauthConfig *OAuthConfig
 }
 
-func NewAuthHandler(jwtService *JWTService, userService UserService, googleAuth *GoogleAuthConfig) *AuthHandler {
+func NewAuthHandler(jwtService *JWTService, userService UserService, oauthConfig *OAuthConfig) *AuthHandler {
 	return &AuthHandler{
 		jwtService:  jwtService,
 		userService: userService,
-		googleAuth:  googleAuth,
+		oauthConfig: oauthConfig,
 	}
 }
 
@@ -249,11 +251,13 @@ func (h *AuthHandler) HandleGoogleLogin(w http.ResponseWriter, r *http.Request) 
 	})
 
 	// Construct Google authorization URL (with client id, redirect uri, scope from config, as well as state etc.)
-	authURL := h.googleAuth.oauth2Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifierPKCE))
+	authURL := h.oauthConfig.GoogleAuth.oauth2Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifierPKCE))
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
+// TODO: should redirect user to error page if there is error while logging in? instead of http.error
 // Handles callback after Google tries to authenticates user and redirects user here.
+// Uses Open ID Connect for authentication, which returns a JWT from Google.
 func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -271,7 +275,7 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 
 	// Exchange auth code for token with provider (Google)
 	code := r.URL.Query().Get("code")
-	token, err := h.googleAuth.oauth2Config.Exchange(ctx, code, oauth2.VerifierOption(verifierCookie.Value))
+	token, err := h.oauthConfig.GoogleAuth.oauth2Config.Exchange(ctx, code, oauth2.VerifierOption(verifierCookie.Value))
 	if err != nil {
 		http.Error(w, "code exchange failed", http.StatusUnauthorized)
 		return
@@ -283,7 +287,7 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Verify JWT signed by provider
-	idToken, err := h.googleAuth.verifier.Verify(ctx, rawIDToken)
+	idToken, err := h.oauthConfig.GoogleAuth.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		http.Error(w, "id_token verification failed", http.StatusUnauthorized)
 		return
@@ -328,4 +332,115 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 
 	// Redirect user to dashboard on frontend
 	http.Redirect(w, r, "/dashboard", http.StatusFound)
+}
+
+func (h *AuthHandler) HandleGithubLogin(w http.ResponseWriter, r *http.Request) {
+	state := utils.RandomString(32)
+
+	// store anti-CSRF token in short-lived, httpOnly cookie to check on callback
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauth_state", Value: state,
+		HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode,
+		Path: "/", MaxAge: 600,
+	})
+
+	// Construct Github authorization URL (with client id, redirect uri, scope from config, as well as state etc.)
+	authURL := h.oauthConfig.GithubAuth.AuthCodeURL(state)
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// Handles callback after Github tries to authenticates user and redirects the user here.
+// Github does not implement OIDC.
+func (h *AuthHandler) HandleGithubCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Check if oauth state returned from Google matches client oauth state (CSRF check)
+	stateCookie, err := r.Cookie("oauth_state")
+	if err != nil || r.URL.Query().Get("state") != stateCookie.Value {
+		http.Error(w, "invalid state", http.StatusBadRequest)
+		return
+	}
+
+	// Exchange code for access token from auth server
+	code := r.URL.Query().Get("code")
+	token, err := h.oauthConfig.GithubAuth.Exchange(ctx, code)
+	if err != nil {
+		http.Error(w, "code exchange failed", http.StatusUnauthorized)
+		return
+	}
+
+	// Get user's Github profile
+	client := h.oauthConfig.GithubAuth.Client(ctx, token)
+	resp, err := client.Get("https://api.github.com/user") // TODO: hardcoded link
+	if err != nil {
+		http.Error(w, "failed to fetch user", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var ghUser GithubUser
+	if err := json.NewDecoder(resp.Body).Decode(&ghUser); err != nil {
+		http.Error(w, "failed to decode user", http.StatusInternalServerError)
+		return
+	}
+
+	// GitHub usually doesn't return email on /user if set to private
+	// fetch email separately if empty
+	if ghUser.Email == "" {
+		ghUser.Email, err = fetchGitHubPrimaryEmail(client)
+		if err != nil {
+			http.Error(w, "failed to fetch email", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Get user record if already exists, else create new user record
+	user, err := h.userService.FindOrCreateUserByGithubID(ctx, strconv.FormatInt(ghUser.ID, 10), ghUser.Email)
+	if err != nil {
+		http.Error(w, "failed to provision user", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate token pair
+	tokenPair, err := h.jwtService.GenerateTokenPair(r.Context(), user.ID, user.Email, user.Roles)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "ERR_GENERATING_TOKENS", "Failed to generate tokens")
+		return
+	}
+
+	// Set refresh token as HTTP-only cookie for added security
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokenPair.RefreshToken,
+		HttpOnly: true,
+		Secure:   true, // Always use HTTPS in production
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/api/auth",
+		MaxAge:   int(7 * 24 * time.Hour / time.Second),
+	})
+
+	// Redirect user to dashboard on frontend
+	http.Redirect(w, r, "/dashboard", http.StatusFound)
+}
+
+// Get the primary email of the Github user, using the http client provided with the authorization token.
+func fetchGitHubPrimaryEmail(client *http.Client) (string, error) {
+	resp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var emails []GithubEmail
+	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+		return "", err
+	}
+
+	// Get the primary verified email of user
+	for _, e := range emails {
+		if e.Primary && e.Verified {
+			return e.Email, nil
+		}
+	}
+	return "", errors.New("no verified primary email found")
 }

@@ -81,12 +81,12 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("init auth config: %w", err)
 	}
-	googleAuthConfig, err := auth.InitGoogleOIDC(ctx)
+	oauthConfig, err := auth.InitOAuthConfig(ctx)
 	authRepository := auth.NewRedisTokenStore(rdb)
 	jwtService := auth.NewJWTService(authConfig, authRepository)
 	userRepository := auth.NewUserRepository(db)
 	userService := auth.NewUserService(userRepository)
-	authHandler := auth.NewAuthHandler(jwtService, userService, googleAuthConfig)
+	authHandler := auth.NewAuthHandler(jwtService, userService, oauthConfig)
 	protected := auth.AuthMiddleware(jwtService)
 	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
 	limiter := redis_rate.NewLimiter(rdb)
@@ -116,6 +116,8 @@ func run() error {
 	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
 	mux.HandleFunc("/api/auth/google/login", authHandler.HandleGoogleLogin)
 	mux.HandleFunc("/api/auth/google/callback", authHandler.HandleGoogleCallback)
+	mux.HandleFunc("/api/auth/github/login", authHandler.HandleGithubLogin)
+	mux.HandleFunc("/api/auth/github/callback", authHandler.HandleGithubCallback)
 	rateLimitSignup := auth.RateLimitMiddleware(limiter, redis_rate.PerHour(3), "signup")
 	mux.Handle("/api/auth/signup", rateLimitSignup(http.HandlerFunc(authHandler.HandleSignup)))
 	mux.HandleFunc("/api/auth/logout", authHandler.HandleLogout)

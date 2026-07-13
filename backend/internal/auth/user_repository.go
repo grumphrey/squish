@@ -14,6 +14,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, userID string) (*User, error)
 	FindUserByGoogleID(ctx context.Context, googleID string) (*User, error)
 	CreateUserWithGoogleID(ctx context.Context, googleID, email string) (*User, error)
+	FindUserByGithubID(ctx context.Context, githubID string) (*User, error)
+	CreateUserWithGithubID(ctx context.Context, githubID, email string) (*User, error)
 }
 
 type userRepository struct {
@@ -91,6 +93,33 @@ func (r *userRepository) CreateUserWithGoogleID(ctx context.Context, googleID, e
 	var user User
 	query := "INSERT INTO users (google_id, email) VALUES ($1, $2) RETURNING id, email, roles"
 	err := r.db.QueryRow(ctx, query, googleID, email).Scan(
+		&user.ID, &user.Email, &user.Roles,
+	)
+	if err != nil {
+		if isPgError(err, PgErrUniqueViolation) {
+			return nil, ErrExistingUser
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) FindUserByGithubID(ctx context.Context, githubID string) (*User, error) {
+	var user User
+	query := "SELECT id, email, roles FROM users WHERE github_id=$1"
+	err := r.db.QueryRow(ctx, query, githubID).Scan(
+		&user.ID, &user.Email, &user.Roles,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) CreateUserWithGithubID(ctx context.Context, githubID, email string) (*User, error) {
+	var user User
+	query := "INSERT INTO users (github_id, email) VALUES ($1, $2) RETURNING id, email, roles"
+	err := r.db.QueryRow(ctx, query, githubID, email).Scan(
 		&user.ID, &user.Email, &user.Roles,
 	)
 	if err != nil {

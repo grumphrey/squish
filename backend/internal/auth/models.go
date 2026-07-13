@@ -48,5 +48,22 @@ type GoogleClaims struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
 	Name          string `json:"name"`
+	AvatarURL     string `json:"picture"`
 	jwt.RegisteredClaims
+}
+
+// Represents the Github user information returned from Github /user endpoint.
+type GithubUser struct {
+	ID        int64  `json:"id"`
+	Login     string `json:"login"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+// Represents a Github user's email returned from Github /user/emails endpoint.
+type GithubEmail struct {
+	Email    string `json:"email"`
+	Primary  bool   `json:"primary"`
+	Verified bool   `json:"verified"`
 }
