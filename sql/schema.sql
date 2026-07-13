@@ -6,7 +6,6 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   google_id VARCHAR(255) UNIQUE, -- TODO: separate into oauth table
   github_id VARCHAR(255) UNIQUE,
-  apple_id VARCHAR(255) UNIQUE,
   email VARCHAR(100) NOT NULL, -- should be unique (TODO linking)
   hashed_password VARCHAR(100),
   roles TEXT[] NOT NULL DEFAULT ARRAY['user'],

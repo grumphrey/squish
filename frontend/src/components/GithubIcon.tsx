@@ -1,10 +1,14 @@
+import { useTheme } from "@/context/ThemeContext";
+
 interface GithubIconProps {
   size?: number;
 }
 const GithubIcon = ({ size = 16 }: GithubIconProps) => {
+  const { theme } = useTheme();
+
   return (
     <svg
-      fill="#000000"
+      fill={theme === "dark" ? "#ffffff" : "#000000"}
       width={size}
       height={size}
       viewBox="0 -0.5 25 25"
