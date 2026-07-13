@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -119,25 +120,37 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Generate QR code if requested by client
+	var encodedQRCode string
+	if request.CreateQRCode {
+		u := &url.URL{
+			Scheme: "https",
+			Host:   r.Host,
+			Path:   fmt.Sprintf("/%s", slug),
+		}
+		qrcode, err := h.urlService.CreateQRCode(u.String())
+		encodedQRCode = "data:image/png;base64," + qrcode
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
+			return
+		}
+	}
+
 	// Respond with generated short code and QR code (optional)
 	type createShortURLResponse struct {
 		ShortURL string `json:"short_url"`
 		QRCode   string `json:"qr_code,omitempty"`
 	}
-	var resQRCode string
-	if record.QRCode != nil {
-		resQRCode = "data:image/png;base64," + *record.QRCode
-	}
 	response := createShortURLResponse{
 		ShortURL: record.ShortURL,
-		QRCode:   resQRCode,
+		QRCode:   encodedQRCode,
 	}
 	if err := utils.Encode(w, r, http.StatusOK, response); err != nil {
 		log.Printf("Encoding error: (%v)\n", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Created short code: %v", record.ShortURL)
+	log.Printf("Created short code: %v", record.ShortURL) // TODO: slog
 }
 
 // HandleDeleteShortURL soft-deletes the given short URL from database records.
@@ -245,23 +258,6 @@ func (h *URLHandler) HandleGetURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Map from domain model to data transfer object (only exposing certain fields)
-	type ShortURLResponse struct {
-		ShortURL  string    `json:"short_url"`
-		LongURL   string    `json:"long_url"`
-		CreatedAt time.Time `json:"created_at"`
-		Active    bool      `json:"is_active"`
-	}
-	result := make([]ShortURLResponse, len(urlRecords))
-	for i, r := range urlRecords {
-		result[i] = ShortURLResponse{
-			ShortURL:  r.ShortURL,
-			LongURL:   r.LongURL,
-			CreatedAt: r.CreatedAt,
-			Active:    r.Active,
-		}
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	json.NewEncoder(w).Encode(urlRecords)
 }

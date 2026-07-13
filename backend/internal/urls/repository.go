@@ -34,7 +34,7 @@ type URLRepository interface {
 
 	// Querying persistent storage
 	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	CreateURLRecord(ctx context.Context, shortCode, longURL, qrCode, userID string) (*ShortURLRecord, error)
+	CreateURLRecord(ctx context.Context, shortCode, longURL, userID string, qrCode bool) (*ShortURLRecord, error)
 	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
 	UpdateShortURLInactive(ctx context.Context, shortCode string) error
 	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
@@ -126,15 +126,15 @@ func (r *urlRepository) GetURLRecord(ctx context.Context, shortCode string) (*Sh
 }
 
 // CreateURLRecord creates a record in the database given the short code and long URL.
-func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL, qrCode, userID string) (*ShortURLRecord, error) {
-	query := `INSERT INTO short_urls (short_url, long_url, encoded_qr_code, user_id) 
-		VALUES (@ShortURL, @LongURL, @QRCode, @UserID) 
+func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL, userID string, qrCode bool) (*ShortURLRecord, error) {
+	query := `INSERT INTO short_urls (short_url, long_url, user_id, is_qrcode) 
+		VALUES (@ShortURL, @LongURL, @UserID, @QRCode) 
 		RETURNING *`
 	args := pgx.NamedArgs{
 		"ShortURL": shortCode,
 		"LongURL":  longURL,
-		"QRCode":   utils.Nullable(qrCode),
 		"UserID":   utils.Nullable(userID),
+		"QRCode":   qrCode,
 	}
 
 	// Attempt to insert rows
@@ -199,7 +199,7 @@ func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts
 			u.id AS user_id, 
 			s.created_at AS created_at, 
 			s.is_active AS is_active, 
-			s.encoded_qr_code AS encoded_qr_code 
+			s.is_qrcode AS is_qrcode 
 		FROM short_urls s 
 		JOIN users u
 		ON s.user_id=u.id 

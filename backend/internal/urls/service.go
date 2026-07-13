@@ -10,7 +10,6 @@ import (
 	"image"
 	"io"
 	"log"
-	"net/url"
 
 	"url-shortener/internal/utils"
 
@@ -31,8 +30,8 @@ var (
 
 // URLService defines the interface for short URL operations.
 type URLService interface {
-	CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, createQRCode bool) (*ShortURLRecord, error)
-	CreateQRCode(host, shortCode string) (string, error)
+	CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error)
+	CreateQRCode(link string) (string, error)
 	FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
 	SoftDeleteURLRecord(ctx context.Context, shortCode, userID string) error
 	GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error)
@@ -51,14 +50,13 @@ func NewURLService(r URLRepository, fs embed.FS) *urlService { // NOTE: factory 
 
 // CreateURLRecord creates the short URL record generated from the given long URL.
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
-func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, createQRCode bool) (*ShortURLRecord, error) {
+func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
 	var lastErr error
 	// Randomly generated short code may have collisions. Re-try on collision.
 	for attempt := 0; attempt < MaxAttempts; attempt++ {
 		var (
-			shortCode     string
-			encodedQRCode string
-			err           error
+			shortCode string
+			err       error
 		)
 
 		// Generate short code or use given slug
@@ -71,16 +69,8 @@ func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID,
 			return nil, fmt.Errorf("generating short code: %w", err)
 		}
 
-		// Generate QR code (if requested)
-		if createQRCode {
-			encodedQRCode, err = s.CreateQRCode(host, shortCode)
-			if err != nil {
-				return nil, fmt.Errorf("generating qr code: %w", err)
-			}
-		}
-
 		// Create URL record in database
-		record, err := s.repo.CreateURLRecord(ctx, shortCode, longURL, encodedQRCode, userID)
+		record, err := s.repo.CreateURLRecord(ctx, shortCode, longURL, userID, qrCode)
 
 		// Successfully created URL record
 		if err == nil {
@@ -104,19 +94,12 @@ func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID,
 }
 
 // CreateQRCode returns a base-64 encoded string representing a QR code for the given URL.
-func (s *urlService) CreateQRCode(host, shortCode string) (string, error) {
-	// Initialize URL object corresponding to given short code
-	u := &url.URL{
-		Scheme: "https",
-		Host:   host,
-		Path:   fmt.Sprintf("/%s", shortCode),
-	}
-	url := u.String()
+func (s *urlService) CreateQRCode(link string) (string, error) {
 
 	// Initialize QR code object with URL
-	qrc, err := qrcode.New(url)
+	qrc, err := qrcode.New(link)
 	if err != nil {
-		return "", fmt.Errorf("creating qr code using %s: %w", url, err)
+		return "", fmt.Errorf("creating qr code using %s: %w", link, err)
 	}
 
 	// Initialize QR code options
@@ -125,7 +108,7 @@ func (s *urlService) CreateQRCode(host, shortCode string) (string, error) {
 		return "", fmt.Errorf("creating qr code using logo: %w", err)
 	}
 	options := []standard.ImageOption{
-		// standard.WithQRWidth(8),
+		standard.WithQRWidth(25),
 		// standard.WithBorderWidth(18),
 		// standard.WithFgColorRGBHex("#ff6600"),
 		// standard.WithBgColorRGBHex("#000000"),
