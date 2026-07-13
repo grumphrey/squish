@@ -9,8 +9,8 @@ const GithubIcon = ({ size = 16 }: GithubIconProps) => {
   return (
     <svg
       fill={theme === "dark" ? "#ffffff" : "#000000"}
-      width={size}
-      height={size}
+      height={`${size}px`}
+      width={`${size}px`}
       viewBox="0 -0.5 25 25"
       xmlns="http://www.w3.org/2000/svg"
     >

@@ -81,6 +81,30 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
                 </p>
               </div>
 
+              <Field className="grid gap-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => loginWithProvider("google")}
+                >
+                  <GoogleIcon size={20} />
+                  <span>Login with Google</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => loginWithProvider("github")}
+                >
+                  <GithubIcon size={20} />
+                  <span>Login with Github</span>
+                </Button>
+              </Field>
+
+              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                Or continue with
+              </FieldSeparator>
+
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -96,13 +120,13 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
+                  {/* <FieldLabel htmlFor="password">Password</FieldLabel> */}
+                  {/* <a */}
+                  {/*   href="#" */}
+                  {/*   className="ml-auto text-sm underline-offset-2 hover:underline" */}
+                  {/* > */}
+                  {/*   Forgot your password? */}
+                  {/* </a> */}
                 </div>
 
                 <div className="w-full max-w-sm space-y-2">
@@ -137,30 +161,6 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
               </Field>
 
               {error && <ErrorAlert message={error} />}
-
-              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                Or continue with
-              </FieldSeparator>
-
-              <Field className="grid grid-cols-2 gap-4">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => loginWithProvider("google")}
-                >
-                  <GoogleIcon />
-                  <span className="sr-only">Login with Google</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => loginWithProvider("github")}
-                >
-                  <GithubIcon />
-                  <span className="sr-only">Login with Github</span>
-                </Button>
-              </Field>
 
               <FieldDescription className="text-center">
                 Don&apos;t have an account? <Link to="/signup"> Sign up </Link>
