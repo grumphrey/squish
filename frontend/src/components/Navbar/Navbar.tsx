@@ -1,10 +1,7 @@
 import styles from "./Navbar.module.css";
 import logo from "@/assets/longdog.png";
-
-import { useEffect, useState, type ReactNode } from "react";
 import {
   IconChartBar,
-  IconHome,
   IconLayoutDashboard,
   IconLink,
   IconLogin,
@@ -13,14 +10,12 @@ import {
   IconQrcode,
   IconSun,
 } from "@tabler/icons-react";
-import { Menu } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
+import { type ReactNode } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -30,104 +25,38 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import CreateURLDialog from "../CreateURLDialog";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const loggedIn = !isLoading && user;
-
-  // Close mobile navigation menu when screen size is desktop
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 768px)");
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (e.matches) setOpen(false);
-    };
-
-    mql.addEventListener("change", handleChange);
-    return () => mql.removeEventListener("change", handleChange);
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    setOpen(false);
-    navigate({ to: "/" });
-  };
 
   return (
     <header className={styles.navbar}>
       <div className={styles.navLeft}>
-        <img src={logo} />
+        <img src={logo} className="hidden md:block" />
         <Link to="/" className={styles.navLogo}>
           squi<span>.</span>sh
         </Link>
+
+        <div className="md:hidden">
+          <ThemeButton />
+        </div>
       </div>
 
       <div className={styles.navRight}>
-        {/* Mobile menu */}
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost">
-              <Menu />
-            </Button>
-          </SheetTrigger>
-
-          <SheetContent side="right">
-            <nav className="h-full flex flex-col justify-between mt-8 p-5 font-semibold">
-              <div className="flex flex-col gap-5">
-                <h3 className={styles.navLogo}>
-                  squi<span>.</span>sh
-                </h3>
-                <Separator />
-              </div>
-
-              {/* Links */}
-              <div className="flex flex-col grow gap-6 *:flex *:gap-1.5 *items-center pt-6">
-                <Link to="/" onClick={() => setOpen(false)}>
-                  <IconHome height="16px" />
-                  Home
-                </Link>
-
-                {user && (
-                  <>
-                    <Link to="/dashboard" onClick={() => setOpen(false)}>
-                      <IconChartBar height="16px" />
-                      Analytics
-                    </Link>
-                    <Link to="/links" onClick={() => setOpen(false)}>
-                      <IconLink height="16px" />
-                      My Links
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              {/* Login/Logout */}
-              <div className="flex flex-col gap-6 *:flex *:gap-1.5 *items-center">
-                {!user && (
-                  <Button
-                    onClick={() => {
-                      navigate({ to: "/login" });
-                      setOpen(false);
-                    }}
-                  >
-                    <IconLogin height="16px" />
-                    Login / Sign Up
-                  </Button>
-                )}
-                {user && (
-                  <Button variant="default" onClick={handleLogout}>
-                    Log out
-                  </Button>
-                )}
-              </div>
-            </nav>
-          </SheetContent>
-        </Sheet>
-
-        {/* Desktop menu TODO using navigation menu */}
+        {/* Desktop nav menu */}
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList className="gap-4">
             <NavigationMenuItem>
@@ -165,21 +94,10 @@ export default function Navbar() {
                 </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
-
-            {loggedIn && (
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Button variant="destructive" onClick={handleLogout}>
-                    <IconLogout />
-                    Sign Out
-                  </Button>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            )}
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="gap-5 items-center hidden md:flex">
+        <div className="gap-5 items-center flex">
           {!user && !isLoading && (
             <Button
               className="font-semibold p-5 bg-(--color-primary) text-(--color-text) hover:bg-(--color-primary-dark)"
@@ -193,9 +111,15 @@ export default function Navbar() {
           )}
         </div>
 
+        {/* Create Link button */}
         {loggedIn && <CreateURLDialog />}
 
-        <ThemeButton />
+        <div className="hidden md:block">
+          <ThemeButton />
+        </div>
+
+        {/* Profile picture + menu */}
+        {loggedIn && <AvatarDropdownMenu />}
       </div>
     </header>
   );
@@ -242,5 +166,92 @@ function ListItem({
         </Link>
       </NavigationMenuLink>
     </li>
+  );
+}
+
+// Component that displays user's avatar. Shows dropdown menu when clicked on.
+function AvatarDropdownMenu() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/" });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="rounded-full p-0 cursor-pointer">
+          <Avatar>
+            <AvatarImage
+              src={user?.picture}
+              alt="avatar"
+              referrerPolicy="no-referrer" // TODO: 429 too many requests to identity provider
+            />
+            <AvatarFallback>
+              <UserIcon size={25} />
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="font-sans w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="font-medium text-sm leading-none">
+              {user?.name || "Welcome back"}
+            </p>
+            <p className="text-muted-foreground text-xs leading-none">
+              {user?.email || "squi.sh"}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuItem>
+            <Link
+              to="/links"
+              className="flex gap-2 items-center w-full font-medium"
+            >
+              <IconLink size={20} /> Links
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <Link
+              to="/links" // TODO: qrcodes
+              className="flex gap-2 items-center w-full font-medium"
+            >
+              <IconQrcode size={20} /> QR Codes
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <Link
+              to="/dashboard"
+              className="flex gap-2 items-center w-full font-medium"
+            >
+              <IconChartBar size={20} /> Analytics
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            variant="destructive"
+            className="font-medium"
+            onClick={handleLogout}
+          >
+            <IconLogout size={20} />
+            Sign Out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

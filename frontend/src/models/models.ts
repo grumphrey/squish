@@ -34,4 +34,6 @@ export interface TotalVisitMetrics {
 export interface User {
   userID: string;
   email: string;
+  name: string;
+  picture: string;
 }

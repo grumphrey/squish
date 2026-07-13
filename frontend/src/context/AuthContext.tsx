@@ -27,8 +27,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .post("/auth/refresh")
       .then(({ data }) => {
         tokenStore.set(data.access_token);
-        const { email, user_id } = decodeBrowserJwt(data.access_token);
-        setUser({ email: email, userID: user_id });
+        const { email, user_id, name, picture } = decodeBrowserJwt(
+          data.access_token,
+        );
+        setUser({ email: email, userID: user_id, name, picture });
         // TODO: navigate to dashboard?
       })
       .catch(() => setUser(null))
@@ -55,10 +57,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data } = await api.post("/auth/login", body);
       tokenStore.set(data.access_token);
 
-      const { email: user_email, user_id } = decodeBrowserJwt(
-        data.access_token,
-      );
-      setUser({ email: user_email, userID: user_id });
+      const {
+        email: user_email,
+        user_id,
+        name,
+        picture,
+      } = decodeBrowserJwt(data.access_token);
+      setUser({ email: user_email, userID: user_id, name, picture });
     } catch (err) {
       // type guard
       if (axios.isAxiosError(err)) {
@@ -97,10 +102,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data } = await api.post("/auth/signup", body);
       tokenStore.set(data.access_token);
 
-      const { email: user_email, user_id } = decodeBrowserJwt(
-        data.access_token,
-      );
-      setUser({ email: user_email, userID: user_id });
+      const {
+        email: user_email,
+        user_id,
+        name,
+        picture,
+      } = decodeBrowserJwt(data.access_token);
+      setUser({ email: user_email, userID: user_id, name, picture });
     } catch (err) {
       // type guard
       if (axios.isAxiosError(err)) {
@@ -166,6 +174,7 @@ function decodeBrowserJwt(token: string) {
         .join(""),
     );
 
+    // TODO: type return val
     return JSON.parse(jsonPayload);
   } catch (error) {
     console.error("Failed to decode JWT:", error);
