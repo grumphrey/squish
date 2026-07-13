@@ -96,7 +96,7 @@ export default function URLInput({
     setError("");
 
     // Send long URL to server to create short URL
-    const payload = { url, slug, qr_code: qrCodeChecked };
+    const payload = { url, slug, qr_code: qrCodeChecked || tab === "qr-code" };
     onSubmit(payload, {
       onSuccess: (data) => {
         setLongURL("");
