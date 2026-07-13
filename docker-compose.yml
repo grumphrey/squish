@@ -19,6 +19,8 @@ services:
       - ./certbot/conf:/etc/letsencrypt # shared volume between nginx and certbot services
       - ./certbot/www:/var/www/certbot
       - ./certs:/etc/letsencrypt/live/squish.humphrey.app # NOTE: only used for local dev
+    environment:
+      - TZ=Asia/Singapore
     depends_on:
       - backend
     restart: unless-stopped
