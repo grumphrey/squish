@@ -39,7 +39,7 @@ type URLRepository interface {
 	UpdateShortURLInactive(ctx context.Context, shortCode string) error
 	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
 
-	CreateRedirectMetrics(ctx context.Context, urlID string, metrics RedirectEventMetrics) error
+	CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error
 	// TODO: return pointer to struct
 	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
 }
@@ -232,7 +232,7 @@ func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts
 }
 
 // UpdateUrlVisitCount increments the click count of the given URL ID in the database, returning the new click count.
-func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID string, metrics RedirectEventMetrics) error {
+func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
 		short_url_id, ip_address, country_code, region, city, latitude, longitude, 
 		user_agent, os, browser, device, device_type

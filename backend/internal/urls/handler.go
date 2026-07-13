@@ -258,6 +258,26 @@ func (h *URLHandler) HandleGetURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Map from domain model to data transfer object (only exposing certain fields)
+	// Cannot use `json:"-"` on struct since it hides those fields from being serialized into redis
+	type ShortURLResponse struct {
+		ShortURL  string    `json:"short_url"`
+		LongURL   string    `json:"long_url"`
+		CreatedAt time.Time `json:"created_at"`
+		Active    bool      `json:"is_active"`
+		QRCode    bool      `json:"is_qrcode"`
+	}
+	result := make([]ShortURLResponse, len(urlRecords))
+	for i, rec := range urlRecords {
+		result[i] = ShortURLResponse{
+			ShortURL:  rec.ShortURL,
+			LongURL:   rec.LongURL,
+			CreatedAt: rec.CreatedAt,
+			Active:    rec.Active,
+			QRCode:    rec.QRCode,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(urlRecords)
+	json.NewEncoder(w).Encode(result)
 }

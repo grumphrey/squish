@@ -3,7 +3,7 @@ package urls
 import "time"
 
 type RedirectEvent struct {
-	UrlID     string
+	UrlID     int64
 	IPAddress string
 	UserAgent string
 }
@@ -34,13 +34,13 @@ type RedirectEventMetrics struct {
 
 // TODO: use google uuid data type instead of string?
 type ShortURLRecord struct {
-	UrlID     string    `db:"id" json:"-"`
-	ShortURL  string    `db:"short_url" json:"short_url"`
-	LongURL   string    `db:"long_url" json:"long_url"`
-	UserID    *string   `db:"user_id" json:"-"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	Active    bool      `db:"is_active" json:"is_active"`
-	QRCode    bool      `db:"is_qrcode" json:"qr_code"`
+	UrlID     int64     `db:"id"`
+	ShortURL  string    `db:"short_url"`
+	LongURL   string    `db:"long_url"`
+	UserID    *string   `db:"user_id"`
+	CreatedAt time.Time `db:"created_at"`
+	Active    bool      `db:"is_active"`
+	QRCode    bool      `db:"is_qrcode"`
 }
 
 // type ErrorCode string
