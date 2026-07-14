@@ -132,6 +132,7 @@ func run() error {
 	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetDeviceMetrics)))
 	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsByDayPastWeek)))
 	mux.Handle("/api/metrics/visits/total", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitMetrics)))
+	mux.Handle("/api/metrics/visits/source", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsBySource)))
 
 	serverErr := make(chan error, 1)
 	go func() {

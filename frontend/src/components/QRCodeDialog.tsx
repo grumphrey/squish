@@ -73,14 +73,22 @@ interface URLQRCodeProps {
   shortCode: string;
 }
 
+function SetQueryParam(url: string, key: string, val: string) {
+  const u = new URL(url);
+  u.searchParams.set(key, val);
+
+  return u.toString();
+}
+
 const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
-  const qrCode = useMemo(
-    () =>
-      // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
-      new QRCodeStyling({
+  const qrCode = useMemo(() =>
+    // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
+    {
+      const link = SetQueryParam(url, "src", "qr");
+      return new QRCodeStyling({
         width: 280,
         height: 280,
-        data: url,
+        data: link,
         image: dogLogo,
         dotsOptions: {
           color: "black",
@@ -89,9 +97,8 @@ const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
         imageOptions: {
           crossOrigin: "anonymous",
         },
-      }),
-    [],
-  );
+      });
+    }, []);
 
   // Callback ref only runs when ref node is mounted
   const setQrRef = (node: HTMLDivElement | null) => {

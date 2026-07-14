@@ -123,10 +123,13 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 	// Generate QR code if requested by client
 	var encodedQRCode string
 	if request.CreateQRCode {
+		queryParams := url.Values{}
+		queryParams.Add("src", "qr") // mark this link as QR code using query param
 		u := &url.URL{
-			Scheme: "https",
-			Host:   r.Host,
-			Path:   fmt.Sprintf("/%s", slug),
+			Scheme:   "https",
+			Host:     r.Host,
+			Path:     fmt.Sprintf("/%s", record.ShortURL),
+			RawQuery: queryParams.Encode(),
 		}
 		qrcode, err := h.urlService.CreateQRCode(u.String())
 		encodedQRCode = "data:image/png;base64," + qrcode
@@ -209,6 +212,14 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Determine whether the request was made by scanning QR code
+	// NOTE: using query params, which may be stripped out, also not foolproof
+	var QRScan bool
+	redirectSrc := r.URL.Query().Get("src")
+	if redirectSrc == "qr" {
+		QRScan = true
+	}
+
 	// Find corresponding URL record for short code
 	record, err := h.urlService.FindURLRecord(ctx, shortCode)
 	if err != nil {
@@ -228,8 +239,10 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	// Can also batch insert instead of writing to DB on every request
 	// Could also use a message queue (more complexity, but allows for durability, multiple consumers)
 	// Currently, will drop tracking the metric if server crashes etc.
+	// TODO: maybe unnecessary struct, only few fields? or embed struct
 	event := RedirectEvent{
 		UrlID:     record.UrlID,
+		QRScan:    QRScan,
 		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
 		UserAgent: r.Header.Get("User-Agent"),
 	}

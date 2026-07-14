@@ -94,3 +94,26 @@ func (h *metricsHandler) HandleGetTotalVisitMetrics(w http.ResponseWriter, r *ht
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// Get total visitors for all short URLs created by this user, grouped by source (redirected by a link vs QR code).
+func (h *metricsHandler) HandleGetTotalVisitsBySource(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Retrieve the user ID from the access-token through request context
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Query for total visits by source (QR code vs direct link)
+	metrics, err := h.metricsService.GetTotalVisitsBySource(ctx, claims.UserID)
+	if err != nil {
+		// TODO: error handling
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+}

@@ -179,3 +179,29 @@ func (r *metricsRepository) GetTotalVisitsWeekBeforePastWeek(ctx context.Context
 
 	return totalVisits, nil
 }
+
+// Total visit count of all short URLs created by this user, divided into source of visits, which could be through a QR code or a direct link.
+func (r *metricsRepository) GetTotalVisitsBySource(ctx context.Context, userID string) ([]TotalVisitsBySource, error) {
+	query := `
+		SELECT 
+			CASE 
+				WHEN is_qrscan = TRUE THEN 'qr_code' 
+				ELSE 'direct_link' 
+			END AS source, 
+			COUNT(*) AS total_visits 
+		FROM short_url_metrics 
+		WHERE user_id = $1 
+		GROUP BY is_qrscan`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	visitsBySource, err := pgx.CollectRows(rows, pgx.RowToStructByName[TotalVisitsBySource])
+	if err != nil {
+		return nil, err
+	}
+	return visitsBySource, nil
+}

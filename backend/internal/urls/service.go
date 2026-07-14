@@ -225,7 +225,7 @@ func (s *urlService) GetURLsByUserID(ctx context.Context, userID string) ([]Shor
 	return urls, nil
 }
 
-// TODO: EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
+// EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
 func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent) {
 	// Get geolocation based on IP address
 	geolocation, err := s.repo.GetIPAddressMetrics(ctx, event.IPAddress)
@@ -245,6 +245,7 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 			DeviceType: getDeviceType(ua),
 		},
 		UserAgentStr: event.UserAgent, // TODO: or use parsed ua.String?
+		QRScan:       event.QRScan,
 	}
 
 	if err := s.repo.CreateRedirectMetrics(ctx, event.UrlID, metrics); err != nil {

@@ -85,3 +85,12 @@ func (s *metricsService) GetTotalVisitMetrics(ctx context.Context, userID string
 
 	return metrics, nil
 }
+
+func (s *metricsService) GetTotalVisitsBySource(ctx context.Context, userID string) ([]TotalVisitsBySource, error) {
+	metrics, err := s.metricsRepository.GetTotalVisitsBySource(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return metrics, nil
+}

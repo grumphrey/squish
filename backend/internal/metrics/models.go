@@ -22,3 +22,8 @@ type PastWeekVisitMetrics struct {
 	TotalPastWeek   int64                     `json:"total_past_week"`
 	TotalWeekBefore int64                     `json:"total_week_before"`
 }
+
+type TotalVisitsBySource struct {
+	Source string `db:"source" json:"source"`
+	Visits int64  `db:"total_visits" json:"total_visits"`
+}

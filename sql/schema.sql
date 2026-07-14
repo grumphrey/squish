@@ -43,12 +43,13 @@ CREATE TABLE url_redirect_events (
   os VARCHAR(50),
   browser VARCHAR(50),
   device VARCHAR(50),
-  device_type VARCHAR(50) CHECK (device_type IN ('bot', 'desktop', 'mobile', 'tablet', 'unknown'))
+  device_type VARCHAR(50) CHECK (device_type IN ('bot', 'desktop', 'mobile', 'tablet', 'unknown')),
+  is_qrscan BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE VIEW short_url_metrics AS 
 SELECT s.id AS short_url_id, s.short_url, s.long_url, s.created_at AS url_created_at, 
-  u.id AS user_id, u.email, e.accessed_at, e.ip_address, e.country_code, e.os, e.browser, e.device, e.device_type, 
+  u.id AS user_id, u.email, e.accessed_at, e.ip_address, e.country_code, e.os, e.browser, e.device, e.device_type, e.is_qrscan, 
   COUNT(e.id) OVER (PARTITION BY s.id) AS total_clicks
 FROM short_urls s 
 JOIN users u               ON s.user_id=u.id 

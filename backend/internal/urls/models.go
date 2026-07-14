@@ -4,6 +4,7 @@ import "time"
 
 type RedirectEvent struct {
 	UrlID     int64
+	QRScan    bool
 	IPAddress string
 	UserAgent string
 }
@@ -25,11 +26,11 @@ type UserAgent struct {
 }
 
 type RedirectEventMetrics struct {
-	IPAddress   string
-	Geolocation Geolocation
-
+	IPAddress    string
+	Geolocation  Geolocation
 	UserAgentStr string
 	UserAgent    UserAgent
+	QRScan       bool
 }
 
 // TODO: use google uuid data type instead of string?

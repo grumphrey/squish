@@ -250,10 +250,10 @@ func (r *urlRepository) GetURLsByUserID(ctx context.Context, userID string, opts
 func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error {
 	query := `INSERT INTO url_redirect_events (
 		short_url_id, ip_address, country_code, region, city, latitude, longitude, 
-		user_agent, os, browser, device, device_type
+		user_agent, os, browser, device, device_type, is_qrscan
 	) VALUES (
 		@ShortURLID, @IPAddress, @CountryCode, @Region, @City, @Latitude, @Longitude, 
-		@UserAgent, @OS, @Browser, @Device, @DeviceType
+		@UserAgent, @OS, @Browser, @Device, @DeviceType, @QRScan
 	)`
 	args := pgx.NamedArgs{
 		"ShortURLID":  urlID,
@@ -268,6 +268,7 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID int64, 
 		"Browser":     utils.Nullable(metrics.UserAgent.Browser),
 		"Device":      utils.Nullable(metrics.UserAgent.Device),
 		"DeviceType":  utils.Nullable(metrics.UserAgent.DeviceType),
+		"QRScan":      metrics.QRScan,
 	}
 
 	_, err := r.db.Exec(ctx, query, args)
