@@ -48,9 +48,10 @@ import { useGetURLs } from "@/hooks/useGetURLs";
 
 interface URLsListProps {
   query?: string;
+  isQROnly?: boolean;
 }
 
-export default function URLsList({ query }: URLsListProps) {
+export default function URLsList({ query, isQROnly }: URLsListProps) {
   const [inactiveOpen, setInactiveOpen] = useState(true);
   const { data, isPending, error } = useGetURLs();
 
@@ -68,12 +69,13 @@ export default function URLsList({ query }: URLsListProps) {
   if (data.length === 0) return <URLListEmpty />;
 
   // Filter links from search bar
-  const links = query
+  let links = query
     ? data.filter((link) => {
         const q = query.toLowerCase();
         return link.short_url.toLowerCase().includes(q);
       })
     : data;
+  links = isQROnly ? links.filter((l) => l.is_qrcode) : links;
   const activeLinks = links.filter((link) => link.is_active);
   const inactiveLinks = links.filter((link) => !link.is_active);
 

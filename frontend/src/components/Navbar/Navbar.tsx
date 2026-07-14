@@ -71,10 +71,10 @@ export default function Navbar() {
                     title="Short Links"
                     icon={<IconLink size={30} />}
                   >
-                    View and manage your short links.
+                    View and manage all your links.
                   </ListItem>
                   <ListItem
-                    href="/links"
+                    href="/qrcodes"
                     title="QR Codes"
                     icon={<IconQrcode size={30} />}
                   >
@@ -222,7 +222,7 @@ function AvatarDropdownMenu() {
 
           <DropdownMenuItem>
             <Link
-              to="/links" // TODO: qrcodes
+              to="/qrcodes"
               className="flex gap-2 items-center w-full font-medium"
             >
               <IconQrcode size={20} /> QR Codes

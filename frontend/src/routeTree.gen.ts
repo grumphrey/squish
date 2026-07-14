@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteRouteImport } from './routes/index/route'
+import { Route as AuthenticatedQrcodesRouteImport } from './routes/_authenticated/qrcodes'
 import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
 import { Route as AuthenticatedDashboardRouteRouteImport } from './routes/_authenticated/dashboard/route'
 
@@ -35,6 +36,11 @@ const IndexRouteRoute = IndexRouteRouteImport.update({
   path: '',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedQrcodesRoute = AuthenticatedQrcodesRouteImport.update({
+  id: '/qrcodes',
+  path: '/qrcodes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
   id: '/links',
   path: '/links',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRouteRoute
   '/links': typeof AuthenticatedLinksRoute
+  '/qrcodes': typeof AuthenticatedQrcodesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRouteRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRouteRoute
   '/links': typeof AuthenticatedLinksRoute
+  '/qrcodes': typeof AuthenticatedQrcodesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,12 +77,13 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteRoute
   '/_authenticated/links': typeof AuthenticatedLinksRoute
+  '/_authenticated/qrcodes': typeof AuthenticatedQrcodesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/dashboard' | '/links'
+  fullPaths: '/' | '/login' | '/signup' | '/dashboard' | '/links' | '/qrcodes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/dashboard' | '/links'
+  to: '/' | '/login' | '/signup' | '/dashboard' | '/links' | '/qrcodes'
   id:
     | '__root__'
     | '/'
@@ -83,6 +92,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/dashboard'
     | '/_authenticated/links'
+    | '/_authenticated/qrcodes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -122,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/qrcodes': {
+      id: '/_authenticated/qrcodes'
+      path: '/qrcodes'
+      fullPath: '/qrcodes'
+      preLoaderRoute: typeof AuthenticatedQrcodesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/links': {
       id: '/_authenticated/links'
       path: '/links'
@@ -142,11 +159,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRouteRoute: typeof AuthenticatedDashboardRouteRoute
   AuthenticatedLinksRoute: typeof AuthenticatedLinksRoute
+  AuthenticatedQrcodesRoute: typeof AuthenticatedQrcodesRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRouteRoute: AuthenticatedDashboardRouteRoute,
   AuthenticatedLinksRoute: AuthenticatedLinksRoute,
+  AuthenticatedQrcodesRoute: AuthenticatedQrcodesRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

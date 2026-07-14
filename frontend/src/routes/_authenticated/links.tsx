@@ -46,7 +46,7 @@ interface URLSearchInputProps extends ComponentProps<"input"> {
   setQuery: Dispatch<SetStateAction<string>>;
 }
 
-function URLSearchInput({ query, setQuery }: URLSearchInputProps) {
+export function URLSearchInput({ query, setQuery }: URLSearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
