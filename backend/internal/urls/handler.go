@@ -281,3 +281,47 @@ func (h *URLHandler) HandleGetURLs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
+
+// Edits the given URL record if user is authorized.
+// Currently only accepts modifying whether a URL record has a QR code generated for it.
+func (h *URLHandler) HandleEditShortURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Add("Allow", "POST")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	type requestData struct {
+		ShortURL string `json:"short_url"`
+		QRCode   bool   `json:"is_qrcode"`
+	}
+
+	// Get short code to edit
+	var req requestData
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Get user ID of requester
+	ctx := r.Context()
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Edit given short code only if the user has required permission
+	err = h.urlService.EditURLRecord(ctx, req.ShortURL, claims.UserID, req.QRCode)
+	if err != nil {
+		if errors.Is(err, ErrPermissionDenied) {
+			http.Error(w, "internal server error", http.StatusInternalServerError) // TODO: 403 forbidden might leak info?
+		} else {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// If successful, return 200 OK
+}

@@ -1,0 +1,173 @@
+import dogLogo from "@/assets/dog-logo-qr.png";
+import { IconPlus, IconDownload, IconQrcode } from "@tabler/icons-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
+
+import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import QRCodeStyling from "qr-code-styling";
+import useEditShortURL from "@/hooks/useEditShortURL";
+
+interface QRCodeDialogProps {
+  isQRCode: boolean;
+  url: string;
+  shortCode: string;
+}
+
+// TODO: Allow users to customize QR code
+export default function QRCodeDialog({
+  isQRCode,
+  url,
+  shortCode,
+}: QRCodeDialogProps) {
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useEditShortURL();
+  const createQRCode = () => {
+    const payload = { short_url: shortCode, is_qrcode: true };
+    mutate(payload, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
+      },
+      onError: () => toast.error("DEFAULT_ERR"),
+    });
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <IconQrcode />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent>
+        {isQRCode ? (
+          <URLQRCode url={url} shortCode={shortCode} />
+        ) : (
+          <EmptyQRCode handleCreate={createQRCode} isPending={isPending} />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface URLQRCodeProps {
+  url: string;
+  shortCode: string;
+}
+
+const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
+  const qrCode = useMemo(
+    () =>
+      // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
+      new QRCodeStyling({
+        width: 280,
+        height: 280,
+        data: url,
+        image: dogLogo,
+        dotsOptions: {
+          color: "black",
+          type: "rounded",
+        },
+        imageOptions: {
+          crossOrigin: "anonymous",
+        },
+      }),
+    [],
+  );
+
+  // Callback ref only runs when ref node is mounted
+  const setQrRef = (node: HTMLDivElement | null) => {
+    if (!node) return;
+
+    node.innerHTML = "";
+    qrCode.append(node);
+  };
+
+  const handleDownload = () => {
+    if (!qrCode) return;
+    qrCode.download();
+  };
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex gap-1 items-center">
+          <IconQrcode height="16px" />
+          Your QR Code
+        </DialogTitle>
+        <DialogDescription className="font-mono wrap-anywhere">
+          <span>URL: </span>
+          <span>{window.location.protocol}</span>
+          <span>//</span>
+          <span>{window.location.hostname}</span>
+          <span>/</span>
+          <span className="text-(--color-primary) inline-block">
+            {shortCode}
+          </span>
+        </DialogDescription>
+      </DialogHeader>
+
+      <div
+        ref={setQrRef}
+        className="m-auto border-10 border-primary rounded-2xl"
+      />
+
+      <Button variant="default" onClick={handleDownload} className="font-sans">
+        <IconDownload />
+        Download QR
+      </Button>
+    </>
+  );
+};
+
+const EmptyQRCode = ({
+  handleCreate,
+  isPending,
+}: {
+  handleCreate: () => void;
+  isPending: boolean;
+}) => {
+  return (
+    <Empty className="font-sans">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <IconQrcode />
+        </EmptyMedia>
+        <EmptyTitle>Nothing to scan, nothing to see.</EmptyTitle>
+        <EmptyDescription>
+          You haven&apos;t created a QR code for this short link yet.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button variant="default" onClick={handleCreate}>
+          {isPending ? (
+            <>
+              <Spinner /> Loading...
+            </>
+          ) : (
+            <>
+              <IconPlus /> Generate QR Code
+            </>
+          )}
+        </Button>
+      </EmptyContent>
+    </Empty>
+  );
+};

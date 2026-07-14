@@ -34,6 +34,7 @@ type URLService interface {
 	CreateQRCode(link string) (string, error)
 	FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
 	SoftDeleteURLRecord(ctx context.Context, shortCode, userID string) error
+	EditURLRecord(ctx context.Context, shortCode, userID string, qrCode bool) error
 	GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error)
 
 	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
@@ -164,6 +165,35 @@ func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID s
 
 	// User has permissions to soft delete url
 	err = s.repo.UpdateShortURLInactive(ctx, shortURL)
+	if err != nil {
+		if err == ErrNoRowsAffected {
+			return nil // no problem if short url has already been deleted
+		}
+		return err
+	}
+
+	// Invalidate cached url record
+	err = s.repo.DeleteCachedURLRecord(ctx, shortURL)
+	if err != nil {
+		// Don't error out if failed to delete cache, will just be stale reads until key expires
+		log.Printf("error while deleting cached URL record: %v", err)
+	}
+
+	return nil
+}
+
+func (s *urlService) EditURLRecord(ctx context.Context, shortURL, userID string, qrCode bool) error {
+	// Check if short URL belongs to user
+	ownerID, err := s.repo.FindShortURLOwner(ctx, shortURL)
+	if err != nil {
+		return err
+	}
+	if ownerID != userID {
+		return ErrPermissionDenied
+	}
+
+	// User has permissions to edit url
+	err = s.repo.UpdateShortURLQRCode(ctx, shortURL, qrCode)
 	if err != nil {
 		if err == ErrNoRowsAffected {
 			return nil // no problem if short url has already been deleted

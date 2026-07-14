@@ -1,4 +1,5 @@
 import styles from "../dashboard.module.css";
+import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import {
   IconArrowNarrowRight,
   IconCheck,
@@ -6,13 +7,8 @@ import {
   IconDots,
   IconLink,
   IconPencil,
+  IconQrcode,
 } from "@tabler/icons-react";
-import { api } from "@/lib/api";
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -34,13 +30,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { Button, type ButtonProps } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { ShortURLRecord } from "@/models/models";
 import ErrorAlert from "@/components/ErrorAlert";
 import { DeleteLinkButton } from "@/components/DeleteLinkButton";
-import type { ShortURLRecord } from "@/models/models";
-import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import QRCodeDialog from "@/components/QRCodeDialog";
+import { useGetURLs } from "@/hooks/useGetURLs";
 
 interface URLsListProps {
   query?: string;
@@ -48,17 +52,7 @@ interface URLsListProps {
 
 export default function URLsList({ query }: URLsListProps) {
   const [inactiveOpen, setInactiveOpen] = useState(true);
-  const { data, isPending, error } = useQuery({
-    queryKey: ["dashboard", "urls"],
-    queryFn: () =>
-      api.get<ShortURLRecord[]>("/urls").then((res) => {
-        return res.data.map((urlRecord) => {
-          return { ...urlRecord, created_at: new Date(urlRecord.created_at) };
-        });
-      }),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
-  });
+  const { data, isPending, error } = useGetURLs();
 
   if (error) return <ErrorAlert />;
 
@@ -73,6 +67,7 @@ export default function URLsList({ query }: URLsListProps) {
 
   if (data.length === 0) return <URLListEmpty />;
 
+  // Filter links from search bar
   const links = query
     ? data.filter((link) => {
         const q = query.toLowerCase();
@@ -170,6 +165,7 @@ function ShortURLRecord({
   long_url,
   is_active,
   created_at,
+  is_qrcode,
 }: ShortURLRecord) {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -231,8 +227,9 @@ function ShortURLRecord({
             )}
           </div>
           <span className="pl-2">{displayShortURL}</span>
+          {is_qrcode && <IconQrcode className="text-(--color-primary)" />}
           <div className="items-center hidden md:flex">
-            <CopyURLButton url={fullURL} />
+            <CopyURLButton url={fullURL} iconSize="10px" />
           </div>
         </div>
 
@@ -257,6 +254,8 @@ function ShortURLRecord({
       {is_active && (
         <URLRecordMenu
           isDeleting={isDeleting}
+          isQRCode={is_qrcode}
+          shortCode={short_url}
           url={fullURL}
           handleEdit={() => console.log("TODO")}
           handleDelete={handleDelete}
@@ -268,12 +267,16 @@ function ShortURLRecord({
 
 interface URLRecordMenuProps {
   isDeleting: boolean;
+  isQRCode: boolean;
+  shortCode: string;
   url: string;
   handleEdit: () => void;
   handleDelete: () => Promise<void>;
 }
 function URLRecordMenu({
   isDeleting,
+  isQRCode,
+  shortCode,
   url,
   handleEdit,
   handleDelete,
@@ -282,51 +285,70 @@ function URLRecordMenu({
     <>
       {/* Desktop menu */}
       <div className="hidden items-center gap-2 md:flex md:flex-row">
-        <Button variant="outline" onClick={handleEdit} disabled>
+        {/* TODO */}
+        <Button
+          variant="outline"
+          className="hidden"
+          onClick={handleEdit}
+          disabled
+        >
           <IconPencil />
         </Button>
+
+        <QRCodeDialog isQRCode={isQRCode} url={url} shortCode={shortCode} />
         <DeleteLinkButton isDeleting={isDeleting} onClick={handleDelete} />
       </div>
 
       {/* Mobile menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="md:hidden">
-            <IconDots />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="font-sans">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>URL</DropdownMenuLabel>
-            <DropdownMenuItem disabled>
-              <IconPencil />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <CopyURLButton url={url} isDropdown />
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
+      <div className="flex items-center gap-2 md:hidden">
+        <QRCodeDialog isQRCode={isQRCode} url={url} shortCode={shortCode} />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="md:hidden">
+              <IconDots />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="font-sans">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>URL</DropdownMenuLabel>
+              {/* TODO: implement edit url */}
+              <DropdownMenuItem className="hidden" disabled>
+                <IconPencil />
+                Edit
+              </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <CopyURLButton url={url} isDropdown />
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
 
-          <DropdownMenuGroup>
-            <DropdownMenuItem variant="destructive" onClick={handleDelete}>
-              <TrashIcon />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+                <TrashIcon />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </>
   );
 }
 
-interface CopyURLButtonProps {
+interface CopyURLButtonProps extends ButtonProps {
   url: string;
   isDropdown?: boolean;
+  iconSize?: string;
 }
 
-function CopyURLButton({ url, isDropdown = false }: CopyURLButtonProps) {
+function CopyURLButton({
+  url,
+  isDropdown = false,
+  iconSize = "16px",
+  ...props
+}: CopyURLButtonProps) {
   const [copying, setCopying] = useState(false);
 
   // Copy url into clipboard and show tick icon for 2 seconds.
@@ -362,8 +384,13 @@ function CopyURLButton({ url, isDropdown = false }: CopyURLButtonProps) {
       variant="ghost"
       onClick={handleClick}
       className="h-5 cursor-pointer"
+      {...props}
     >
-      {copying ? <IconCheck height="10px" /> : <IconCopy height="10px" />}
+      {copying ? (
+        <IconCheck height={iconSize} />
+      ) : (
+        <IconCopy height={iconSize} />
+      )}
     </Button>
   );
 }

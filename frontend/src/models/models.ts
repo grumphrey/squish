@@ -3,6 +3,7 @@ export interface ShortURLRecord {
   long_url: string;
   is_active: boolean;
   created_at: Date;
+  is_qrcode: boolean;
 }
 
 export interface DailyTotalVisits {

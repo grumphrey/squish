@@ -37,6 +37,7 @@ type URLRepository interface {
 	CreateURLRecord(ctx context.Context, shortCode, longURL, userID string, qrCode bool) (*ShortURLRecord, error)
 	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
 	UpdateShortURLInactive(ctx context.Context, shortCode string) error
+	UpdateShortURLQRCode(ctx context.Context, shortCode string, qrCode bool) error
 	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
 
 	CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error
@@ -170,6 +171,20 @@ func (r *urlRepository) FindShortURLOwner(ctx context.Context, shortCode string)
 func (r *urlRepository) UpdateShortURLInactive(ctx context.Context, shortCode string) error {
 	query := "UPDATE short_urls SET is_active=FALSE WHERE short_url=$1"
 	tag, err := r.db.Exec(ctx, query, shortCode)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNoRowsAffected
+	}
+
+	return nil
+}
+
+// Set the given short URL as having a QR code.
+func (r *urlRepository) UpdateShortURLQRCode(ctx context.Context, shortCode string, qrCode bool) error {
+	query := "UPDATE short_urls SET is_qrcode=$1 WHERE short_url=$2"
+	tag, err := r.db.Exec(ctx, query, qrCode, shortCode)
 	if err != nil {
 		return err
 	}

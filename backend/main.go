@@ -127,6 +127,7 @@ func run() error {
 	mux.Handle("/api/shorten", rateLimitShorten(extractUser(http.HandlerFunc(urlHandler.HandleCreateShortURL))))
 	mux.Handle("/api/urls", protected(http.HandlerFunc(urlHandler.HandleGetURLs)))
 	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))
+	mux.Handle("/api/url/edit", protected(http.HandlerFunc(urlHandler.HandleEditShortURL)))
 
 	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetDeviceMetrics)))
 	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsByDayPastWeek)))
