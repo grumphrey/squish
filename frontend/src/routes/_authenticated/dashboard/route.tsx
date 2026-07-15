@@ -13,25 +13,27 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { api } from "@/lib/api";
-
+import ErrorAlert from "@/components/ErrorAlert";
 import BrowserMetrics from "./-components/BrowserMetrics";
 import CountryMetrics from "./-components/CountryMetrics";
 import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
 import VisitTimelineMetrics from "./-components/VisitTimelineMetrics";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import ErrorAlert from "@/components/ErrorAlert";
+import SourceMetrics from "./-components/SourceMetrics";
 import type {
   DeviceMetrics,
   TotalVisitMetrics,
   VisitsPastWeek,
+  VisitsBySource,
 } from "@/models/models";
-import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -94,7 +96,26 @@ function Dashboard() {
     refetchOnMount: "always",
   });
 
-  const isRefreshing = isFetchingMetrics || isFetchingVisits || isFetchingTotal;
+  const {
+    data: sourceData,
+    isPending: isSourceLoading,
+    isFetching: isFetchingSource,
+    error: sourceError,
+  } = useQuery({
+    queryKey: ["dashboard", "source"],
+    queryFn: () =>
+      api
+        .get<VisitsBySource[]>("/metrics/visits/source")
+        .then((res) => res.data),
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
+  });
+
+  const isRefreshing =
+    isFetchingMetrics ||
+    isFetchingVisits ||
+    isFetchingTotal ||
+    isFetchingSource;
 
   // Refresh metrics data from backend
   const handleRefreshAll = () => {
@@ -132,16 +153,8 @@ function Dashboard() {
         <Separator />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-        <div className="col-span-1 sm:col-span-2">
-          <VisitTimelineMetrics
-            data={visitsData?.daily_past_week}
-            isPending={isVisitsLoading}
-            error={visitsError}
-          />
-        </div>
-
-        <div className="gap-5 grid grid-cols-subgrid col-span-1 sm:col-span-2 md:col-span-1">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-9">
+        <div className="col-span-1 md:col-span-3">
           <MetricCard
             data={visitsData?.total_past_week}
             compareData={visitsData?.total_week_before}
@@ -151,6 +164,9 @@ function Dashboard() {
             title="Total Visitors"
             description="Past 7 days"
           />
+        </div>
+
+        <div className="col-span-1 md:col-span-3">
           <MetricCard
             data={totalData?.unique_visitors}
             isPending={isTotalLoading}
@@ -160,7 +176,23 @@ function Dashboard() {
           />
         </div>
 
-        <div className="gap-5 grid grid-cols-subgrid sm:col-span-2 md:col-span-3">
+        <div className="col-span-1 sm:col-span-2 md:col-span-6">
+          <VisitTimelineMetrics
+            data={visitsData?.daily_past_week}
+            isPending={isVisitsLoading}
+            error={visitsError}
+          />
+        </div>
+
+        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+          <SourceMetrics
+            data={sourceData}
+            isPending={isSourceLoading}
+            error={sourceError}
+          />
+        </div>
+
+        <div className="gap-5 grid grid-cols-subgrid sm:col-span-2 md:col-span-9 md:*:col-span-3">
           <BrowserMetrics
             data={metricsData?.browser}
             isPending={isMetricsLoading}
@@ -229,13 +261,13 @@ function MetricCard({
   }
 
   return (
-    <Card className="bg-linear-to-t from-primary/5">
+    <Card className="font-sans h-full bg-linear-to-t from-primary/5">
       <CardHeader>
         <CardTitle className="flex justify-between">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
 
-      <CardContent className="flex text-6xl items-center justify-center h-full">
+      <CardContent className="font-mono flex text-6xl items-center justify-center h-full">
         <div>{data}</div>
       </CardContent>
 

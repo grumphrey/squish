@@ -32,6 +32,11 @@ export interface TotalVisitMetrics {
   unique_visitors: number;
 }
 
+export interface VisitsBySource {
+  source: string;
+  total_visits: number;
+}
+
 export interface User {
   userID: string;
   email: string;
