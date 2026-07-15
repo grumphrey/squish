@@ -92,5 +92,23 @@ func (s *metricsService) GetTotalVisitsBySource(ctx context.Context, userID stri
 		return nil, err
 	}
 
-	return metrics, nil
+	// Backfill missing categories with 0
+	// NOTE: maybe not best way to do it since need to hardcode sources instead of relying on type safety
+	sources := []string{"direct_link", "qr_code"}
+	results := make([]TotalVisitsBySource, 0, len(sources))
+	for _, s := range sources {
+		var count int64
+		for i := range metrics {
+			if metrics[i].Source == s {
+				count = metrics[i].Visits
+				break
+			}
+		}
+		results = append(results, TotalVisitsBySource{
+			Source: s,
+			Visits: count,
+		})
+	}
+
+	return results, nil
 }
