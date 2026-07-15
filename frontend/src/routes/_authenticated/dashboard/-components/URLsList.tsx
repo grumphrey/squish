@@ -228,7 +228,9 @@ function ShortURLRecord({
               <div className={styles.urlInactive} />
             )}
           </div>
-          <span className="pl-2">{displayShortURL}</span>
+          <span className={`pl-2 ${!is_active && "text-muted-foreground"}`}>
+            {displayShortURL}
+          </span>
           {is_qrcode && <IconQrcode className="text-(--color-primary)" />}
           <div className="items-center hidden md:flex">
             <CopyURLButton url={fullURL} iconSize="10px" />
