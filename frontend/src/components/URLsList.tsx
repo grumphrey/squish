@@ -39,14 +39,12 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 import type { ShortURLRecord } from "@/models/models";
 import ErrorAlert from "@/components/ErrorAlert";
-import { DeleteLinkButton } from "@/components/DeleteLinkButton";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { useGetURLs } from "@/hooks/useGetURLs";
 import AnalyticsDialog from "@/components/AnalyticsDialog";
+import { DeleteLinkDialog } from "@/components/DeleteLinkDialog";
 
 interface URLsListProps {
   query?: string;
@@ -171,45 +169,9 @@ function ShortURLRecord({
   created_at,
   is_qrcode,
 }: ShortURLRecord) {
-  const queryClient = useQueryClient();
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const displayShortURL = "/" + short_url;
   const fullURL = window.location.origin + displayShortURL;
   const displayDate = urlDateFormatter.format(created_at);
-
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true);
-      await api.post("/url/delete", { short_url });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
-
-      toast.success(
-        <div>
-          Successfully deleted{" "}
-          <span className="text-(--color-primary)">{displayShortURL}</span>
-        </div>,
-        {
-          position: "top-center",
-        },
-      );
-    } catch (err) {
-      toast.error(
-        <div>
-          There was a problem trying to delete{" "}
-          <span className="text-(--color-primary)">{displayShortURL}</span>.
-        </div>,
-        {
-          description: (
-            <div className="text-(--color-text)">Please try again later.</div>
-          ),
-          position: "top-center",
-        },
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   return (
     <div className={`${styles.urlContainer} hover:bg-accent transition-all`}>
@@ -257,60 +219,78 @@ function ShortURLRecord({
         <span>{displayDate}</span>
       </div>
 
-      {is_active && (
-        <URLRecordMenu
-          isDeleting={isDeleting}
-          isQRCode={is_qrcode}
-          shortCode={short_url}
-          url={fullURL}
-          handleEdit={() => console.log("TODO")}
-          handleDelete={handleDelete}
-        />
-      )}
+      <URLRecordMenu
+        isQRCode={is_qrcode}
+        isActive={is_active}
+        shortCode={short_url}
+      />
     </div>
   );
 }
 
 interface URLRecordMenuProps {
-  isDeleting: boolean;
   isQRCode: boolean;
+  isActive: boolean;
   shortCode: string;
-  url: string;
-  handleEdit: () => void;
-  handleDelete: () => Promise<void>;
 }
-function URLRecordMenu({
-  isDeleting,
-  isQRCode,
-  shortCode,
-  url,
-  handleEdit,
-  handleDelete,
-}: URLRecordMenuProps) {
+function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [QROpen, setQROpen] = useState(false);
+  const url = window.location.origin + "/" + shortCode;
+
+  const handleSelectAnalytics = (e: any) => {
+    e.preventDefault();
+    setAnalyticsOpen(true);
+  };
+
+  const handleSelectDelete = (e: any) => {
+    e.preventDefault();
+    setDeleteOpen(true);
+  };
+
+  const handleSelectQRCode = (e: any) => {
+    e.preventDefault();
+    setQROpen(true);
+  };
+
   return (
     <>
       {/* Desktop menu */}
       <div className="hidden items-center gap-2 md:flex md:flex-row">
         {/* TODO */}
-        <Button
-          variant="outline"
-          className="hidden"
-          onClick={handleEdit}
-          disabled
-        >
-          <IconPencil />
-        </Button>
+        {isActive && (
+          <Button variant="outline" className="hidden" disabled>
+            <IconPencil />
+          </Button>
+        )}
 
-        <AnalyticsDialog shortCode={shortCode} />
+        <AnalyticsDialog
+          shortCode={shortCode}
+          open={analyticsOpen}
+          setOpen={setAnalyticsOpen}
+        />
 
-        <QRCodeDialog isQRCode={isQRCode} url={url} shortCode={shortCode} />
+        {isActive && (
+          <QRCodeDialog
+            isQRCode={isQRCode}
+            shortCode={shortCode}
+            open={QROpen}
+            setOpen={setQROpen}
+          />
+        )}
 
-        <DeleteLinkButton isDeleting={isDeleting} onClick={handleDelete} />
+        {isActive && (
+          <DeleteLinkDialog
+            shortCode={shortCode}
+            open={deleteOpen}
+            setOpen={setDeleteOpen}
+          />
+        )}
       </div>
 
       {/* Mobile menu */}
       <div className="flex items-center gap-2 md:hidden">
-        <QRCodeDialog isQRCode={isQRCode} url={url} shortCode={shortCode} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="md:hidden">
@@ -320,29 +300,43 @@ function URLRecordMenu({
           <DropdownMenuContent className="font-sans">
             <DropdownMenuGroup>
               <DropdownMenuLabel>URL</DropdownMenuLabel>
-              {/* TODO: implement edit url */}
-              <DropdownMenuItem className="hidden" disabled>
-                <IconPencil />
-                Edit
+              <DropdownMenuItem>
+                <CopyURLButton url={url} isDropdown />
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => console.log("TODO")} disabled>
+              {isActive && (
+                <DropdownMenuItem onClick={handleSelectQRCode}>
+                  <IconQrcode />
+                  QR Code
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem onClick={handleSelectAnalytics}>
                 <IconChartBar />
                 Analytics
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
-                <CopyURLButton url={url} isDropdown />
-              </DropdownMenuItem>
+              {/* TODO: implement edit url */}
+              {isActive && (
+                <DropdownMenuItem className="hidden" disabled>
+                  <IconPencil />
+                  Edit
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator />
+            {isActive && <DropdownMenuSeparator />}
 
             <DropdownMenuGroup>
-              <DropdownMenuItem variant="destructive" onClick={handleDelete}>
-                <TrashIcon />
-                Delete
-              </DropdownMenuItem>
+              {isActive && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={handleSelectDelete}
+                >
+                  <TrashIcon />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

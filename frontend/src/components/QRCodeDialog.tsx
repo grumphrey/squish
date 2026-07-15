@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import QRCodeStyling from "qr-code-styling";
 import useEditShortURL from "@/hooks/useEditShortURL";
@@ -34,15 +34,17 @@ import { DEFAULT_ERR } from "@/constants";
 
 interface QRCodeDialogProps {
   isQRCode: boolean;
-  url: string;
   shortCode: string;
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 // TODO: Allow users to customize QR code
 export default function QRCodeDialog({
   isQRCode,
-  url,
   shortCode,
+  open,
+  setOpen,
 }: QRCodeDialogProps) {
   const queryClient = useQueryClient();
   const { mutate, isPending } = useEditShortURL();
@@ -57,7 +59,7 @@ export default function QRCodeDialog({
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <IconQrcode />
@@ -66,7 +68,7 @@ export default function QRCodeDialog({
 
       <DialogContent>
         {isQRCode ? (
-          <URLQRCode url={url} shortCode={shortCode} />
+          <URLQRCode shortCode={shortCode} />
         ) : (
           <EmptyQRCode handleCreate={createQRCode} isPending={isPending} />
         )}
@@ -76,7 +78,6 @@ export default function QRCodeDialog({
 }
 
 interface URLQRCodeProps {
-  url: string;
   shortCode: string;
 }
 
@@ -87,12 +88,13 @@ function SetQueryParam(url: string, key: string, val: string) {
   return u.toString();
 }
 
-const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
+const URLQRCode = ({ shortCode }: URLQRCodeProps) => {
   const divRef = useRef<HTMLDivElement>(null);
   const fileName = `squish-qrcode-${shortCode}`;
 
   // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
   const qrCode = useMemo(() => {
+    const url = window.location.origin + "/" + shortCode;
     const link = SetQueryParam(url, "src", "qr");
     return new QRCodeStyling({
       width: 280,

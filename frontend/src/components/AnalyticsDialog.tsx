@@ -1,6 +1,6 @@
 import { IconChartBar } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { type Dispatch, type SetStateAction } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,16 @@ import { MetricCard } from "@/routes/_authenticated/dashboard/route";
 
 interface AnalyticsDialogProps {
   shortCode: string;
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 // NOTE: dialog remains mounted on the page even when closed. use dialogcontent if need to unmount (e.g. for react query refetchOnMount).
-export default function AnalyticsDialog({ shortCode }: AnalyticsDialogProps) {
-  const [open, setOpen] = useState(false);
-
+export default function AnalyticsDialog({
+  shortCode,
+  open, // controlled by URLRecordMenu to work with Dropdown component
+  setOpen,
+}: AnalyticsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
