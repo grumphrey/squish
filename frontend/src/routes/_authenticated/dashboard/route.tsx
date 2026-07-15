@@ -1,7 +1,6 @@
 import styles from "./dashboard.module.css";
 import {
   IconArrowNarrowLeft,
-  IconRefresh,
   IconTrendingDown,
   IconTrendingUp,
 } from "@tabler/icons-react";
@@ -15,25 +14,23 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { api } from "@/lib/api";
 import ErrorAlert from "@/components/ErrorAlert";
 import BrowserMetrics from "./-components/BrowserMetrics";
 import CountryMetrics from "./-components/CountryMetrics";
 import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
 import VisitTimelineMetrics from "./-components/VisitTimelineMetrics";
 import SourceMetrics from "./-components/SourceMetrics";
-import type {
-  DeviceMetrics,
-  TotalVisitMetrics,
-  VisitsPastWeek,
-  VisitsBySource,
-} from "@/models/models";
+import {
+  useSourceMetrics,
+  useTotalVisitMetrics,
+  usePastWeekMetrics,
+  useDeviceMetrics,
+} from "@/hooks";
+import RefreshButton from "@/components/RefreshButton";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -43,73 +40,42 @@ function RouteComponent() {
   return (
     <>
       <title>squi.sh — Analytics</title>
-      <Dashboard />
+      <MetricsDashboard />
     </>
   );
 }
 
-function Dashboard() {
+function MetricsDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Get device metrics (browser, device type, OS, country)
   const {
     data: metricsData,
     isPending: isMetricsLoading,
     isFetching: isFetchingMetrics,
     error: metricsError,
-  } = useQuery({
-    queryKey: ["dashboard", "deviceMetrics"],
-    queryFn: () =>
-      api.get<DeviceMetrics>("/metrics/device").then((res) => res.data),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
-  });
+  } = useDeviceMetrics();
 
-  // Get daily visits metrics for the past 7 days
   const {
     data: visitsData,
     isPending: isVisitsLoading,
     isFetching: isFetchingVisits,
     error: visitsError,
-  } = useQuery({
-    queryKey: ["dashboard", "dailyTotalVisits"],
-    queryFn: () =>
-      api.get<VisitsPastWeek>("/metrics/visits/daily").then((res) => res.data),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
-  });
+  } = usePastWeekMetrics();
 
-  // Get total visits metrics all-time
   const {
     data: totalData,
     isPending: isTotalLoading,
     isFetching: isFetchingTotal,
     error: totalError,
-  } = useQuery({
-    queryKey: ["dashboard", "totalVisits"],
-    queryFn: () =>
-      api
-        .get<TotalVisitMetrics>("/metrics/visits/total")
-        .then((res) => res.data),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
-  });
+  } = useTotalVisitMetrics();
 
   const {
     data: sourceData,
     isPending: isSourceLoading,
     isFetching: isFetchingSource,
     error: sourceError,
-  } = useQuery({
-    queryKey: ["dashboard", "source"],
-    queryFn: () =>
-      api
-        .get<VisitsBySource[]>("/metrics/visits/source")
-        .then((res) => res.data),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
-  });
+  } = useSourceMetrics();
 
   const isRefreshing =
     isFetchingMetrics ||
@@ -131,22 +97,10 @@ function Dashboard() {
 
       <div className="flex justify-between">
         <h1 className={styles.dashboardTitle}>Analytics</h1>
-        <Button
-          className="font-sans"
-          variant="outline"
-          onClick={handleRefreshAll}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <>
-              <Spinner data-icon="inline-start" /> Loading
-            </>
-          ) : (
-            <>
-              <IconRefresh /> Refresh
-            </>
-          )}
-        </Button>
+        <RefreshButton
+          handleRefresh={handleRefreshAll}
+          isRefreshing={isRefreshing}
+        />
       </div>
       <div className={styles.dashboardHeader}>
         <h3 className={styles.dashboardSubtitle}>Summary</h3>
@@ -175,6 +129,8 @@ function Dashboard() {
             description="All-Time"
           />
         </div>
+
+        {/* TODO: <OSMetrics/> */}
 
         <div className="col-span-1 sm:col-span-1 md:col-span-6">
           <VisitTimelineMetrics
@@ -208,7 +164,6 @@ function Dashboard() {
             isPending={isMetricsLoading}
             error={metricsError}
           />
-          {/* TODO: <OSMetrics/> */}
         </div>
       </div>
 
@@ -227,7 +182,7 @@ interface MetricCardProps {
   description: string;
 }
 
-function MetricCard({
+export function MetricCard({
   data,
   compareData,
   isCompare,

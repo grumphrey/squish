@@ -2,6 +2,7 @@ import styles from "../dashboard.module.css";
 import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import {
   IconArrowNarrowRight,
+  IconChartBar,
   IconCheck,
   IconCopy,
   IconDots,
@@ -45,6 +46,7 @@ import ErrorAlert from "@/components/ErrorAlert";
 import { DeleteLinkButton } from "@/components/DeleteLinkButton";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import { useGetURLs } from "@/hooks/useGetURLs";
+import AnalyticsDialog from "@/components/AnalyticsDialog";
 
 interface URLsListProps {
   query?: string;
@@ -299,7 +301,10 @@ function URLRecordMenu({
           <IconPencil />
         </Button>
 
+        <AnalyticsDialog shortCode={shortCode} />
+
         <QRCodeDialog isQRCode={isQRCode} url={url} shortCode={shortCode} />
+
         <DeleteLinkButton isDeleting={isDeleting} onClick={handleDelete} />
       </div>
 
@@ -319,6 +324,11 @@ function URLRecordMenu({
               <DropdownMenuItem className="hidden" disabled>
                 <IconPencil />
                 Edit
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => console.log("TODO")} disabled>
+                <IconChartBar />
+                Analytics
               </DropdownMenuItem>
 
               <DropdownMenuItem>
