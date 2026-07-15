@@ -82,7 +82,7 @@ export default function DeviceTypeMetrics({
 
   if (isPending)
     return (
-      <Card className="max-w-[660px]">
+      <Card className="max-w-[660px] h-full">
         <CardHeader className="gap-2.5">
           <Skeleton className="w-1/2 h-6" />
           <Skeleton className="w-1/4 h-5" />
@@ -97,7 +97,7 @@ export default function DeviceTypeMetrics({
   if (error) return <ErrorAlert />;
 
   return (
-    <Card className="flex flex-col font-sans">
+    <Card className="flex flex-col font-sans h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Device Type</CardTitle>
         <CardDescription>All-Time</CardDescription>
@@ -171,14 +171,14 @@ function DeviceTypeMetricsDonutChart({
                   >
                     <tspan
                       x={viewBox.cx}
-                      y={(viewBox.cy || 0) - 30}
-                      className="fill-foreground text-3xl font-bold"
+                      y={(viewBox.cy || 0) - 20}
+                      className="fill-foreground text-3xl font-bold font-mono"
                     >
                       {totalVisitors.toLocaleString()}
                     </tspan>
                     <tspan
                       x={viewBox.cx}
-                      y={viewBox.cy}
+                      y={(viewBox.cy || 0) + 10}
                       className="fill-muted-foreground"
                     >
                       Visitors

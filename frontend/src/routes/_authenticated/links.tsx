@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { IconLink } from "@tabler/icons-react";
 import URLsList from "./dashboard/-components/URLsList";
-import { Search } from "lucide-react";
+import { CircleXIcon, Search } from "lucide-react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -16,6 +16,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Kbd } from "@/components/ui/kbd";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,
@@ -87,6 +88,11 @@ export function URLSearchInput({ query, setQuery }: URLSearchInputProps) {
       <InputGroupAddon className="hidden md:block" align="inline-end">
         <Kbd>⌘</Kbd>
         <Kbd>K</Kbd>
+      </InputGroupAddon>
+      <InputGroupAddon align="inline-end">
+        <Button variant="ghost" onClick={() => setQuery("")}>
+          <CircleXIcon />
+        </Button>
       </InputGroupAddon>
     </InputGroup>
   );

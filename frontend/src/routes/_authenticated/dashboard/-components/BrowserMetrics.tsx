@@ -50,9 +50,6 @@ export default function BrowserMetrics({
     chartData = [];
   }
 
-  // TODO:
-  // Loading skeleton
-  // Error state
   if (isPending)
     return (
       <Card className="max-w-[660px]">

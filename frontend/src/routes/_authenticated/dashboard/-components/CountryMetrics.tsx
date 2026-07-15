@@ -76,7 +76,7 @@ export default function CountryMetrics({
   if (error) return <ErrorAlert />;
 
   return (
-    <Card className="font-sans">
+    <Card className="font-sans h-full">
       <CardHeader>
         <CardTitle>Countries</CardTitle>
         <CardDescription>Top 5 All-Time</CardDescription>
