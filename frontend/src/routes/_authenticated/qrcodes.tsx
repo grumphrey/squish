@@ -2,7 +2,7 @@ import { IconQrcode } from "@tabler/icons-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { URLSearchInput } from "./links";
-import URLsList from "./dashboard/-components/URLsList";
+import URLsList from "@/components/URLsList";
 
 export const Route = createFileRoute("/_authenticated/qrcodes")({
   component: RouteComponent,

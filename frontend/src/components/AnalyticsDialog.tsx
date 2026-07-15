@@ -1,5 +1,6 @@
 import { IconChartBar } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,21 +10,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   useURLDeviceMetrics,
   useURLPastWeekMetrics,
   useURLSourceMetrics,
   useURLTotalVisitMetrics,
 } from "@/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import VisitTimelineMetrics from "@/routes/_authenticated/dashboard/-components/VisitTimelineMetrics";
-import SourceMetrics from "@/routes/_authenticated/dashboard/-components/SourceMetrics";
-import BrowserMetrics from "@/routes/_authenticated/dashboard/-components/BrowserMetrics";
-import DeviceTypeMetrics from "@/routes/_authenticated/dashboard/-components/DeviceTypeMetrics";
-import CountryMetrics from "@/routes/_authenticated/dashboard/-components/CountryMetrics";
-import { MetricCard } from "@/routes/_authenticated/dashboard/route";
+import VisitTimelineMetrics from "@/components/VisitTimelineMetrics";
+import SourceMetrics from "@/components/SourceMetrics";
+import BrowserMetrics from "@/components/BrowserMetrics";
+import DeviceTypeMetrics from "@/components/DeviceTypeMetrics";
+import CountryMetrics from "@/components/CountryMetrics";
 import RefreshButton from "@/components/RefreshButton";
+import { MetricCard } from "@/routes/_authenticated/dashboard/route";
 
 interface AnalyticsDialogProps {
   shortCode: string;

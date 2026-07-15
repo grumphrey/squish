@@ -1,12 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { IconLink } from "@tabler/icons-react";
-import URLsList from "./dashboard/-components/URLsList";
 import { CircleXIcon, Search } from "lucide-react";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
 import {
   useEffect,
   useRef,
@@ -15,8 +9,14 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { Button } from "@/components/ui/button";
+import URLsList from "@/components/URLsList";
 
 export const Route = createFileRoute("/_authenticated/links")({
   component: RouteComponent,

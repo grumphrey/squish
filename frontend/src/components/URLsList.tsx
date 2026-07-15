@@ -1,4 +1,4 @@
-import styles from "../dashboard.module.css";
+import styles from "@/routes/_authenticated/dashboard/dashboard.module.css";
 import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
 import {
   IconArrowNarrowRight,

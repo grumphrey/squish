@@ -19,11 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import ErrorAlert from "@/components/ErrorAlert";
-import BrowserMetrics from "./-components/BrowserMetrics";
-import CountryMetrics from "./-components/CountryMetrics";
-import DeviceTypeMetrics from "./-components/DeviceTypeMetrics";
-import VisitTimelineMetrics from "./-components/VisitTimelineMetrics";
-import SourceMetrics from "./-components/SourceMetrics";
+import BrowserMetrics from "@/components/BrowserMetrics";
+import CountryMetrics from "@/components/CountryMetrics";
+import DeviceTypeMetrics from "@/components/DeviceTypeMetrics";
+import VisitTimelineMetrics from "@/components/VisitTimelineMetrics";
+import SourceMetrics from "@/components/SourceMetrics";
 import {
   useSourceMetrics,
   useTotalVisitMetrics,
