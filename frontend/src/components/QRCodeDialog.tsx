@@ -1,9 +1,15 @@
 import dogLogo from "@/assets/dog-logo-qr.png";
-import { IconPlus, IconDownload, IconQrcode } from "@tabler/icons-react";
+import {
+  IconPlus,
+  IconDownload,
+  IconQrcode,
+  IconShare2,
+} from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,10 +26,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import QRCodeStyling from "qr-code-styling";
 import useEditShortURL from "@/hooks/useEditShortURL";
+import { DEFAULT_ERR } from "@/constants";
 
 interface QRCodeDialogProps {
   isQRCode: boolean;
@@ -45,7 +52,7 @@ export default function QRCodeDialog({
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
       },
-      onError: () => toast.error("DEFAULT_ERR"),
+      onError: () => toast.error(DEFAULT_ERR),
     });
   };
 
@@ -81,37 +88,69 @@ function SetQueryParam(url: string, key: string, val: string) {
 }
 
 const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
-  const qrCode = useMemo(() =>
-    // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
-    {
-      const link = SetQueryParam(url, "src", "qr");
-      return new QRCodeStyling({
-        width: 280,
-        height: 280,
-        data: link,
-        image: dogLogo,
-        dotsOptions: {
-          color: "black",
-          type: "rounded",
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-        },
-      });
-    }, []);
+  const divRef = useRef<HTMLDivElement>(null);
+  const fileName = `squish-qrcode-${shortCode}`;
+
+  // TODO: difficult to make width and height responsive? just set to a agreeable size for both mobile/desktop for now
+  const qrCode = useMemo(() => {
+    const link = SetQueryParam(url, "src", "qr");
+    return new QRCodeStyling({
+      width: 280,
+      height: 280,
+      data: link,
+      image: dogLogo,
+      dotsOptions: {
+        color: "black",
+        type: "rounded",
+      },
+      imageOptions: {
+        crossOrigin: "anonymous",
+      },
+    });
+  }, []);
 
   // Callback ref only runs when ref node is mounted
   const setQrRef = (node: HTMLDivElement | null) => {
     if (!node) return;
 
+    divRef.current = node;
     node.innerHTML = "";
     qrCode.append(node);
   };
 
   const handleDownload = () => {
     if (!qrCode) return;
-    qrCode.download();
+    qrCode.download({ name: fileName, extension: "png" });
   };
+
+  const handleShare = async () => {
+    const container = divRef.current;
+    if (!container) return;
+
+    const canvas = container.querySelector("canvas");
+    if (!canvas) return;
+
+    // Convert image to blob, then run callback func to call web share API
+    try {
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const file = new File([blob], fileName + ".png", { type: "image/png" });
+
+        if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+          toast.error(DEFAULT_ERR);
+          return;
+        }
+
+        await navigator.share({
+          files: [file],
+        });
+      }, "image/png");
+    } catch (err) {
+      toast.error(DEFAULT_ERR);
+    }
+  };
+
   return (
     <>
       <DialogHeader>
@@ -136,10 +175,16 @@ const URLQRCode = ({ url, shortCode }: URLQRCodeProps) => {
         className="m-auto border-10 border-primary rounded-2xl"
       />
 
-      <Button variant="default" onClick={handleDownload} className="font-sans">
-        <IconDownload />
-        Download QR
-      </Button>
+      <DialogFooter className="font-sans">
+        <Button variant="default" onClick={handleDownload}>
+          <IconDownload />
+          Download QR
+        </Button>
+
+        <Button variant="secondary" onClick={handleShare}>
+          <IconShare2 /> Share
+        </Button>
+      </DialogFooter>
     </>
   );
 };
