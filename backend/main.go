@@ -129,10 +129,15 @@ func run() error {
 	mux.Handle("/api/url/delete", protected(http.HandlerFunc(urlHandler.HandleDeleteShortURL)))
 	mux.Handle("/api/url/edit", protected(http.HandlerFunc(urlHandler.HandleEditShortURL)))
 
-	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetDeviceMetrics)))
-	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsByDayPastWeek)))
-	mux.Handle("/api/metrics/visits/total", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitMetrics)))
-	mux.Handle("/api/metrics/visits/source", protected(http.HandlerFunc(metricsHandler.HandleGetTotalVisitsBySource)))
+	mux.Handle("/api/metrics/device", protected(http.HandlerFunc(metricsHandler.HandleGetUserDeviceMetrics)))
+	mux.Handle("/api/metrics/visits/daily", protected(http.HandlerFunc(metricsHandler.HandleGetUserDeviceMetricsPastWeek)))
+	mux.Handle("/api/metrics/visits/total", protected(http.HandlerFunc(metricsHandler.HandleGetUserTotalVisitMetrics)))
+	mux.Handle("/api/metrics/visits/source", protected(http.HandlerFunc(metricsHandler.HandleGetUserSourceMetrics)))
+
+	mux.Handle("/api/metrics/device/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLDeviceMetrics)))
+	mux.Handle("/api/metrics/visits/daily/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLDeviceMetricsPastWeek)))
+	mux.Handle("/api/metrics/visits/total/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLTotalVisitMetrics)))
+	mux.Handle("/api/metrics/visits/source/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLSourceMetrics)))
 
 	serverErr := make(chan error, 1)
 	go func() {
