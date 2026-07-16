@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { URLSearchInput } from "./links";
 import URLsList from "@/components/URLsList";
+import { useGetURLs } from "@/hooks/useGetURLs";
 
 export const Route = createFileRoute("/_authenticated/qrcodes")({
   component: RouteComponent,
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/_authenticated/qrcodes")({
 
 function RouteComponent() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data, isPending, error } = useGetURLs();
 
   return (
     <>
@@ -22,7 +24,14 @@ function RouteComponent() {
           <URLSearchInput query={searchTerm} setQuery={setSearchTerm} />
         </div>
 
-        <URLsList query={searchTerm} isQROnly />
+        {/* TODO: move props out of urlslist into parent */}
+        <URLsList
+          data={data}
+          error={error}
+          isPending={isPending}
+          query={searchTerm}
+          isQROnly
+        />
       </section>
     </>
   );

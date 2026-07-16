@@ -42,18 +42,29 @@ import { useState } from "react";
 import type { ShortURLRecord } from "@/models/models";
 import ErrorAlert from "@/components/ErrorAlert";
 import QRCodeDialog from "@/components/QRCodeDialog";
-import { useGetURLs } from "@/hooks/useGetURLs";
 import AnalyticsDialog from "@/components/AnalyticsDialog";
 import { DeleteLinkDialog } from "@/components/DeleteLinkDialog";
+import type { DateRange } from "react-day-picker";
 
 interface URLsListProps {
+  data: ShortURLRecord[] | undefined;
+  error: Error | null;
+  isPending: boolean;
+
   query?: string;
+  date?: DateRange | undefined;
   isQROnly?: boolean;
 }
 
-export default function URLsList({ query, isQROnly }: URLsListProps) {
+export default function URLsList({
+  data,
+  error,
+  isPending,
+  query,
+  date,
+  isQROnly,
+}: URLsListProps) {
   const [inactiveOpen, setInactiveOpen] = useState(true);
-  const { data, isPending, error } = useGetURLs();
 
   if (error) return <ErrorAlert />;
 
@@ -66,16 +77,14 @@ export default function URLsList({ query, isQROnly }: URLsListProps) {
       </>
     );
 
-  if (data.length === 0) return <URLListEmpty />;
+  if (!data || data?.length === 0) return <URLListEmpty />;
 
-  // Filter links from search bar
-  let links = query
-    ? data.filter((link) => {
-        const q = query.toLowerCase();
-        return link.short_url.toLowerCase().includes(q);
-      })
-    : data;
+  // Filter links
+  // TODO: refactor + need to memoize?
+  let links = data;
   links = isQROnly ? links.filter((l) => l.is_qrcode) : links;
+  links = filterByQuery(links, query);
+  links = filterByDateRange(links, date);
   const activeLinks = links.filter((link) => link.is_active);
   const inactiveLinks = links.filter((link) => !link.is_active);
 
@@ -92,6 +101,7 @@ export default function URLsList({ query, isQROnly }: URLsListProps) {
             {<ShortURLRecord {...record} />}
           </li>
         ))}
+        {activeLinks.length == 0 && "Your search came up empty. No links TODO"}
       </ul>
 
       <div className={styles.dashboardHeader}>
@@ -407,3 +417,37 @@ const urlDateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
   month: "long",
 });
+
+function filterByQuery(links: ShortURLRecord[], query: string | undefined) {
+  if (!query) return links; // if nothing to filter by, return full list of links
+
+  return links.filter((link) => {
+    const q = query.toLowerCase();
+    const l = link.short_url.toLowerCase();
+
+    return l.includes(q);
+  });
+}
+
+function filterByDateRange(
+  links: ShortURLRecord[],
+  range: DateRange | undefined,
+) {
+  if (!range?.from) return links; // if no date or no from, return all links
+  const from = range.from;
+  const to = range.to ?? range.from; // if only "from" is picked, treat as single day range
+
+  // normalize to start/end of day to avoid time-of-day issues
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const end = new Date(
+    to.getFullYear(),
+    to.getMonth(),
+    to.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+
+  return links.filter((l) => l.created_at >= start && l.created_at <= end);
+}
