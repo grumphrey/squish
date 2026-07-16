@@ -200,7 +200,7 @@ function AvatarDropdownMenu() {
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-foreground font-medium text-sm leading-none">
-              {user?.name || "Welcome back"}
+              {user?.name}
             </p>
             <p className="text-muted-foreground text-xs leading-none">
               {user?.email || "squi.sh"}
