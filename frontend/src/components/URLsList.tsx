@@ -1,5 +1,10 @@
 import styles from "@/routes/_authenticated/dashboard/dashboard.module.css";
-import { ChevronsDownIcon, ChevronsUpIcon, TrashIcon } from "lucide-react";
+import {
+  ChevronsDownIcon,
+  ChevronsUpIcon,
+  SearchXIcon,
+  TrashIcon,
+} from "lucide-react";
 import {
   IconArrowNarrowRight,
   IconChartBar,
@@ -101,7 +106,9 @@ export default function URLsList({
             {<ShortURLRecord {...record} />}
           </li>
         ))}
-        {activeLinks.length == 0 && "Your search came up empty. No links TODO"}
+        {activeLinks.length == 0 && inactiveLinks.length == 0 && (
+          <URLListEmptyResult />
+        )}
       </ul>
 
       <div className={styles.dashboardHeader}>
@@ -137,6 +144,20 @@ export default function URLsList({
         </CollapsibleContent>
       </Collapsible>
     </>
+  );
+}
+
+function URLListEmptyResult() {
+  return (
+    <Empty className="font-sans">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <SearchXIcon />
+        </EmptyMedia>
+        <EmptyTitle>No links found.</EmptyTitle>
+        <EmptyDescription>Try adjusting your search.</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }
 
