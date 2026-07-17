@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	ErrNoRowsAffected = errors.New("No rows affected")
-	ErrCodeExists     = errors.New("Short code already exists")
+	ErrNoRowsAffected      = errors.New("No rows affected")
+	ErrCodeExists          = errors.New("Short code already exists")
+	ErrCodeUniqueViolation = "23505"
 
 	defaultExpirationTime = 24 * time.Hour
 )
@@ -141,15 +142,16 @@ func (r *urlRepository) CreateURLRecord(ctx context.Context, shortCode, longURL,
 	// Attempt to insert rows
 	rows, err := r.db.Query(ctx, query, args)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique violation
-			return nil, ErrCodeExists
-		}
 		return nil, err
 	}
+	defer rows.Close()
 
 	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[ShortURLRecord])
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == ErrCodeUniqueViolation {
+			return nil, ErrCodeExists
+		}
 		return nil, err
 	}
 
