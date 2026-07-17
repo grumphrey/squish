@@ -54,6 +54,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const KNOWN_DEVICES = ["desktop", "mobile", "tablet", "bot"];
+
 const ACTIVE_INDEX = 0;
 
 interface DeviceTypeDonutChartDataItem {
@@ -210,5 +212,25 @@ const processChartData = (
       fill: `var(--color-${key.toLowerCase()})`,
     };
   });
-  return metricsData;
+
+  // Label non-known devices as "other"
+  const known = metricsData.filter((d) => KNOWN_DEVICES.includes(d.deviceType));
+  const others = metricsData.filter(
+    (d) => !KNOWN_DEVICES.includes(d.deviceType),
+  );
+
+  const othersTotal = others.reduce((sum, d) => sum + d.visitors, 0);
+
+  return [
+    ...known,
+    ...(othersTotal > 0
+      ? [
+          {
+            deviceType: "other",
+            visitors: othersTotal,
+            fill: `var(--color-chart-other)`,
+          },
+        ]
+      : []),
+  ];
 };
