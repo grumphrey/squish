@@ -33,12 +33,12 @@ const chartConfig = {
   macos: {
     label: "macOS",
     // color: "var(--chart-1)",
-    color: "#A3AAAE",
+    color: "#FF605C",
   },
   ios: {
     label: "iOS",
     // color: "var(--chart-2)",
-    color: "#555555",
+    color: "#FF9500",
   },
   windows: {
     label: "Windows",

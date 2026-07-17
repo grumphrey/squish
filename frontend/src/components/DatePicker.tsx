@@ -55,6 +55,7 @@ export function DatePickerWithRange({
             selected={date}
             onSelect={setDate}
             numberOfMonths={2}
+            // captionLayout="dropdown"
             modifiers={{ links: linkDates }}
             modifiersClassNames={{
               // dot styles to mark dates with a created short link
