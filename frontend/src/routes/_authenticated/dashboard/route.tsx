@@ -24,6 +24,7 @@ import CountryMetrics from "@/components/CountryMetrics";
 import DeviceTypeMetrics from "@/components/DeviceTypeMetrics";
 import VisitTimelineMetrics from "@/components/VisitTimelineMetrics";
 import SourceMetrics from "@/components/SourceMetrics";
+import OSMetrics from "@/components/OSMetrics";
 import {
   useSourceMetrics,
   useTotalVisitMetrics,
@@ -130,7 +131,13 @@ function MetricsDashboard() {
           />
         </div>
 
-        {/* TODO: <OSMetrics/> */}
+        <div className="col-span-1 md:col-span-3">
+          <OSMetrics
+            data={metricsData?.os}
+            isPending={isMetricsLoading}
+            error={metricsError}
+          />
+        </div>
 
         <div className="col-span-1 sm:col-span-1 md:col-span-6">
           <VisitTimelineMetrics

@@ -22,6 +22,7 @@ import SourceMetrics from "@/components/SourceMetrics";
 import BrowserMetrics from "@/components/BrowserMetrics";
 import DeviceTypeMetrics from "@/components/DeviceTypeMetrics";
 import CountryMetrics from "@/components/CountryMetrics";
+import OSMetrics from "@/components/OSMetrics";
 import RefreshButton from "@/components/RefreshButton";
 import { MetricCard } from "@/routes/_authenticated/dashboard/route";
 
@@ -131,7 +132,13 @@ function URLAnalytics({ open, shortCode }: URLAnalyticsProps) {
           />
         </div>
 
-        {/* TODO: <OSMetrics/> */}
+        <div className="col-span-1 md:col-span-3">
+          <OSMetrics
+            data={metricsData?.os}
+            isPending={isMetricsLoading}
+            error={metricsError}
+          />
+        </div>
 
         <div className="col-span-1 sm:col-span-1 md:col-span-6">
           <VisitTimelineMetrics
