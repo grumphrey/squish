@@ -2,6 +2,7 @@ import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { type AuthContext } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { IconError404 } from "@tabler/icons-react";
 
 // Pass authentication state from auth context to tanstack router
 interface RouterContext {
@@ -27,18 +28,19 @@ function RootComponent() {
 function NotFoundPage() {
   return (
     <section className="hero">
-      {/* TODO: styles */}
-      <p className="hero-preheader">Error 404 - Page not found</p>
-      <h1 className="hero-headline">Nobody lives here.</h1>
+      <IconError404 size={100} />
+      <h1 className="text-5xl mb-5">Nobody lives here.</h1>
       <div className="hero-message">
-        <p>
+        <p className="mb-2">
           Whatever you were looking for, it's not at this address. It may have
           moved, been deleted, or never existed.
         </p>
         <p>
-          You may have mis-typed the URL or simply clicked on a broken link.
-          Links are CAse SeNsiTivE, so double check that everything is correct
-          and try again.
+          You may have mis-typed the URL or simply clicked on a broken link.{" "}
+          <span className="text-(--color-primary)">
+            Links are CAse SeNsiTivE
+          </span>
+          , so double check that everything is correct and try again.
         </p>
       </div>
     </section>
