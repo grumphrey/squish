@@ -286,9 +286,9 @@ function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
   };
 
   return (
-    <>
+    <div className="flex gap-2">
       {/* Desktop menu */}
-      <div className="hidden items-center gap-2 md:flex md:flex-row">
+      <div className="items-center gap-2 flex flex-row">
         {/* TODO */}
         {isActive && (
           <Button variant="outline" className="hidden" disabled>
@@ -296,27 +296,33 @@ function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
           </Button>
         )}
 
-        <AnalyticsDialog
-          shortCode={shortCode}
-          open={analyticsOpen}
-          setOpen={setAnalyticsOpen}
-        />
+        <div>
+          <AnalyticsDialog
+            shortCode={shortCode}
+            open={analyticsOpen}
+            setOpen={setAnalyticsOpen}
+          />
+        </div>
 
         {isActive && (
-          <QRCodeDialog
-            isQRCode={isQRCode}
-            shortCode={shortCode}
-            open={QROpen}
-            setOpen={setQROpen}
-          />
+          <div className="hidden sm:block">
+            <QRCodeDialog
+              isQRCode={isQRCode}
+              shortCode={shortCode}
+              open={QROpen}
+              setOpen={setQROpen}
+            />
+          </div>
         )}
 
         {isActive && (
-          <DeleteLinkDialog
-            shortCode={shortCode}
-            open={deleteOpen}
-            setOpen={setDeleteOpen}
-          />
+          <div className="hidden sm:block">
+            <DeleteLinkDialog
+              shortCode={shortCode}
+              open={deleteOpen}
+              setOpen={setDeleteOpen}
+            />
+          </div>
         )}
       </div>
 
@@ -372,7 +378,7 @@ function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </>
+    </div>
   );
 }
 
