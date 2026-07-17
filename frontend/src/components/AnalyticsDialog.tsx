@@ -109,7 +109,7 @@ function URLAnalytics({ open, shortCode }: URLAnalyticsProps) {
         </DialogDescription>
       </DialogHeader>
 
-      <div className="p-4 max-h-[50vh] overflow-y-auto px-4 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-9 m-auto max-w-80 sm:max-w-none md:max-w-none">
+      <div className="p-4 max-h-[50vh] overflow-y-auto px-4 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-9 m-auto max-w-100 sm:max-w-none md:max-w-none">
         <div className="col-span-1 md:col-span-3">
           <MetricCard
             data={visitsData?.total_past_week}
