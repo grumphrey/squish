@@ -87,12 +87,12 @@ export default function OSMetrics({ data, isPending, error }: OSMetricsProps) {
     return (
       <Card className="max-w-[660px]">
         <CardHeader className="gap-2.5">
-          <Skeleton className="w-1/2 h-6" />
-          <Skeleton className="w-1/4 h-5" />
+          <Skeleton className="w-1/2 h-4" />
+          <Skeleton className="w-1/4 h-4" />
         </CardHeader>
 
         <CardContent>
-          <Skeleton className="w-full h-70" />
+          <Skeleton className="w-full h-30" />
         </CardContent>
       </Card>
     );
