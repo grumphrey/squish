@@ -26,7 +26,10 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: dev # TODO
+      # target: prod
     expose:
       - "8080"
     environment:
@@ -43,6 +46,8 @@ services:
       - GITHUB_OAUTH_REDIRECT_URL=${GITHUB_OAUTH_REDIRECT_URL}
     volumes:
       - ./data/geoip:/var/lib/geoip:ro # data dependencies (i.e. geoip database)
+      - ./backend:/app # TODO: for dev (mount source code to container for air to view changes)
+      - /app/tmp # TODO: for dev (create anonymous volume to isolate air build output)
     depends_on:
       postgres:
         condition: service_healthy
