@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"url-shortener/internal/auth"
+	"url-shortener/internal/logging"
 	"url-shortener/internal/metrics"
 	"url-shortener/internal/urls"
 
@@ -77,6 +79,10 @@ func run() error {
 	}
 	defer gdb.Close()
 
+	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	authConfig, err := auth.NewConfig()
 	if err != nil {
 		return fmt.Errorf("init auth config: %w", err)
@@ -100,14 +106,6 @@ func run() error {
 	metricsHandler := metrics.NewMetricsHandler(metricsService)
 
 	mux := http.NewServeMux()
-	server := &http.Server{
-		Addr:         ":8080",
-		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
 	// TODO: extract routes into each domain handler as a RegisterRoutes method
 	// mux.HandleFunc("/{$}", handler.HandleIndex)            // served by nginx, maybe remove or use as fallback
 	mux.HandleFunc("/", urlHandler.HandleRedirect)
@@ -138,6 +136,15 @@ func run() error {
 	mux.Handle("/api/metrics/visits/daily/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLDeviceMetricsPastWeek)))
 	mux.Handle("/api/metrics/visits/total/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLTotalVisitMetrics)))
 	mux.Handle("/api/metrics/visits/source/{shortCode}", protected(http.HandlerFunc(metricsHandler.HandleGetURLSourceMetrics)))
+
+	loggedMux := logging.Middleware(mux)
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      loggedMux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
 
 	serverErr := make(chan error, 1)
 	go func() {
