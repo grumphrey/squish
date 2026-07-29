@@ -48,7 +48,7 @@ func (h *URLHandler) HandleError(w http.ResponseWriter, r *http.Request, status 
 	}
 }
 
-// TODO: Health check endpoint
+// Health check endpoint for controlling order of service startups
 func (h *URLHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	data := map[string]string{
 		"status": "ok",
@@ -243,7 +243,7 @@ func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	event := RedirectEvent{
 		UrlID:     record.UrlID,
 		QRScan:    QRScan,
-		IPAddress: r.Header.Get("X-Forwarded-For"), // sitting behind nginx reverse proxy
+		IPAddress: r.Header.Get("X-Real-IP"), // get client IP from reverse proxy, NOTE: assumes nothing else is sitting in front
 		UserAgent: r.Header.Get("User-Agent"),
 	}
 	go h.urlService.EmitRedirectEvent(context.WithoutCancel(ctx), event) // okay to fail... not critical
