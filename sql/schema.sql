@@ -7,7 +7,7 @@ CREATE TABLE users (
   github_id VARCHAR(255) UNIQUE,
   email VARCHAR(100) NOT NULL, -- should be unique (TODO linking)
   hashed_password VARCHAR(100),
-  roles TEXT[] NOT NULL DEFAULT ARRAY['user'],
+  roles TEXT[] NOT NULL DEFAULT ARRAY['user'], -- TODO: add more roles
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   name VARCHAR(255),
   avatar_url VARCHAR(255),
@@ -16,6 +16,11 @@ CREATE TABLE users (
   last_login_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- TODO: update in app
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP -- TODO: update in app
 );
+
+-- For now, only enforce email uniqueness among password-based accounts since there is no linking functionality implemented
+CREATE UNIQUE INDEX unique_email_password_account
+ON users (email)
+WHERE hashed_password IS NOT NULL;
 
 CREATE TABLE short_urls (
   id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- NOTE: only works in single database instance. maybe replace with uuid
