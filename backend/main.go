@@ -40,6 +40,18 @@ func main() {
 
 // NOTE: To allow returning errors into main and run deferred functions
 func run() error {
+	// TODO: configurable log level
+	levelVar := new(slog.LevelVar)
+	levelVar.Set(slog.LevelInfo)
+
+	opts := &slog.HandlerOptions{
+		Level: levelVar,
+		// AddSource: true,
+	}
+	// logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
 	err := godotenv.Load()
 	if err != nil && !os.IsNotExist(err) {
 		return ErrNoEnvVars
@@ -60,7 +72,7 @@ func run() error {
 	if err := db.Ping(ctx); err != nil {
 		return fmt.Errorf("ping database: %w", err)
 	}
-	log.Println("Connected to postgres")
+	slog.Info("connected to postgres")
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDRESS"),
@@ -71,17 +83,14 @@ func run() error {
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return fmt.Errorf("ping redis: %w", err)
 	}
-	log.Println("Connected to redis")
+	slog.Info("connected to redis")
 
 	gdb, err := geoip2.Open("/var/lib/geoip/GeoLite2-City.mmdb")
 	if err != nil {
 		return fmt.Errorf("starting geolocation database: %w", err)
 	}
+	slog.Info("loaded geolite2 database")
 	defer gdb.Close()
-
-	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
 
 	authConfig, err := auth.NewConfig()
 	if err != nil {
@@ -99,7 +108,7 @@ func run() error {
 
 	urlRepository := urls.NewURLRepository(db, rdb, gdb)
 	urlService := urls.NewURLService(urlRepository, staticFiles)
-	urlHandler := urls.NewURLHandler(urlService, staticFiles)
+	urlHandler := urls.NewURLHandler(urlService)
 
 	metricsRepository := metrics.NewMetricsRepository(db)
 	metricsService := metrics.NewMetricsService(metricsRepository)
@@ -148,7 +157,7 @@ func run() error {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("Starting URL shortener http server on port%s", server.Addr)
+		slog.Info("starting server", "port", server.Addr, "env", os.Getenv("ENV"))
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- fmt.Errorf("server error: %w", err)
 		}
