@@ -26,41 +26,25 @@ var (
 	defaultExpirationTime = 24 * time.Hour
 )
 
-// URLRepository defines storage operations.
-type URLRepository interface {
-	// Caching
-	GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord, expirationTime ...time.Duration) error
-	DeleteCachedURLRecord(ctx context.Context, shortCode string) error
-
-	// Querying persistent storage
-	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	CreateURLRecord(ctx context.Context, shortCode, longURL, userID string, qrCode bool) (*ShortURLRecord, error)
-	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
-	UpdateShortURLInactive(ctx context.Context, shortCode string) error
-	UpdateShortURLQRCode(ctx context.Context, shortCode string, qrCode bool) error
-	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
-
-	CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error
-	// TODO: return pointer to struct
-	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
-}
-
 type urlRepository struct {
-	db  *pgxpool.Pool
-	rdb *redis.Client
-	gdb *geoip2.Reader
+	db    *pgxpool.Pool
+	redis *redis.Client
+	gdb   *geoip2.Reader
 }
 
-func NewURLRepository(db *pgxpool.Pool, rdb *redis.Client, gdb *geoip2.Reader) *urlRepository {
-	return &urlRepository{db: db, rdb: rdb, gdb: gdb}
+func NewURLRepository(db *pgxpool.Pool, redis *redis.Client, gdb *geoip2.Reader) *urlRepository {
+	return &urlRepository{
+		db:    db,
+		redis: redis,
+		gdb:   gdb,
+	}
 }
 
 // GetCachedURLRecord returns the URL record within the cache that matches the given short URL.
 func (r *urlRepository) GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
 	// Get value from redis
 	key := "url:" + shortCode
-	val, err := r.rdb.Get(ctx, key).Result()
+	val, err := r.redis.Get(ctx, key).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +73,7 @@ func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string
 	if len(expirationTime) > 0 {
 		ttl = expirationTime[0]
 	}
-	if err := r.rdb.Set(ctx, key, val, ttl).Err(); err != nil {
+	if err := r.redis.Set(ctx, key, val, ttl).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -99,7 +83,7 @@ func (r *urlRepository) SetCachedURLRecord(ctx context.Context, shortCode string
 // Attempting to delete non-existent keys will not return an error.
 func (r *urlRepository) DeleteCachedURLRecord(ctx context.Context, shortCode string) error {
 	key := "url:" + shortCode
-	if err := r.rdb.Del(ctx, key).Err(); err != nil {
+	if err := r.redis.Del(ctx, key).Err(); err != nil {
 		return err // redis.Del silently ignores non-existent keys
 	}
 	return nil

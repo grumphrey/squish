@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"time"
 
 	"url-shortener/internal/logging"
 	"url-shortener/internal/utils"
@@ -28,33 +29,41 @@ var (
 	ErrSlugExists       = errors.New("Slug taken")
 )
 
-// URLService defines the interface for short URL operations.
-type URLService interface {
-	CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error)
-	CreateQRCode(link string) (string, error)
-	FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
-	SoftDeleteURLRecord(ctx context.Context, shortCode, userID string) error
-	EditURLRecord(ctx context.Context, shortCode, userID string, qrCode bool) error
-	GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error)
-
-	EmitRedirectEvent(ctx context.Context, event RedirectEvent)
-}
-
-type urlService struct {
+type URLService struct {
 	repo URLRepository
 	fs   embed.FS
 }
 
-func NewURLService(r URLRepository, fs embed.FS) *urlService {
-	return &urlService{
+func NewURLService(r URLRepository, fs embed.FS) *URLService {
+	return &URLService{
 		repo: r,
 		fs:   fs,
 	}
 }
 
+// URLRepository defines storage operations needed by URLService.
+type URLRepository interface {
+	// Caching
+	GetCachedURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
+	SetCachedURLRecord(ctx context.Context, shortCode string, record *ShortURLRecord, expirationTime ...time.Duration) error
+	DeleteCachedURLRecord(ctx context.Context, shortCode string) error
+
+	// Querying persistent storage
+	GetURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error)
+	CreateURLRecord(ctx context.Context, shortCode, longURL, userID string, qrCode bool) (*ShortURLRecord, error)
+	FindShortURLOwner(ctx context.Context, shortCode string) (userID string, err error)
+	UpdateShortURLInactive(ctx context.Context, shortCode string) error
+	UpdateShortURLQRCode(ctx context.Context, shortCode string, qrCode bool) error
+	GetURLsByUserID(ctx context.Context, userID string, opts URLOptions) ([]ShortURLRecord, error)
+
+	CreateRedirectMetrics(ctx context.Context, urlID int64, metrics RedirectEventMetrics) error
+	// TODO: return pointer to struct
+	GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error)
+}
+
 // Creates the short URL record generated from the given long URL.
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
-func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
+func (s *URLService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
 	var lastErr error
 	// Randomly generated short code may have collisions. Re-try on collision.
 	for attempt := 0; attempt < MaxAttempts; attempt++ {
@@ -98,7 +107,7 @@ func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID,
 }
 
 // CreateQRCode returns a base-64 encoded string representing a QR code for the given URL.
-func (s *urlService) CreateQRCode(link string) (string, error) {
+func (s *URLService) CreateQRCode(link string) (string, error) {
 
 	// Initialize QR code object with URL
 	qrc, err := qrcode.New(link)
@@ -132,7 +141,7 @@ func (s *urlService) CreateQRCode(link string) (string, error) {
 }
 
 // Returns the URL record that matches a given short code.
-func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
+func (s *URLService) FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
 	logger := logging.FromContext(ctx)
 
 	// Look inside cache first, return if cache hit
@@ -141,9 +150,9 @@ func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*Shor
 		logger.Info("cache hit", "short_code", record.ShortURL)
 		return record, nil
 	}
-	// Cache miss, so retrieve from database instead
-	logger.Info("cache miss", "short_code", record.ShortURL, "error", err)
 
+	// Cache miss, so retrieve from database instead
+	logger.Info("cache miss", "short_code", shortCode, "error", err)
 	record, err = s.repo.GetURLRecord(ctx, shortCode)
 	if err != nil {
 		return nil, err
@@ -158,7 +167,7 @@ func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*Shor
 }
 
 // Only soft delete if short URL belongs to given user.
-func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID string) error {
+func (s *URLService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID string) error {
 	logger := logging.FromContext(ctx)
 
 	// Check if short URL belongs to user
@@ -189,7 +198,7 @@ func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID s
 	return nil
 }
 
-func (s *urlService) EditURLRecord(ctx context.Context, shortURL, userID string, qrCode bool) error {
+func (s *URLService) EditURLRecord(ctx context.Context, shortURL, userID string, qrCode bool) error {
 	logger := logging.FromContext(ctx)
 
 	// Check if short URL belongs to user
@@ -221,7 +230,7 @@ func (s *urlService) EditURLRecord(ctx context.Context, shortURL, userID string,
 }
 
 // Return a list of URL records belonging to the given user ID.
-func (s *urlService) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
+func (s *URLService) GetURLsByUserID(ctx context.Context, userID string) ([]ShortURLRecord, error) {
 	// is_active := true
 	options := URLOptions{
 		active: nil,
@@ -235,7 +244,7 @@ func (s *urlService) GetURLsByUserID(ctx context.Context, userID string) ([]Shor
 }
 
 // EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
-func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent) {
+func (s *URLService) EmitRedirectEvent(ctx context.Context, event RedirectEvent) {
 	logger := logging.FromContext(ctx)
 
 	// Get geolocation based on IP address
