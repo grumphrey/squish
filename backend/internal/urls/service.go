@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"log"
 
+	"url-shortener/internal/logging"
 	"url-shortener/internal/utils"
 
 	"github.com/mileusna/useragent"
@@ -45,11 +45,14 @@ type urlService struct {
 	fs   embed.FS
 }
 
-func NewURLService(r URLRepository, fs embed.FS) *urlService { // NOTE: factory pattern so returning interface is okay here: can easily swap implementations?
-	return &urlService{repo: r, fs: fs}
+func NewURLService(r URLRepository, fs embed.FS) *urlService {
+	return &urlService{
+		repo: r,
+		fs:   fs,
+	}
 }
 
-// CreateURLRecord creates the short URL record generated from the given long URL.
+// Creates the short URL record generated from the given long URL.
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
 func (s *urlService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
 	var lastErr error
@@ -128,25 +131,27 @@ func (s *urlService) CreateQRCode(link string) (string, error) {
 	return encodedQRCode, nil
 }
 
-// FindURLRecord returns the URL record that matches a given short code.
+// Returns the URL record that matches a given short code.
 func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*ShortURLRecord, error) {
+	logger := logging.FromContext(ctx)
+
 	// Look inside cache first, return if cache hit
 	record, err := s.repo.GetCachedURLRecord(ctx, shortCode)
 	if err == nil { // Cache hit
-		log.Printf("cache hit: short code: %s\nLONG URL: %s", record.ShortURL, record.LongURL)
+		logger.Info("cache hit", "short_code", record.ShortURL)
 		return record, nil
 	}
 	// Cache miss, so retrieve from database instead
-	log.Printf("cache miss: short code: (%s): %v", shortCode, err)
+	logger.Info("cache miss", "short_code", record.ShortURL, "error", err)
 
 	record, err = s.repo.GetURLRecord(ctx, shortCode)
 	if err != nil {
-		return nil, fmt.Errorf("finding url record using short code: (%s): %w", shortCode, err)
+		return nil, err
 	}
 
 	// Cache the URL record obtained from database
 	if err := s.repo.SetCachedURLRecord(ctx, shortCode, record); err != nil {
-		log.Printf("could not cache: (%s)", shortCode)
+		logger.Error("could not cache", "short_code", record.ShortURL, "error", err)
 	}
 
 	return record, nil
@@ -154,6 +159,8 @@ func (s *urlService) FindURLRecord(ctx context.Context, shortCode string) (*Shor
 
 // Only soft delete if short URL belongs to given user.
 func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID string) error {
+	logger := logging.FromContext(ctx)
+
 	// Check if short URL belongs to user
 	ownerID, err := s.repo.FindShortURLOwner(ctx, shortURL)
 	if err != nil {
@@ -175,14 +182,16 @@ func (s *urlService) SoftDeleteURLRecord(ctx context.Context, shortURL, userID s
 	// Invalidate cached url record
 	err = s.repo.DeleteCachedURLRecord(ctx, shortURL)
 	if err != nil {
-		// Don't error out if failed to delete cache, will just be stale reads until key expires
-		log.Printf("error while deleting cached URL record: %v", err)
+		// Don't return error if failed to delete cache, will just be stale reads until key expires
+		logger.Warn("failed to invalidate cached url", "error", err)
 	}
 
 	return nil
 }
 
 func (s *urlService) EditURLRecord(ctx context.Context, shortURL, userID string, qrCode bool) error {
+	logger := logging.FromContext(ctx)
+
 	// Check if short URL belongs to user
 	ownerID, err := s.repo.FindShortURLOwner(ctx, shortURL)
 	if err != nil {
@@ -205,7 +214,7 @@ func (s *urlService) EditURLRecord(ctx context.Context, shortURL, userID string,
 	err = s.repo.DeleteCachedURLRecord(ctx, shortURL)
 	if err != nil {
 		// Don't error out if failed to delete cache, will just be stale reads until key expires
-		log.Printf("error while deleting cached URL record: %v", err)
+		logger.Warn("failed to invalidate cached url", "error", err)
 	}
 
 	return nil
@@ -227,10 +236,12 @@ func (s *urlService) GetURLsByUserID(ctx context.Context, userID string) ([]Shor
 
 // EmitRedirectEvent processes the event emitted from a redirect by storing metrics.
 func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent) {
+	logger := logging.FromContext(ctx)
+
 	// Get geolocation based on IP address
 	geolocation, err := s.repo.GetIPAddressMetrics(ctx, event.IPAddress)
 	if err != nil { // could not get geolocation
-		log.Printf("could not get geolocation data for %s: %v", event.IPAddress, err)
+		logger.Warn("failed to get geolocation data", "error", err, "ip_address", event.IPAddress)
 	}
 
 	// Parse user agent string from request header
@@ -249,7 +260,7 @@ func (s *urlService) EmitRedirectEvent(ctx context.Context, event RedirectEvent)
 	}
 
 	if err := s.repo.CreateRedirectMetrics(ctx, event.UrlID, metrics); err != nil {
-		log.Printf("could not update redirect metrics: %w", err)
+		logger.Error("failed to update redirect metrics", "error", err)
 	}
 }
 

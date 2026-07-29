@@ -50,9 +50,16 @@ const (
 	CodeShortTakenErr string = "short_code_taken"
 	CodeGenericErr    string = "internal_server_error"
 	CodeBadRequest    string = "bad_request"
+	CodeUnauthorized  string = "unauthorized_request"
+	CodeForbidden     string = "forbidden_request"
+	CodeNotFound      string = "not_found"
 
 	MsgShortCodeTaken string = "The short code '%s' is already taken."
 	MsgGenericError   string = "Something went wrong."
 	MsgInvalidUrl     string = "Invalid URL."
 	MsgInvalidSlug    string = "Invalid slug."
+	MsgInvalidJson    string = "Invalid JSON."
+	MsgUnauthorized   string = "Please log in to continue."
+	MsgForbidden      string = "Access denied. Your account does not have permission to perform this action."
+	MsgNotFound       string = "Resource not found."
 )

@@ -23,7 +23,7 @@ func Middleware(next http.Handler) http.Handler {
 		)
 
 		// Add logger to request context
-		ctx := withLogger(r.Context(), logger)
+		ctx := WithLogger(r.Context(), logger)
 		r = r.WithContext(ctx)
 
 		// Capture response status code
@@ -41,7 +41,7 @@ func Middleware(next http.Handler) http.Handler {
 type loggerKey struct{}
 
 // Adds logger to request context.
-func withLogger(ctx context.Context, logger *slog.Logger) context.Context {
+func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
 }
 
