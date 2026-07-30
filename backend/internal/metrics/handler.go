@@ -7,17 +7,17 @@ import (
 	"url-shortener/internal/auth"
 )
 
-type metricsHandler struct {
+type MetricsHandler struct {
 	metricsService *metricsService
 }
 
-func NewMetricsHandler(s *metricsService) *metricsHandler {
-	return &metricsHandler{metricsService: s}
+func NewMetricsHandler(s *metricsService) *MetricsHandler {
+	return &MetricsHandler{metricsService: s}
 }
 
 // Get device metrics for all short URLs created by the user
 // i.e. browser, OS, country code, device type
-func (h *metricsHandler) HandleGetUserDeviceMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetUserDeviceMetrics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Retrieve the user ID from the access-token through request context
@@ -40,7 +40,7 @@ func (h *metricsHandler) HandleGetUserDeviceMetrics(w http.ResponseWriter, r *ht
 }
 
 // Get a daily breakdown of total visits by device type from the last week, for this user.
-func (h *metricsHandler) HandleGetUserDeviceMetricsPastWeek(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetUserDeviceMetricsPastWeek(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Retrieve the user ID from the access-token through request context
@@ -64,7 +64,7 @@ func (h *metricsHandler) HandleGetUserDeviceMetricsPastWeek(w http.ResponseWrite
 }
 
 // Get total visitors + unique visitors for all short URLs created by this user.
-func (h *metricsHandler) HandleGetUserTotalVisitMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetUserTotalVisitMetrics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Retrieve the user ID from the access-token through request context
@@ -96,7 +96,7 @@ func (h *metricsHandler) HandleGetUserTotalVisitMetrics(w http.ResponseWriter, r
 }
 
 // Get total visitors for all short URLs created by this user, grouped by source (redirected by a link vs QR code).
-func (h *metricsHandler) HandleGetUserSourceMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetUserSourceMetrics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Retrieve the user ID from the access-token through request context
@@ -120,7 +120,7 @@ func (h *metricsHandler) HandleGetUserSourceMetrics(w http.ResponseWriter, r *ht
 
 // Get device metrics for the given short URL.
 // i.e. browser, OS, country code, device type.
-func (h *metricsHandler) HandleGetURLDeviceMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetURLDeviceMetrics(w http.ResponseWriter, r *http.Request) {
 	shortCode := r.PathValue("shortCode")
 
 	// Query database for all short URLs based on this user ID.
@@ -136,7 +136,7 @@ func (h *metricsHandler) HandleGetURLDeviceMetrics(w http.ResponseWriter, r *htt
 }
 
 // Get a daily breakdown of total visits by device type from the last week, for the given short URL.
-func (h *metricsHandler) HandleGetURLDeviceMetricsPastWeek(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetURLDeviceMetricsPastWeek(w http.ResponseWriter, r *http.Request) {
 	shortCode := r.PathValue("shortCode")
 
 	// Get a list of dates and the total number of visits on each day, grouped by device type, from the past week.
@@ -153,7 +153,7 @@ func (h *metricsHandler) HandleGetURLDeviceMetricsPastWeek(w http.ResponseWriter
 }
 
 // Get total visitors + unique visitors for the given short URL.
-func (h *metricsHandler) HandleGetURLTotalVisitMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetURLTotalVisitMetrics(w http.ResponseWriter, r *http.Request) {
 	shortCode := r.PathValue("shortCode")
 
 	// Query for total visits + unique visits
@@ -178,7 +178,7 @@ func (h *metricsHandler) HandleGetURLTotalVisitMetrics(w http.ResponseWriter, r 
 }
 
 // Get total visitors for the given short URL, grouped by source (redirected by a link vs QR code).
-func (h *metricsHandler) HandleGetURLSourceMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) HandleGetURLSourceMetrics(w http.ResponseWriter, r *http.Request) {
 	shortCode := r.PathValue("shortCode")
 
 	// Query for total visits by source (QR code vs direct link)

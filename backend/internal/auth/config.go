@@ -101,5 +101,4 @@ func InitOAuthConfig(ctx context.Context) (*OAuthConfig, error) {
 		GoogleAuth: googleConfig,
 		GithubAuth: githubConfig,
 	}, nil
-
 }

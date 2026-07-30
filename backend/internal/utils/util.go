@@ -1,5 +1,7 @@
 package utils
 
+// TODO: separate into packages
+
 import (
 	"crypto/rand"
 	"encoding/base64"
@@ -8,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -20,15 +23,6 @@ func Encode[T any](w http.ResponseWriter, r *http.Request, status int, v T) erro
 		return fmt.Errorf("encode json: %w", err)
 	}
 	return nil
-}
-
-// Decode value from JSON
-func Decode[T any](r *http.Request) (T, error) {
-	var v T
-	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-		return v, fmt.Errorf("decode json: %w", err)
-	}
-	return v, nil
 }
 
 const base62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" // should be safe to index into since ASCII
@@ -150,6 +144,8 @@ var (
 		"assets":    {},
 		"favicon":   {},
 		"health":    {},
+		"qrcodes":   {},
+		"links":     {},
 	}
 	slugPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
@@ -188,4 +184,13 @@ func RandomString(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// MustEnv gets an env var or panics if it is not set.
+func MustEnv(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		panic(fmt.Sprintf("environment variable %s is required but not set", key))
+	}
+	return value
 }
