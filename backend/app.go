@@ -9,6 +9,7 @@ import (
 	"url-shortener/internal/urls"
 
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // App holds everything required by the server.
@@ -17,6 +18,7 @@ type App struct {
 	Databases  *Databases
 	Router     *Router
 	Middleware *Middleware
+	McpServer  *mcp.Server
 }
 
 // Holds the middleware (auth, rate limiting, logging etc).
@@ -32,6 +34,8 @@ type Router struct {
 	authHandler    *auth.AuthHandler
 	urlHandler     *urls.URLHandler
 	metricsHandler *metrics.MetricsHandler
+	mcpHandler     *mcp.StreamableHTTPHandler
+	urlTools       *urls.URLTools
 }
 
 // Initialize app and wire everything together (middleware + handlers -> services -> repositories).
@@ -58,10 +62,24 @@ func newApp(cfg *Config, db *Databases) *App {
 	extractUser := auth.OptionalAuthMiddleware(jwtService) // TODO: compose middleware instead of making separate function
 	limiter := redis_rate.NewLimiter(db.redis)
 
+	// MCP stuff
+	mcpServer := mcp.NewServer(&mcp.Implementation{
+		Name:    "squish-mcp",
+		Version: "1.0.0",
+	}, nil)
+	// NOTE: implements http.Handler
+	mcpHandler := mcp.NewStreamableHTTPHandler(
+		func(r *http.Request) *mcp.Server { return mcpServer },
+		&mcp.StreamableHTTPOptions{}, // Stateless: true if you don't need session affinity
+	)
+	urlTools := urls.NewURLTools(urlService)
+
 	router := &Router{
 		authHandler:    authHandler,
 		urlHandler:     urlHandler,
 		metricsHandler: metricsHandler,
+		mcpHandler:     mcpHandler,
+		urlTools:       urlTools,
 	}
 	middleware := &Middleware{
 		protected:   protected,
@@ -75,6 +93,7 @@ func newApp(cfg *Config, db *Databases) *App {
 		Databases:  db,
 		Router:     router,
 		Middleware: middleware,
+		McpServer:  mcpServer,
 	}
 }
 
@@ -95,7 +114,7 @@ func registerRoutes(mux *http.ServeMux, r *Router, m *Middleware) {
 	mux.HandleFunc("/api/auth/refresh", r.authHandler.HandleRefresh)
 
 	// CRUD URL routes
-	rateLimitShorten := auth.RateLimitMiddleware(m.rateLimit, redis_rate.PerMinute(10), "shorten")
+	rateLimitShorten := auth.RateLimitMiddleware(m.rateLimit, redis_rate.PerMinute(60), "shorten")
 	mux.Handle("/api/shorten", rateLimitShorten(m.extractUser(http.HandlerFunc(r.urlHandler.HandleCreateShortURL))))
 	mux.Handle("/api/urls", m.protected(http.HandlerFunc(r.urlHandler.HandleGetURLs)))
 	mux.Handle("/api/url/delete", m.protected(http.HandlerFunc(r.urlHandler.HandleDeleteShortURL)))
@@ -110,4 +129,16 @@ func registerRoutes(mux *http.ServeMux, r *Router, m *Middleware) {
 	mux.Handle("/api/metrics/visits/daily/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLDeviceMetricsPastWeek)))
 	mux.Handle("/api/metrics/visits/total/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLTotalVisitMetrics)))
 	mux.Handle("/api/metrics/visits/source/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLSourceMetrics)))
+}
+
+// Register resources, tools, prompts for the MCP server.
+func registerMCP(mux *http.ServeMux, mcpServer *mcp.Server, r *Router, m *Middleware) {
+	rateLimitShorten := auth.RateLimitMiddleware(m.rateLimit, redis_rate.PerHour(60), "shorten")
+	mux.Handle("/mcp", rateLimitShorten(r.mcpHandler)) // any middleware (auth, logging) wraps normally
+
+	// Tools
+	mcp.AddTool(mcpServer, &mcp.Tool{
+		Name:        "create_short_url",
+		Description: "Create a short URL from the given long URL",
+	}, r.urlTools.CreateShortURL)
 }

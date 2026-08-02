@@ -40,11 +40,13 @@ func run() error {
 
 	app := newApp(cfg, db)
 	mux := http.NewServeMux()
+
 	registerRoutes(mux, app.Router, app.Middleware)
+	registerMCP(mux, app.McpServer, app.Router, app.Middleware)
 
 	server := &http.Server{
 		Addr:         ":8080",
-		Handler:      app.Middleware.logging(mux),
+		Handler:      app.Middleware.logging(mux), // global middleware
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
