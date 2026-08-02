@@ -2,6 +2,7 @@ package urls
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -93,7 +94,7 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 	}
 
 	// Create short code and store URL record in database
-	record, err := h.urlService.CreateURLRecord(ctx, r.Host, req.LongURL, userID, slug, req.CreateQRCode)
+	record, err := h.urlService.CreateURLRecord(ctx, req.LongURL, userID, slug, req.CreateQRCode)
 	if err != nil {
 		if errors.Is(err, ErrSlugExists) {
 			logger.Warn("failed to create url", "error", err, "slug", slug)
@@ -117,7 +118,7 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 			RawQuery: queryParams.Encode(),
 		}
 		qrcode, err := h.urlService.CreateQRCode(u.String())
-		encodedQRCode = "data:image/png;base64," + qrcode
+		encodedQRCode = "data:image/png;base64," + base64.StdEncoding.EncodeToString(qrcode)
 		if err != nil {
 			logger.Warn("failed to generate qr code", "error", err)
 			utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)

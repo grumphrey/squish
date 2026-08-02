@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
@@ -63,7 +62,7 @@ type URLRepository interface {
 
 // Creates the short URL record generated from the given long URL.
 // Returns the corresponding short code, or an error if the short URL record could not be generated.
-func (s *URLService) CreateURLRecord(ctx context.Context, host, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
+func (s *URLService) CreateURLRecord(ctx context.Context, longURL, userID, slug string, qrCode bool) (*ShortURLRecord, error) {
 	var lastErr error
 	// Randomly generated short code may have collisions. Re-try on collision.
 	for attempt := 0; attempt < MaxAttempts; attempt++ {
@@ -106,19 +105,19 @@ func (s *URLService) CreateURLRecord(ctx context.Context, host, longURL, userID,
 	return nil, fmt.Errorf("could not create short code after %d attempts: %w", MaxAttempts, lastErr)
 }
 
-// CreateQRCode returns a base-64 encoded string representing a QR code for the given URL.
-func (s *URLService) CreateQRCode(link string) (string, error) {
+// CreateQRCode returns a byte slice representing a QR code for the given URL.
+func (s *URLService) CreateQRCode(link string) ([]byte, error) {
 
 	// Initialize QR code object with URL
 	qrc, err := qrcode.New(link)
 	if err != nil {
-		return "", fmt.Errorf("creating qr code using %s: %w", link, err)
+		return nil, fmt.Errorf("creating qr code using %s: %w", link, err)
 	}
 
 	// Initialize QR code options
 	img, err := loadEmbeddedImage(s.fs, "static/assets/dog-logo-qr.png")
 	if err != nil {
-		return "", fmt.Errorf("creating qr code using logo: %w", err)
+		return nil, fmt.Errorf("creating qr code using logo: %w", err)
 	}
 	options := []standard.ImageOption{
 		standard.WithQRWidth(25),
@@ -133,11 +132,10 @@ func (s *URLService) CreateQRCode(link string) (string, error) {
 	var buf bytes.Buffer
 	writer := standard.NewWithWriter(nopWriteCloser{&buf}, options...)
 	if err := qrc.Save(writer); err != nil { // writes qr code to buf
-		return "", fmt.Errorf("creating qr code: writing to buffer: %w", err)
+		return nil, fmt.Errorf("creating qr code: writing to buffer: %w", err)
 	}
-	encodedQRCode := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	return encodedQRCode, nil
+	return buf.Bytes(), nil
 }
 
 // Returns the URL record that matches a given short code.
