@@ -1,4 +1,4 @@
-import { IconAlertCircle, IconBrandGithub } from "@tabler/icons-react";
+import { IconBrandGithub } from "@tabler/icons-react";
 import styles from "./Footer.module.css";
 import { Link } from "@tanstack/react-router";
 
@@ -8,14 +8,9 @@ export default function Footer() {
       <Link to="/" className={styles.logo}>
         squi<span>.</span>sh
       </Link>
-      <div className={styles.middle}>
-        <IconAlertCircle />
-        <span>
-          this side project was developed for learning purposes! © 2026
-        </span>
-      </div>
+      <div className={styles.middle}></div>
       <div className={styles.right}>
-        <span>built by </span>
+        <span>4fun project built by </span>
         <a
           href="https://www.github.com/grumphrey"
           target="_blank"
