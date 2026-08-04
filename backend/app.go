@@ -3,10 +3,10 @@ package main
 import (
 	"net/http"
 
-	"url-shortener/internal/auth"
-	"url-shortener/internal/logging"
-	"url-shortener/internal/metrics"
-	"url-shortener/internal/urls"
+	"github.com/grumphrey/squish/internal/auth"
+	"github.com/grumphrey/squish/internal/logging"
+	"github.com/grumphrey/squish/internal/metrics"
+	"github.com/grumphrey/squish/internal/urls"
 
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/modelcontextprotocol/go-sdk/mcp"

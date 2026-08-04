@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"url-shortener/internal/auth"
+	"github.com/grumphrey/squish/internal/auth"
 )
 
 type MetricsHandler struct {

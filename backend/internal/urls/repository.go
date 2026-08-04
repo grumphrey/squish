@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"url-shortener/internal/utils"
-
+	"github.com/grumphrey/squish/internal/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"

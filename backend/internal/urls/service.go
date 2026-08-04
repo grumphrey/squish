@@ -10,9 +10,8 @@ import (
 	"io"
 	"time"
 
-	"url-shortener/internal/logging"
-	"url-shortener/internal/utils"
-
+	"github.com/grumphrey/squish/internal/logging"
+	"github.com/grumphrey/squish/internal/utils"
 	"github.com/mileusna/useragent"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"

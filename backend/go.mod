@@ -1,4 +1,4 @@
-module url-shortener
+module github.com/grumphrey/squish
 
 go 1.26.3
 

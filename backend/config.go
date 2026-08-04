@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"url-shortener/internal/auth"
+	"github.com/grumphrey/squish/internal/auth"
 )
 
 const (

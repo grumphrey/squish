@@ -8,8 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"url-shortener/internal/utils"
-
+	"github.com/grumphrey/squish/internal/utils"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

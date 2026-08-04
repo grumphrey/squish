@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"url-shortener/internal/auth"
-	"url-shortener/internal/logging"
-	"url-shortener/internal/utils"
+	"github.com/grumphrey/squish/internal/auth"
+	"github.com/grumphrey/squish/internal/logging"
+	"github.com/grumphrey/squish/internal/utils"
 )
 
 type URLHandler struct {

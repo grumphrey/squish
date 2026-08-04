@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"url-shortener/internal/utils"
-
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/grumphrey/squish/internal/utils"
 )
 
 // ContextKey is a custom type for context keys to avoid collisions.

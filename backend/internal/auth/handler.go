@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"url-shortener/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/grumphrey/squish/internal/utils"
 	"golang.org/x/oauth2"
 )
 
