@@ -103,7 +103,7 @@ func initGeoIP(cfg GeoIPConfig) (*geoip2.Reader, error) {
 	// TODO: not fatal on fail
 	gdb, err := geoip2.Open(cfg.Path)
 	if err != nil {
-		slog.Warn("Geolite2 database not found at %q, disabling geoip lookups. See README for instructions on installing the database.", cfg.Path)
+		slog.Warn(fmt.Sprintf("Geolite2 database not found at %q, disabling geoip lookups. See README for instructions on installing the database.", cfg.Path))
 		return nil, nil
 	}
 
