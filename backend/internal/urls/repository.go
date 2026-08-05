@@ -25,6 +25,7 @@ var (
 	defaultExpirationTime = 24 * time.Hour
 )
 
+// TODO: wrap gdb in a struct with wrapper methods, instead of having to check if gdb is nil whenever we use it
 type urlRepository struct {
 	db    *pgxpool.Pool
 	redis *redis.Client
@@ -263,10 +264,13 @@ func (r *urlRepository) CreateRedirectMetrics(ctx context.Context, urlID int64, 
 	return nil
 }
 
-// GetIPAdressMetrics returns the parsed geolocation data from the given IP address.
+// GetIPAddressMetrics returns the parsed geolocation data from the given IP address.
 // NOTE: context unused since geo db is a file. But can be used in future if the database is changed to require network calls.
 // TODO: the function could return pointer, but would have to do nil check. Not sure if struct is large enough to justify
 func (r *urlRepository) GetIPAddressMetrics(ctx context.Context, ipAddr string) (Geolocation, error) {
+	if r.gdb == nil {
+		return Geolocation{}, nil
+	}
 	ip, err := netip.ParseAddr(ipAddr)
 	if err != nil {
 		return Geolocation{}, fmt.Errorf("could not parse ip address %s: %w", ipAddr, err)
