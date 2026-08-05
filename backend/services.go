@@ -98,12 +98,13 @@ func initRedis(ctx context.Context, cfg RedisConfig) (*redis.Client, error) {
 	return rdb, nil
 }
 
-// Opens geoip2 database file.
+// Opens geoip2 database file (optional).
 func initGeoIP(cfg GeoIPConfig) (*geoip2.Reader, error) {
 	// TODO: not fatal on fail
 	gdb, err := geoip2.Open(cfg.Path)
 	if err != nil {
-		return nil, fmt.Errorf("starting geoip database at %s: %w", cfg.Path, err)
+		slog.Warn(fmt.Sprintf("Geolite2 database not found at %q, disabling geoip lookups. See README for instructions on installing the database.", cfg.Path))
+		return nil, nil
 	}
 
 	slog.Info("loaded geolite2 database")
