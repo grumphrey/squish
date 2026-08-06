@@ -7,6 +7,7 @@ A URL shortener written in Go + React
 - [Demo](#demo)
 - [Key features](#key-features)
 - [Technical stack](#technical-stack)
+- [Architecture](#architecture)
 - [Running the application](#running-the-application)
 - [Setup and Configuration](#setup-and-configuration)
 
@@ -46,6 +47,10 @@ https://github.com/user-attachments/assets/049ea872-c616-4f4b-b049-532bed944668
 - Infrastructure
   - Postgres, Redis, nginx
   - docker and docker-compose
+ 
+## Architecture
+
+<img width="2626" height="1727" alt="squish-architecture" src="https://github.com/user-attachments/assets/2d91cf82-497a-43b1-bf63-a0c4a85d8b61" />
 
 ## Running the application
 
