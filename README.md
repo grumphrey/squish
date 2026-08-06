@@ -9,7 +9,7 @@ A URL shortener written in Go + React
 - [Technical stack](#technical-stack)
 - [Architecture](#architecture)
 - [Running the application](#running-the-application)
-- [Setup and Configuration](#setup-and-configuration)
+- [Setup and configuration](#setup-and-configuration)
 
 ## Demo
 
@@ -64,9 +64,9 @@ docker compose up
 
 This setup uses PostgreSQL for the database, Redis for the caching layer.
 
-## Setup and Configuration
+## Setup and configuration
 
-The app can be configured via environment variables. See [`.example.env`](./.example.env) for the full list of configurations.
+The app can be configured via environment variables. See [`.env.example`](./.env.example) for the full list of configurations.
 
 ### Optional configurations
 
