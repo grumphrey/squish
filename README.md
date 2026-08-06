@@ -12,6 +12,8 @@ A URL shortener written in Go + React
 
 ## Demo
 
+https://github.com/user-attachments/assets/524c63b5-7eb9-497f-863e-7c17a4bef72e
+
 🔗 Live site: [squish.humphrey.app](https://squish.humphrey.app)
 
 ## Key features
@@ -77,22 +79,3 @@ After obtaining OAuth credentials, set the following env vars: (`CLIENT_ID`, `CL
 
 To serve the app over https, use `nginx.https.conf` instead, with a valid TLS certificate.
 You can get one for free with [LetsEncrypt](https://letsencrypt.org/).
-
-# Project Structure
-
-- Handler-Service-Repository pattern
-  - Clearly defined responsibilities
-  - Handler does data validation, serialization, request, response, call the appropriate service
-- Service does the business logic, call the appropriate database function
-- Repository does database access logic, can be reused by different services
-- Clearly defined interface of each part (e.g. repository has these methods)
-- Dependency injection, initialize structs in main and pass each of them into whichever struct that needs it (to call functions etc.)
-- nginx handles TLS termination, static file delivery and routing.
-
-# Architecture
-
-- TODO: use excalidraw
-
-# API endpoints
-
-- TODO
