@@ -12,7 +12,7 @@ A URL shortener written in Go + React
 
 ## Demo
 
-https://github.com/user-attachments/assets/524c63b5-7eb9-497f-863e-7c17a4bef72e
+https://github.com/user-attachments/assets/049ea872-c616-4f4b-b049-532bed944668
 
 🔗 Live site: [squish.humphrey.app](https://squish.humphrey.app)
 
