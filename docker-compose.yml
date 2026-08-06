@@ -16,11 +16,11 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt # shared volume between nginx and certbot services
-      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt # NOTE: shared volume between nginx and certbot services
+      - ./certbot/www:/var/www/certbot # NOTE: for https
       - ./certs:/etc/letsencrypt/live/squish.humphrey.app # NOTE: only used for local dev
     environment:
-      - TZ=Asia/Singapore
+      - TZ=${TZ}
     depends_on:
       backend:
         condition: service_healthy
@@ -29,7 +29,7 @@ services:
   backend:
     build:
       context: ./backend
-      target: dev # TODO
+      target: dev # NOTE: dev or prod
       # target: prod
     expose:
       - "8080"
@@ -37,8 +37,8 @@ services:
       - .env
     volumes:
       - ./data/geoip:/var/lib/geoip:ro # data dependencies (i.e. geoip database)
-      - ./backend:/app # TODO: for dev (mount source code to container for air to view changes)
-      - /app/tmp # TODO: for dev (create anonymous volume to isolate air build output)
+      - ./backend:/app # NOTE: remove in prod (for dev, mount source code to container for air to view changes)
+      - /app/tmp # NOTE: remove in prod (for dev, create anonymous volume to isolate air build output)
     depends_on:
       postgres:
         condition: service_healthy
