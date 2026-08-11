@@ -6,10 +6,7 @@ import {
   TrashIcon,
 } from "lucide-react";
 import {
-  IconArrowNarrowRight,
   IconChartBar,
-  IconCheck,
-  IconCopy,
   IconDots,
   IconLink,
   IconPencil,
@@ -31,28 +28,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 
 import { useState } from "react";
-import type { ShortURLRecord } from "@/models/models";
+import type { ShortURLRecord as ShortURLRecordModel } from "@/models/models";
 import ErrorAlert from "@/components/ErrorAlert";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import AnalyticsDialog from "@/components/AnalyticsDialog";
 import { DeleteLinkDialog } from "@/components/DeleteLinkDialog";
+import {
+  CopyURLButton,
+  ShortURLRecord,
+} from "@/components/ShortURLRecord";
 import type { DateRange } from "react-day-picker";
 
 interface URLsListProps {
-  data: ShortURLRecord[] | undefined;
+  data: ShortURLRecordModel[] | undefined;
   error: Error | null;
   isPending: boolean;
 
@@ -103,7 +98,7 @@ export default function URLsList({
       <ul className={styles.urlRootContainer}>
         {activeLinks.map((record) => (
           <li className={styles.urlListItemContainer} key={record.short_url}>
-            {<ShortURLRecord {...record} />}
+            {<ManagedShortURLRecord {...record} />}
           </li>
         ))}
         {activeLinks.length == 0 && inactiveLinks.length == 0 && (
@@ -137,7 +132,7 @@ export default function URLsList({
                 className={styles.urlListItemContainer}
                 key={record.short_url}
               >
-                {<ShortURLRecord {...record} />}
+                {<ManagedShortURLRecord {...record} />}
               </li>
             ))}
           </ul>
@@ -193,69 +188,28 @@ function URLSkeleton() {
   );
 }
 
-function ShortURLRecord({
+function ManagedShortURLRecord({
   short_url,
   long_url,
   is_active,
   created_at,
   is_qrcode,
-}: ShortURLRecord) {
-  const displayShortURL = "/" + short_url;
-  const fullURL = window.location.origin + displayShortURL;
-  const displayDate = urlDateFormatter.format(created_at);
-
+}: ShortURLRecordModel) {
   return (
-    <div className={`${styles.urlContainer} hover:bg-accent transition-all`}>
-      <div className="hidden md:flex">
-        {is_active ? (
-          <div className={styles.urlActive} />
-        ) : (
-          <div className={styles.urlInactive} />
-        )}
-      </div>
-
-      <div className={styles.urlLinks}>
-        <div className={styles.urlShort}>
-          <div className="md:hidden">
-            {is_active ? (
-              <div className={styles.urlActive} />
-            ) : (
-              <div className={styles.urlInactive} />
-            )}
-          </div>
-          <span className={`pl-2 ${!is_active && "text-muted-foreground"}`}>
-            {displayShortURL}
-          </span>
-          {is_qrcode && <IconQrcode className="text-(--color-primary)" />}
-          <div className="items-center hidden md:flex">
-            <CopyURLButton url={fullURL} iconSize="10px" />
-          </div>
-        </div>
-
-        <div className={styles.urlLong}>
-          <IconArrowNarrowRight stroke={2} />
-
-          <Tooltip>
-            <TooltipContent className="max-w-sm md:max-w-xl break-all">
-              {long_url}
-            </TooltipContent>
-            <TooltipTrigger className="hover:text-foreground transition-all whitespace-nowrap overflow-hidden text-ellipsis">
-              {long_url}
-            </TooltipTrigger>
-          </Tooltip>
-        </div>
-      </div>
-
-      <div className={styles.urlCreatedDate}>
-        <span>{displayDate}</span>
-      </div>
-
-      <URLRecordMenu
-        isQRCode={is_qrcode}
-        isActive={is_active}
-        shortCode={short_url}
-      />
-    </div>
+    <ShortURLRecord
+      short_url={short_url}
+      long_url={long_url}
+      is_active={is_active}
+      created_at={created_at}
+      is_qrcode={is_qrcode}
+      actions={
+        <URLRecordMenu
+          isQRCode={is_qrcode}
+          isActive={is_active}
+          shortCode={short_url}
+        />
+      }
+    />
   );
 }
 
@@ -382,70 +336,10 @@ function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
   );
 }
 
-interface CopyURLButtonProps extends ButtonProps {
-  url: string;
-  isDropdown?: boolean;
-  iconSize?: string;
-}
-
-function CopyURLButton({
-  url,
-  isDropdown = false,
-  iconSize = "16px",
-  ...props
-}: CopyURLButtonProps) {
-  const [copying, setCopying] = useState(false);
-
-  // Copy url into clipboard and show tick icon for 2 seconds.
-  const handleClick = () => {
-    navigator.clipboard.writeText(url).catch(() => {
-      toast.error("Could not copy onto clipboard.", {
-        description: "Please try again later.",
-        position: "top-center",
-      });
-    });
-
-    toast.success("Copied onto clipboard", {
-      description: <div className="text-(--color-primary)">{url}</div>,
-      position: "top-center",
-    });
-
-    setCopying(true);
-    setTimeout(() => {
-      setCopying(false);
-    }, 2000);
-  };
-  if (isDropdown) {
-    return (
-      <span className="flex gap-2 items-center" onClick={handleClick}>
-        <IconCopy height="10px" />
-        Copy
-      </span>
-    );
-  }
-
-  return (
-    <Button
-      variant="ghost"
-      onClick={handleClick}
-      className="h-5 cursor-pointer"
-      {...props}
-    >
-      {copying ? (
-        <IconCheck height={iconSize} />
-      ) : (
-        <IconCopy height={iconSize} />
-      )}
-    </Button>
-  );
-}
-
-const urlDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-});
-
-function filterByQuery(links: ShortURLRecord[], query: string | undefined) {
+function filterByQuery(
+  links: ShortURLRecordModel[],
+  query: string | undefined,
+) {
   if (!query) return links; // if nothing to filter by, return full list of links
 
   return links.filter((link) => {
@@ -457,7 +351,7 @@ function filterByQuery(links: ShortURLRecord[], query: string | undefined) {
 }
 
 function filterByDateRange(
-  links: ShortURLRecord[],
+  links: ShortURLRecordModel[],
   range: DateRange | undefined,
 ) {
   if (!range?.from) return links; // if no date or no from, return all links

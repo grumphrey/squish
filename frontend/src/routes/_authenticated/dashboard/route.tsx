@@ -30,8 +30,10 @@ import {
   useTotalVisitMetrics,
   usePastWeekMetrics,
   useDeviceMetrics,
+  useTopLinks,
 } from "@/hooks";
 import RefreshButton from "@/components/RefreshButton";
+import TopLinks from "@/components/TopLinks";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: RouteComponent,
@@ -78,15 +80,23 @@ function MetricsDashboard() {
     error: sourceError,
   } = useSourceMetrics();
 
+  const {
+    data: topLinksData,
+    isPending: isTopLinksLoading,
+    isFetching: isFetchingTopLinks,
+    error: topLinksError,
+  } = useTopLinks();
+
   const isRefreshing =
     isFetchingMetrics ||
     isFetchingVisits ||
     isFetchingTotal ||
-    isFetchingSource;
+    isFetchingSource ||
+    isFetchingTopLinks;
 
   // Refresh metrics data from backend
   const handleRefreshAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["metrics"] });
   };
 
   return (
@@ -174,7 +184,15 @@ function MetricsDashboard() {
         </div>
       </div>
 
-      {/* <URLsList /> */}
+      <div className={styles.dashboardHeader}>
+        <h3 className={styles.dashboardSubtitle}>Top performing links</h3>
+        <Separator />
+      </div>
+      <TopLinks
+        data={topLinksData}
+        error={topLinksError}
+        isPending={isTopLinksLoading}
+      />
     </section>
   );
 }

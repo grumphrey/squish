@@ -37,6 +37,13 @@ export interface VisitsBySource {
   total_visits: number;
 }
 
+export interface TopLink {
+  short_url: string;
+  long_url: string;
+  is_active: boolean;
+  total_visits: number;
+}
+
 export interface User {
   userID: string;
   email: string;
