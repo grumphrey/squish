@@ -58,11 +58,14 @@ export function DatePickerWithRange({
             // captionLayout="dropdown"
             modifiers={{ links: linkDates }}
             modifiersClassNames={{
-              // dot styles to mark dates with a created short link
-              links: `relative after:absolute after:bottom-1 after:left-1/2 
-              after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full 
-              after:bg-(--color-primary) after:z-10`,
-              // need higher z-index to stack ::after on top of highlighted date range styles
+              // "Dot" to mark dates in which there was a short link created
+              // Render the marker on the button so it stays above its selected
+              // background and does not conflict with the cell's range ::after
+              links: `[&>button]:after:pointer-events-none [&>button]:after:absolute
+              [&>button]:after:bottom-1 [&>button]:after:left-1/2
+              [&>button]:after:z-20 [&>button]:after:h-1 [&>button]:after:w-1
+              [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full
+              [&>button]:after:bg-(--color-primary) [&>button]:after:content-['']`,
             }}
           />
         </PopoverContent>
