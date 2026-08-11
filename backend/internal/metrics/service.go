@@ -13,6 +13,10 @@ func NewMetricsService(r *metricsRepository) *metricsService {
 	return &metricsService{metricsRepository: r}
 }
 
+func (s *metricsService) GetUserTopLinks(ctx context.Context, userID string) ([]TopLink, error) {
+	return s.metricsRepository.GetUserTopLinks(ctx, userID)
+}
+
 func (s *metricsService) GetUserDeviceMetrics(ctx context.Context, userID string) (MetricToValueCountMap, error) {
 	metricMap, err := s.metricsRepository.GetUserDeviceMetrics(ctx, userID)
 	if err != nil {

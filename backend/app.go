@@ -121,6 +121,7 @@ func registerRoutes(mux *http.ServeMux, r *Router, m *Middleware) {
 	mux.Handle("/api/url/edit", m.protected(http.HandlerFunc(r.urlHandler.HandleEditShortURL)))
 
 	// Metrics routes
+	mux.Handle("/api/metrics/top-links", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTopLinks)))
 	mux.Handle("/api/metrics/device", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetrics)))
 	mux.Handle("/api/metrics/visits/daily", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetricsPastWeek)))
 	mux.Handle("/api/metrics/visits/total", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTotalVisitMetrics)))

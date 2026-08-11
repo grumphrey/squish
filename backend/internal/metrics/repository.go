@@ -15,6 +15,35 @@ func NewMetricsRepository(db *pgxpool.Pool) *metricsRepository {
 	return &metricsRepository{db: db}
 }
 
+// GetUserTopLinks returns the user's most visited short URLs across all time.
+func (r *metricsRepository) GetUserTopLinks(ctx context.Context, userID string) ([]TopLink, error) {
+	query := `
+		SELECT
+			s.short_url,
+			s.long_url,
+			s.is_active,
+			COUNT(e.id) AS total_visits
+		FROM short_urls s
+		LEFT JOIN url_redirect_events e ON e.short_url_id = s.id
+		WHERE s.user_id = $1
+		GROUP BY s.id, s.short_url, s.long_url, s.is_active, s.created_at
+		ORDER BY total_visits DESC, s.created_at DESC, s.id DESC
+		LIMIT 10`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	links, err := pgx.CollectRows(rows, pgx.RowToStructByName[TopLink])
+	if err != nil {
+		return nil, err
+	}
+
+	return links, nil
+}
+
 // Get all-time total visitors and unique visitors for all short URLs belonging to a user.
 func (r *metricsRepository) GetUserTotalVisitMetrics(ctx context.Context, userID string) (*AllTimeVisitMetrics, error) {
 	query := `

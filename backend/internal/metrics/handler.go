@@ -5,6 +5,9 @@ import (
 	"net/http"
 
 	"github.com/grumphrey/squish/internal/auth"
+	"github.com/grumphrey/squish/internal/logging"
+	"github.com/grumphrey/squish/internal/urls"
+	"github.com/grumphrey/squish/internal/utils"
 )
 
 type MetricsHandler struct {
@@ -13,6 +16,32 @@ type MetricsHandler struct {
 
 func NewMetricsHandler(s *metricsService) *MetricsHandler {
 	return &MetricsHandler{metricsService: s}
+}
+
+// HandleGetUserTopLinks returns the user's top 10 most visited short URLs across all time.
+func (h *MetricsHandler) HandleGetUserTopLinks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := logging.FromContext(ctx)
+
+	claims, ok := auth.GetClaimsFromContext(ctx)
+	if !ok {
+		logger.Warn("unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, urls.CodeUnauthorized, urls.MsgUnauthorized)
+		return
+	}
+
+	links, err := h.metricsService.GetUserTopLinks(ctx, claims.UserID)
+	if err != nil {
+		logger.Error("failed to get top links", "error", err)
+		utils.WriteError(w, http.StatusInternalServerError, urls.CodeGenericErr, urls.MsgGenericError)
+		return
+	}
+
+	if err := utils.Encode(w, r, http.StatusOK, links); err != nil {
+		logger.Error("failed to encode response", "error", err)
+		utils.WriteError(w, http.StatusInternalServerError, urls.CodeGenericErr, urls.MsgGenericError)
+		return
+	}
 }
 
 // Get device metrics for all short URLs created by the user

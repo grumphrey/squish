@@ -27,3 +27,10 @@ type TotalVisitsBySource struct {
 	Source string `db:"source" json:"source"`
 	Visits int64  `db:"total_visits" json:"total_visits"`
 }
+
+type TopLink struct {
+	ShortURL    string `db:"short_url" json:"short_url"`
+	LongURL     string `db:"long_url" json:"long_url"`
+	Active      bool   `db:"is_active" json:"is_active"`
+	TotalVisits int64  `db:"total_visits" json:"total_visits"`
+}
