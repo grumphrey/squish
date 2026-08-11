@@ -58,14 +58,22 @@ func ValidateShortUrl(url string) error {
 
 // Check long url (to be converted to short url) provided by user is valid.
 //
-// Should be a valid web URL (http or https), with valid top-level domain.
-// Currently only checked by frontend.
-func ValidateLongUrl(long_url string) error {
-	u, err := url.ParseRequestURI(long_url)
-
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("invalid long url: %w", err)
+// Must be an absolute HTTP(S) URL. The service redirects clients to this value,
+// so non-web schemes and URLs with embedded credentials are not supported.
+func ValidateLongUrl(longURL string) error {
+	u, err := url.ParseRequestURI(longURL)
+	if err != nil || u.Hostname() == "" {
+		return errors.New("invalid long url")
 	}
+
+	if !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
+		return errors.New("long url must use http or https")
+	}
+
+	if u.User != nil {
+		return errors.New("long url must not contain user credentials")
+	}
+
 	return nil
 }
 
