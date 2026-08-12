@@ -76,7 +76,7 @@ func run() error {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Info("server forced to shut down: %s\n", err)
+		logger.Info("server forced to shut down", "error", err)
 	}
 	logger.Info("server stopped")
 
