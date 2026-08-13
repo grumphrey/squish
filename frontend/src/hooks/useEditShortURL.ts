@@ -8,7 +8,7 @@ export default function useEditShortURL() {
 async function editShortURL(
   payload: EditShortURLRequest,
 ): Promise<EditShortURLResponse> {
-  const response = await api.post<EditShortURLRequest>("/url/edit", payload);
+  const response = await api.post<EditShortURLResponse>("/url/edit", payload);
 
   return response.data;
 }
@@ -18,4 +18,4 @@ export interface EditShortURLRequest {
   is_qrcode?: boolean;
 }
 
-export interface EditShortURLResponse {}
+export type EditShortURLResponse = Record<string, never>;

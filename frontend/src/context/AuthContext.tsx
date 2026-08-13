@@ -71,19 +71,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         switch (err.response?.status) {
           case 401:
             if (code === "ERR_INVALID_CREDENTIALS") {
-              throw new Error("Invalid login credentials.");
+              throw new Error("Invalid login credentials.", { cause: err });
             }
             break;
           case 500:
             if (code === "ERR_GENERATING_TOKENS") {
-              throw new Error("Could not log in user. Please try again later.");
+              throw new Error("Could not log in user. Please try again later.", {
+                cause: err,
+              });
             }
             break;
           default:
-            throw new Error("Internal server error. Please try again later.");
+            throw new Error("Internal server error. Please try again later.", {
+              cause: err,
+            });
         }
       }
-      throw new Error("Internal server error. Please try again later.");
+      throw new Error("Internal server error. Please try again later.", {
+        cause: err,
+      });
     }
   };
 
@@ -116,27 +122,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         switch (err.response?.status) {
           case 400:
             if (code === "ERR_EXISTING_USER") {
-              throw new Error("User already exists. Please log in.");
+              throw new Error("User already exists. Please log in.", {
+                cause: err,
+              });
             } else if (code === "ERR_CREATING_USER") {
               throw new Error(
                 "We faced a problem creating the user. Please try again later.",
+                { cause: err },
               );
             } else if (code === "INVALID_SIGNUP") {
               throw new Error(
                 "Your email/password does not meet the requirements.",
+                { cause: err },
               );
             }
             break;
           case 500:
             if (code === "ERR_GENERATING_TOKENS") {
-              throw new Error("Could not log in user. Please try again later.");
+              throw new Error("Could not log in user. Please try again later.", {
+                cause: err,
+              });
             }
             break;
           default:
-            throw new Error("Internal server error. Please try again later.");
+            throw new Error("Internal server error. Please try again later.", {
+              cause: err,
+            });
         }
       }
-      throw new Error("Internal server error. Please try again later.");
+      throw new Error("Internal server error. Please try again later.", {
+        cause: err,
+      });
     }
   };
 

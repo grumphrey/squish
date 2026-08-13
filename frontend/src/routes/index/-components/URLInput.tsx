@@ -88,7 +88,7 @@ export default function URLInput({
     // Validate input URL
     try {
       url = validateURL(tlds || [], longURL);
-    } catch (err) {
+    } catch {
       setError(`We'll need a valid URL, like "super-long-link.com/shorten-it"`);
       inputRef.current?.focus();
       return;

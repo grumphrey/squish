@@ -14,8 +14,12 @@ api.interceptors.request.use((config) => {
 
 // Auto-refresh token when we get 401 unauthorized
 let isRefreshing = false; // global flag to lock further refresh attempts
-let failedQueue: { resolve: Function; reject: Function }[] = [];
-const processQueue = (error: any, token: string | null) => {
+type FailedRequest = {
+  resolve: (token: string | null) => void;
+  reject: (reason?: unknown) => void;
+};
+let failedQueue: FailedRequest[] = [];
+const processQueue = (error: unknown, token: string | null) => {
   failedQueue.forEach(({ resolve, reject }) =>
     error ? reject(error) : resolve(token),
   );

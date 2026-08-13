@@ -109,7 +109,7 @@ const URLQRCode = ({ shortCode }: URLQRCodeProps) => {
         crossOrigin: "anonymous",
       },
     });
-  }, []);
+  }, [shortCode]);
 
   // Callback ref only runs when ref node is mounted
   const setQrRef = (node: HTMLDivElement | null) => {
@@ -148,7 +148,7 @@ const URLQRCode = ({ shortCode }: URLQRCodeProps) => {
           files: [file],
         });
       }, "image/png");
-    } catch (err) {
+    } catch {
       toast.error(DEFAULT_ERR);
     }
   };

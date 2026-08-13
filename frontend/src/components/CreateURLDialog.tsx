@@ -76,7 +76,7 @@ export default function CreateURLDialog() {
     // Validate input URL
     try {
       url = validateURL(tlds || [], inputUrl);
-    } catch (err) {
+    } catch {
       setError(INVALID_URL_ERR);
       return;
     }

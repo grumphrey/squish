@@ -47,7 +47,7 @@ export function DeleteLinkDialog({
           position: "top-center",
         },
       );
-    } catch (err) {
+    } catch {
       toast.error(
         <div>
           There was a problem trying to delete{" "}

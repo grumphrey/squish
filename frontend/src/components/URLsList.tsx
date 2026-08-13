@@ -34,7 +34,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import type { ShortURLRecord as ShortURLRecordModel } from "@/models/models";
 import ErrorAlert from "@/components/ErrorAlert";
 import QRCodeDialog from "@/components/QRCodeDialog";
@@ -224,17 +224,17 @@ function URLRecordMenu({ isQRCode, isActive, shortCode }: URLRecordMenuProps) {
   const [QROpen, setQROpen] = useState(false);
   const url = window.location.origin + "/" + shortCode;
 
-  const handleSelectAnalytics = (e: any) => {
+  const handleSelectAnalytics = (e: MouseEvent) => {
     e.preventDefault();
     setAnalyticsOpen(true);
   };
 
-  const handleSelectDelete = (e: any) => {
+  const handleSelectDelete = (e: MouseEvent) => {
     e.preventDefault();
     setDeleteOpen(true);
   };
 
-  const handleSelectQRCode = (e: any) => {
+  const handleSelectQRCode = (e: MouseEvent) => {
     e.preventDefault();
     setQROpen(true);
   };
