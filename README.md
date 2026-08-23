@@ -4,6 +4,8 @@
   
 A URL shortener written in Go + React
 
+![dancing-gopher](https://github.com/egonelbre/gophers/blob/master/.thumb/animation/gopher-dance-long-3x.gif)
+
 ## Table of Contents
 
 - [Demo](#demo)
