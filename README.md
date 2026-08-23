@@ -1,5 +1,7 @@
 # squish
-
+[![CI](https://github.com/grumphrey/squish/actions/workflows/ci.yml/badge.svg)](https://github.com/grumphrey/squish/actions/workflows/ci.yml)
+[![Deployment](https://github.com/grumphrey/squish/actions/workflows/deploy.yml/badge.svg)](https://github.com/grumphrey/squish/actions/workflows/deploy.yml)
+  
 A URL shortener written in Go + React
 
 ## Table of Contents
