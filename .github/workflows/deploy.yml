@@ -1,0 +1,121 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed] # only run deploy when completed+success, changes on main branch
+    branches: [main]
+  workflow_dispatch: # manual deployment for rollbacks (specify commit)
+    inputs:
+      image_tag:
+        description: Existing 40-character commit SHA to deploy or roll back to
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write # for github actions to obtain OIDC token
+
+concurrency: # prevent multiple deployments running simultaneously
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    # env vars are obtained from GitHub variables, used in ssm deploy script
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      EC2_DEPLOY_USER: ${{ vars.EC2_DEPLOY_USER }}
+      EC2_DEPLOY_PATH: ${{ vars.EC2_DEPLOY_PATH }}
+      BACKEND_ECR_REPOSITORY: ${{ vars.BACKEND_ECR_REPOSITORY }}
+      FRONTEND_ECR_REPOSITORY: ${{ vars.FRONTEND_ECR_REPOSITORY }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: Resolve release SHA # get commit SHA (automatic: commit that triggered CI, manual: input commit to rollback to), used as image tag
+        id: release
+        env:
+          AUTOMATIC_SHA: ${{ github.event.workflow_run.head_sha }}
+          MANUAL_SHA: ${{ inputs.image_tag }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            sha="$MANUAL_SHA"
+          else
+            sha="$AUTOMATIC_SHA"
+          fi
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Release SHA must contain exactly 40 lowercase hexadecimal characters" >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && steps.release.outputs.sha || github.sha }}
+
+      - name: Configure short-lived AWS credentials # obtain temporary credentials from AWS STS, using token issued from GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sign in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check release images # check if the docker images already exist in ECR (registry/repository:tag) to decide if need to build
+        id: images
+        env:
+          DEPLOY_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          if aws ecr describe-images --repository-name "$BACKEND_ECR_REPOSITORY" --image-ids "imageTag=$DEPLOY_SHA" >/dev/null 2>&1; then
+            echo "backend_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+          if aws ecr describe-images --repository-name "$FRONTEND_ECR_REPOSITORY" --image-ids "imageTag=$DEPLOY_SHA" >/dev/null 2>&1; then
+            echo "frontend_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx # only run for automatic deployment (since manual deployment uses existing images, no need to build)
+        if: github.event_name == 'workflow_run'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        if: github.event_name == 'workflow_run' && steps.images.outputs.backend_exists != 'true' # build only if automatic CI-triggered deployment + image doesn't already exist
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          target: prod # build prod stage
+          platforms: linux/amd64
+          push: true # push to ECR
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.BACKEND_ECR_REPOSITORY }}:${{ steps.release.outputs.sha }}
+          cache-from: type=gha,scope=backend # docker build caching
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push frontend image
+        if: github.event_name == 'workflow_run' && steps.images.outputs.frontend_exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.FRONTEND_ECR_REPOSITORY }}:${{ steps.release.outputs.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Confirm manual release images exist
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          [[ "${{ steps.images.outputs.backend_exists }}" == "true" ]] || { echo "Backend image does not exist" >&2; exit 1; }
+          [[ "${{ steps.images.outputs.frontend_exists }}" == "true" ]] || { echo "Frontend image does not exist" >&2; exit 1; }
+
+      - name: Deploy through AWS Systems Manager # run deployment script: send commands to EC2 through AWS SSM
+        env:
+          DEPLOY_SHA: ${{ steps.release.outputs.sha }}
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }} # value obtained from ECR login step
+        run: bash scripts/run-ssm-deploy.sh

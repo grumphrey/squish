@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Run tests
+        run: go test ./...
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20 # TODO
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  containers:
+    name: Production containers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Compose files
+        env:
+          # dummy values for CI (prod compose file)
+          ECR_REGISTRY: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com
+          BACKEND_ECR_REPOSITORY: squish-backend
+          FRONTEND_ECR_REPOSITORY: squish-frontend
+          IMAGE_TAG: 0000000000000000000000000000000000000000
+          # dummy env values for CI
+        run: |
+          docker compose --env-file .env.example -f docker-compose.yml config --quiet
+          docker compose --env-file .env.example -f docker-compose.prod.yml config --quiet
+      - name: Build backend production image
+        run: docker build --platform linux/amd64 --target prod --tag squish-backend:ci backend
+      - name: Build frontend production image
+        run: docker build --platform linux/amd64 --tag squish-frontend:ci frontend

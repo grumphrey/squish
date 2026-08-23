@@ -29,6 +29,7 @@ go.work.sum
 .env
 *.pem
 certbot/
+.deploy/
 
 # Editor/IDE
 # .idea/

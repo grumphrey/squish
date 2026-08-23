@@ -15,9 +15,9 @@ FROM base AS builder
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-FROM alpine:latest AS prod
-WORKDIR /root/
-# only copy the binary
+FROM alpine:3.22 AS prod
+RUN apk add --no-cache ca-certificates tzdata # add root certs and timezone data into prod image
+WORKDIR /app
 COPY --from=builder /app/main .
 EXPOSE 8080
 CMD ["./main"]
