@@ -57,11 +57,12 @@ jobs:
           ECR_REGISTRY: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com
           BACKEND_ECR_REPOSITORY: squish-backend
           FRONTEND_ECR_REPOSITORY: squish-frontend
-          IMAGE_TAG: 0000000000000000000000000000000000000000
+          IMAGE_TAG: "0000000000000000000000000000000000000000"
           # dummy env values for CI
         run: |
-          docker compose --env-file .env.example -f docker-compose.yml config --quiet
-          docker compose --env-file .env.example -f docker-compose.prod.yml config --quiet
+          cp .env.example .env
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.prod.yml config --quiet
       - name: Build backend production image
         run: docker build --platform linux/amd64 --target prod --tag squish-backend:ci backend
       - name: Build frontend production image
