@@ -15,33 +15,54 @@
   font-weight: 700;
   text-decoration: none;
   position: relative;
-  overflow: hidden;
   display: inline-block;
-}
-
-.logo::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -75%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255, 255, 255, 0.5),
-    transparent
-  );
-  transform: skewX(-25deg);
-}
-
-.logo:hover::after {
-  left: 125%;
-  transition: left 0.6s ease;
+  transform-origin: center bottom;
 }
 
 .logo span {
   color: var(--color-primary);
+  display: inline-block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .logo:hover {
+    animation: logoSquish 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  .logo:hover span {
+    animation: dotPop 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo:hover,
+  .logo:hover span {
+    animation: none;
+  }
+}
+
+@keyframes logoSquish {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scaleX(0.94) scaleY(1.06);
+  }
+  65% {
+    transform: scaleX(1.025) scaleY(0.985);
+  }
+}
+
+@keyframes dotPop {
+  0%,
+  30%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  60% {
+    transform: translateY(-0.18em) scale(1.12);
+  }
 }
 .link {
   color: var(--color-primary-dark);
