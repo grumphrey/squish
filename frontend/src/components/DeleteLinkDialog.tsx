@@ -35,7 +35,7 @@ export function DeleteLinkDialog({
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await api.post("/url/delete", { short_url: shortCode });
+      await api.delete(`/urls/${encodeURIComponent(shortCode)}`);
       queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });
 
       toast.success(

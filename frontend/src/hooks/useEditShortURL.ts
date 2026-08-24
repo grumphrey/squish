@@ -7,15 +7,12 @@ export default function useEditShortURL() {
 
 async function editShortURL(
   payload: EditShortURLRequest,
-): Promise<EditShortURLResponse> {
-  const response = await api.post<EditShortURLResponse>("/url/edit", payload);
-
-  return response.data;
+): Promise<void> {
+  const { shortCode, is_qrcode } = payload;
+  await api.patch(`/urls/${encodeURIComponent(shortCode)}`, { is_qrcode });
 }
 
 export interface EditShortURLRequest {
-  short_url: string;
-  is_qrcode?: boolean;
+  shortCode: string;
+  is_qrcode: boolean;
 }
-
-export type EditShortURLResponse = Record<string, never>;

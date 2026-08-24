@@ -49,12 +49,6 @@ func (h *URLHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 // Accepts a long URL, generating a unique short code that maps to the given URL.
 // Optionally, takes in a custom path e.g. "/my-link", and whether to create a QR code for this URL.
 func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := r.Context()
 	logger := logging.FromContext(ctx)
 
@@ -143,60 +137,49 @@ func (h *URLHandler) HandleCreateShortURL(w http.ResponseWriter, r *http.Request
 	logger.Info("created short code", "short_code", record.ShortURL)
 }
 
-// TODO: use DELETE?
-// POST /api/url/delete
+// DELETE /api/urls/{shortCode}
 // HandleDeleteShortURL soft-deletes the given short URL from database records.
 func (h *URLHandler) HandleDeleteShortURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := r.Context()
 	logger := logging.FromContext(ctx)
-
-	// Get short code to delete
-	type requestData struct {
-		ShortURL string `json:"short_url"`
-	}
-	var req requestData
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn("rejected delete url request", "error", err)
-		utils.WriteError(w, http.StatusBadRequest, CodeBadRequest, MsgInvalidJson)
-		return
-	}
+	shortCode := r.PathValue("shortCode")
 
 	// Get user ID of requester
 	claims, ok := auth.GetClaimsFromContext(ctx)
 	if !ok {
-		logger.Warn("unauthorized delete url request", "short_code", req.ShortURL)
+		logger.Warn("unauthorized delete url request", "short_code", shortCode)
 		utils.WriteError(w, http.StatusUnauthorized, CodeUnauthorized, MsgUnauthorized)
 		return
 	}
 
 	// Soft delete given short code if user has required permissions
-	err := h.urlService.SoftDeleteURLRecord(ctx, req.ShortURL, claims.UserID)
+	err := h.urlService.SoftDeleteURLRecord(ctx, shortCode, claims.UserID)
 	if err != nil {
 		if errors.Is(err, ErrPermissionDenied) {
-			logger.Warn("failed to delete url", "error", err, "user_id", claims.UserID, "short_code", req.ShortURL)
+			logger.Warn("failed to delete url", "error", err, "user_id", claims.UserID, "short_code", shortCode)
 			utils.WriteError(w, http.StatusForbidden, CodeForbidden, MsgForbidden)
 		} else {
 			logger.Error("failed to delete url", "error", err)
 			utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
-			return
 		}
+		return
 	}
 
-	// If successful, return 200 OK
-	logger.Info("deleted url", "short_code", req.ShortURL)
+	logger.Info("deleted url", "short_code", shortCode)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /{}
+// GET /{shortCode}
 // Redirects the user to the long URL that corresponds to the given short URL.
 // Also emits a metric if user is successfully redirected.
 // Returns 404 if the short URL is not found.
 func (h *URLHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Add("Allow", "GET")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	ctx := r.Context()
 	logger := logging.FromContext(ctx)
 
@@ -298,29 +281,26 @@ func (h *URLHandler) HandleGetURLs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// POST /api/url/edit
+// PATCH /api/urls/{shortCode}
 // Edits the given URL record if the user is authorized.
 // Accepts modifying whether a URL record has a QR code generated for it.
 func (h *URLHandler) HandleEditShortURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := r.Context()
 	logger := logging.FromContext(ctx)
+	shortCode := r.PathValue("shortCode")
 
-	// Get short code to edit
 	type requestData struct {
-		ShortURL string `json:"short_url"`
-		QRCode   bool   `json:"is_qrcode"`
+		QRCode *bool `json:"is_qrcode"`
 	}
 	var req requestData
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		logger.Warn("rejected edit url request", "error", err)
 		utils.WriteError(w, http.StatusBadRequest, CodeBadRequest, MsgInvalidJson)
+		return
+	}
+	if req.QRCode == nil {
+		utils.WriteError(w, http.StatusBadRequest, CodeBadRequest, "Missing is_qrcode field.")
 		return
 	}
 
@@ -332,17 +312,17 @@ func (h *URLHandler) HandleEditShortURL(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Edit given short code only if the user has required permission
-	err = h.urlService.EditURLRecord(ctx, req.ShortURL, claims.UserID, req.QRCode)
+	err = h.urlService.EditURLRecord(ctx, shortCode, claims.UserID, *req.QRCode)
 	if err != nil {
 		if errors.Is(err, ErrPermissionDenied) {
 			logger.Warn("failed to edit url", "error", err, "user_id", claims.UserID)
 			utils.WriteError(w, http.StatusForbidden, CodeForbidden, MsgForbidden)
 		} else {
-			logger.Error("failed to edit url", "error", err, "short_code", req.ShortURL)
+			logger.Error("failed to edit url", "error", err, "short_code", shortCode)
 			utils.WriteError(w, http.StatusInternalServerError, CodeGenericErr, MsgGenericError)
-			return
 		}
+		return
 	}
 
-	// If successful, return 200 OK
+	w.WriteHeader(http.StatusNoContent)
 }

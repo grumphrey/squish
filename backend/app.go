@@ -100,36 +100,36 @@ func newApp(cfg *Config, db *Databases) *App {
 // Register the handler + middleware for each route.
 func registerRoutes(mux *http.ServeMux, r *Router, m *Middleware) {
 	mux.HandleFunc("/", r.urlHandler.HandleRedirect)
-	mux.HandleFunc("/health", r.urlHandler.HandleHealth)
+	mux.HandleFunc("GET /health", r.urlHandler.HandleHealth)
 
 	// Auth routes
-	mux.HandleFunc("/api/auth/login", r.authHandler.HandleLogin)
-	mux.HandleFunc("/api/auth/google/login", r.authHandler.HandleGoogleLogin)
-	mux.HandleFunc("/api/auth/google/callback", r.authHandler.HandleGoogleCallback)
-	mux.HandleFunc("/api/auth/github/login", r.authHandler.HandleGithubLogin)
-	mux.HandleFunc("/api/auth/github/callback", r.authHandler.HandleGithubCallback)
+	mux.HandleFunc("POST /api/auth/login", r.authHandler.HandleLogin)
+	mux.HandleFunc("GET /api/auth/google/login", r.authHandler.HandleGoogleLogin)
+	mux.HandleFunc("GET /api/auth/google/callback", r.authHandler.HandleGoogleCallback)
+	mux.HandleFunc("GET /api/auth/github/login", r.authHandler.HandleGithubLogin)
+	mux.HandleFunc("GET /api/auth/github/callback", r.authHandler.HandleGithubCallback)
 	rateLimitSignup := auth.RateLimitMiddleware(m.rateLimit, redis_rate.PerHour(3), "signup")
-	mux.Handle("/api/auth/signup", rateLimitSignup(http.HandlerFunc(r.authHandler.HandleSignup)))
-	mux.HandleFunc("/api/auth/logout", r.authHandler.HandleLogout)
-	mux.HandleFunc("/api/auth/refresh", r.authHandler.HandleRefresh)
+	mux.Handle("POST /api/auth/signup", rateLimitSignup(http.HandlerFunc(r.authHandler.HandleSignup)))
+	mux.HandleFunc("POST /api/auth/logout", r.authHandler.HandleLogout)
+	mux.HandleFunc("POST /api/auth/refresh", r.authHandler.HandleRefresh)
 
 	// CRUD URL routes
 	rateLimitShorten := auth.RateLimitMiddleware(m.rateLimit, redis_rate.PerMinute(60), "shorten")
-	mux.Handle("/api/shorten", rateLimitShorten(m.extractUser(http.HandlerFunc(r.urlHandler.HandleCreateShortURL))))
-	mux.Handle("/api/urls", m.protected(http.HandlerFunc(r.urlHandler.HandleGetURLs)))
-	mux.Handle("/api/url/delete", m.protected(http.HandlerFunc(r.urlHandler.HandleDeleteShortURL)))
-	mux.Handle("/api/url/edit", m.protected(http.HandlerFunc(r.urlHandler.HandleEditShortURL)))
+	mux.Handle("POST /api/shorten", rateLimitShorten(m.extractUser(http.HandlerFunc(r.urlHandler.HandleCreateShortURL))))
+	mux.Handle("GET /api/urls", m.protected(http.HandlerFunc(r.urlHandler.HandleGetURLs)))
+	mux.Handle("PATCH /api/urls/{shortCode}", m.protected(http.HandlerFunc(r.urlHandler.HandleEditShortURL)))
+	mux.Handle("DELETE /api/urls/{shortCode}", m.protected(http.HandlerFunc(r.urlHandler.HandleDeleteShortURL)))
 
 	// Metrics routes
-	mux.Handle("/api/metrics/top-links", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTopLinks)))
-	mux.Handle("/api/metrics/device", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetrics)))
-	mux.Handle("/api/metrics/visits/daily", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetricsPastWeek)))
-	mux.Handle("/api/metrics/visits/total", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTotalVisitMetrics)))
-	mux.Handle("/api/metrics/visits/source", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserSourceMetrics)))
-	mux.Handle("/api/metrics/device/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLDeviceMetrics)))
-	mux.Handle("/api/metrics/visits/daily/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLDeviceMetricsPastWeek)))
-	mux.Handle("/api/metrics/visits/total/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLTotalVisitMetrics)))
-	mux.Handle("/api/metrics/visits/source/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLSourceMetrics)))
+	mux.Handle("GET /api/metrics/top-links", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTopLinks)))
+	mux.Handle("GET /api/metrics/device", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetrics)))
+	mux.Handle("GET /api/metrics/visits/daily", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserDeviceMetricsPastWeek)))
+	mux.Handle("GET /api/metrics/visits/total", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserTotalVisitMetrics)))
+	mux.Handle("GET /api/metrics/visits/source", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetUserSourceMetrics)))
+	mux.Handle("GET /api/metrics/device/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLDeviceMetrics)))
+	mux.Handle("GET /api/metrics/visits/daily/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLDeviceMetricsPastWeek)))
+	mux.Handle("GET /api/metrics/visits/total/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLTotalVisitMetrics)))
+	mux.Handle("GET /api/metrics/visits/source/{shortCode}", m.protected(http.HandlerFunc(r.metricsHandler.HandleGetURLSourceMetrics)))
 }
 
 // Register resources, tools, prompts for the MCP server.

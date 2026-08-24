@@ -49,7 +49,7 @@ export default function QRCodeDialog({
   const queryClient = useQueryClient();
   const { mutate, isPending } = useEditShortURL();
   const createQRCode = () => {
-    const payload = { short_url: shortCode, is_qrcode: true };
+    const payload = { shortCode, is_qrcode: true };
     mutate(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["dashboard", "urls"] });

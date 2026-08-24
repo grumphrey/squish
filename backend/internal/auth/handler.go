@@ -29,12 +29,6 @@ func NewAuthHandler(jwtService *JWTService, userService UserService, oauthConfig
 
 // HandleLogin handles user authentication and returns a token pair.
 func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	type LoginRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -170,12 +164,6 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 // HandleSignup registers an account for the user.
 // Throws an error if user already taken.
 func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Add("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	type SignupRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
