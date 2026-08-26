@@ -32,6 +32,11 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Run gosec security scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
   frontend:
     name: Frontend lint and build
     runs-on: ubuntu-latest
